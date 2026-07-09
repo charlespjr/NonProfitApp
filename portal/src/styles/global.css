@@ -1,0 +1,75 @@
+/* Ported from the design handoff (Adams Infinite Legacy Portal.dc.html).
+   Themes are CSS custom properties set on the app shell; see theme.ts. */
+
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+button { font-family: inherit; }
+input, textarea, select { font-family: inherit; }
+::selection { background: rgba(0, 0, 0, .09); }
+
+@keyframes ailfade { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+@keyframes ailpop { from { opacity: 0; transform: scale(.97); } to { opacity: 1; transform: scale(1); } }
+@keyframes ailspin { to { transform: rotate(360deg); } }
+
+[data-m="hamburger"] { display: none; }
+
+@media (max-width: 900px) {
+  [data-m="hamburger"] { display: flex !important; }
+  aside[data-m="sidebar"] {
+    position: fixed !important; left: 0; top: 0; bottom: 0; height: 100dvh !important;
+    z-index: 70; transform: translateX(-100%) !important; transition: transform .25s ease;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, .28);
+  }
+  [data-nav="open"] aside[data-m="sidebar"] { transform: translateX(0) !important; }
+  [data-m="backdrop"] {
+    display: none; position: fixed; inset: 0; background: rgba(0, 0, 0, .42);
+    z-index: 60; animation: ailfade .2s ease both;
+  }
+  [data-nav="open"] [data-m="backdrop"] { display: block; }
+  [data-m="header"] { padding: 11px 15px !important; }
+  [data-m="htext"] [data-mt="title"] { font-size: 17px !important; }
+  [data-m="main"] { padding: 18px 15px 72px !important; }
+  [data-m="search"] { display: none !important; }
+  [data-m="newnote"] [data-mt="lbl"] { display: none; }
+  [data-m="kpi"] { grid-template-columns: 1fr 1fr !important; }
+  [data-m="dashbody"] { grid-template-columns: 1fr !important; }
+  [data-m="calwrap"] { grid-template-columns: 1fr !important; }
+  [data-m="calmonth"] > div { min-height: 62px !important; padding: 5px 5px !important; }
+  [data-m="noteswrap"] { grid-template-columns: 1fr !important; height: auto !important; min-height: 0 !important; }
+  [data-m="noteslist"] { height: auto !important; max-height: 210px; }
+  [data-m="noteeditor"] { height: 62vh !important; }
+  [data-m="dochead"], [data-m="teamhead"] { display: none !important; }
+  [data-m="docrow"], [data-m="teamrow"] { grid-template-columns: 1fr !important; gap: 10px !important; align-items: stretch !important; }
+  [data-m="login"] { grid-template-columns: 1fr !important; }
+  [data-m="loginbrand"] { display: none !important; }
+  [data-m="loginform"] { padding: 28px 22px !important; }
+}
+
+*::-webkit-scrollbar { width: 11px; height: 11px; }
+*::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, .16); border-radius: 20px;
+  border: 3px solid transparent; background-clip: content-box;
+}
+*::-webkit-scrollbar-thumb:hover { background: rgba(0, 0, 0, .28); background-clip: content-box; }
+
+/* Hover states — the prototype expressed these as style-hover attributes. */
+.hv-soft:hover { background: var(--accent-soft) !important; }
+.hv-bg:hover { background: var(--bg) !important; }
+.hv-bright:hover { filter: brightness(1.08); }
+.hv-bright-sm:hover { filter: brightness(1.06); }
+.hv-dim:hover { filter: brightness(.97); }
+.hv-border-accent:hover { border-color: var(--accent) !important; }
+.hv-border-accent-brand:hover { border-color: var(--accent) !important; color: var(--brand) !important; }
+.hv-border-accent-shadow:hover { border-color: var(--accent) !important; box-shadow: 0 2px 10px rgba(0, 0, 0, .06); }
+.hv-border-danger:hover { border-color: var(--danger) !important; color: var(--danger) !important; }
+.hv-warn-danger:hover { background: var(--warn-soft) !important; color: var(--danger) !important; }
+.hv-soft-ink:hover { background: var(--accent-soft) !important; color: var(--ink) !important; }
+.hv-danger:hover { color: var(--danger) !important; }
+.hv-hostinger:hover { border-color: #673de6 !important; box-shadow: 0 2px 10px rgba(0, 0, 0, .06); }
+.hv-zoom:hover { background: #e7f1ff !important; }
+.hv-docuseal:hover { filter: brightness(.98); }
+.hv-row:hover { background: var(--bg); }
+
+/* Focus ring for inputs (style-focus in the prototype). */
+.inp:focus { border-color: var(--accent) !important; box-shadow: 0 0 0 3px var(--accent-soft); }
+.inp-plain:focus { border-color: var(--accent) !important; }
