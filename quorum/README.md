@@ -6,11 +6,16 @@ Infinite Legacy board portal. Design matches the Quorum one-pager: espresso +
 terracotta + cream, JetBrains Mono kickers, Form · Sign · Vote · Meet · Comply.
 
 Static site: a single `index.html` (inline CSS, no build step). Product
-screenshots (warm-theme, captured from the live product) are in `shots/` and
-are currently ALSO served from https://portal.adamsinfinitelegacy.org/lmb/ —
-the deployed page references those absolute URLs; switch to relative `shots/`
-paths once this repo hosts its own images. `preview.html` is the local-preview
-copy using relative paths.
+screenshots (warm-theme, captured at 1920px from the portal prototype in
+`../portal-handoff/`) are in `shots/` and are referenced by relative paths.
+`preview.html` is kept byte-identical to `index.html`.
+
+**Live:** https://quorum-board-os.vercel.app (Vercel project `quorum-board-os`,
+team *pleasantc-gmailcom's projects*). The deployment's build step pulls
+`index.html` + `shots/` from this repo's `main` branch, so redeploying the
+project from the Vercel dashboard picks up whatever is on `main`. An older
+deploy with pre-refresh content is also public at quorum-site.vercel.app — the
+`quorum-site` and `quorum` Vercel projects are superseded and safe to delete.
 
 ## Editing
 
