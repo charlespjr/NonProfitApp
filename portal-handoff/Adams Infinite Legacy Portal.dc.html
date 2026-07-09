@@ -1,0 +1,1846 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Spectral:ital,wght@0,400;0,500;0,600;1,400&family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box}
+html,body{margin:0}
+button{font-family:inherit}
+input,textarea{font-family:inherit}
+::selection{background:rgba(0,0,0,.09)}
+@keyframes ailfade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@keyframes ailpop{from{opacity:0;transform:scale(.97)}to{opacity:1;transform:scale(1)}}
+@keyframes ailspin{to{transform:rotate(360deg)}}
+[data-m=hamburger]{display:none}
+@media (max-width: 900px){
+  [data-m=hamburger]{display:flex !important}
+  aside[data-m=sidebar]{position:fixed !important;left:0;top:0;bottom:0;height:100dvh !important;z-index:70;transform:translateX(-100%) !important;transition:transform .25s ease;box-shadow:0 20px 60px rgba(0,0,0,.28)}
+  [data-nav=open] aside[data-m=sidebar]{transform:translateX(0) !important}
+  [data-m=backdrop]{display:none;position:fixed;inset:0;background:rgba(0,0,0,.42);z-index:60;animation:ailfade .2s ease both}
+  [data-nav=open] [data-m=backdrop]{display:block}
+  [data-m=header]{padding:11px 15px !important}
+  [data-m=htext] [data-mt=title]{font-size:17px !important}
+  [data-m=main]{padding:18px 15px 72px !important}
+  [data-m=search]{display:none !important}
+  [data-m=newnote] [data-mt=lbl]{display:none}
+  [data-m=kpi]{grid-template-columns:1fr 1fr !important}
+  [data-m=dashbody]{grid-template-columns:1fr !important}
+  [data-m=calwrap]{grid-template-columns:1fr !important}
+  [data-m=calmonth] > div{min-height:62px !important;padding:5px 5px !important}
+  [data-m=noteswrap]{grid-template-columns:1fr !important;height:auto !important;min-height:0 !important}
+  [data-m=noteslist]{height:auto !important;max-height:210px}
+  [data-m=noteeditor]{height:62vh !important}
+  [data-m=dochead],[data-m=teamhead]{display:none !important}
+  [data-m=docrow],[data-m=teamrow]{grid-template-columns:1fr !important;gap:10px !important;align-items:stretch !important}
+  [data-m=login]{grid-template-columns:1fr !important}
+  [data-m=loginbrand]{display:none !important}
+  [data-m=loginform]{padding:28px 22px !important}
+}
+*::-webkit-scrollbar{width:11px;height:11px}
+*::-webkit-scrollbar-thumb{background:rgba(0,0,0,.16);border-radius:20px;border:3px solid transparent;background-clip:content-box}
+*::-webkit-scrollbar-thumb:hover{background:rgba(0,0,0,.28);background-clip:content-box}
+</style>
+</helmet>
+
+<div style="{{ shellStyle }}">
+
+<sc-if value="{{ notLoggedIn }}" hint-placeholder-val="{{ true }}">
+<div data-m="login" style="min-height:100vh;display:grid;grid-template-columns:1.05fr .95fr">
+  <div data-m="loginbrand" style="background:var(--brand);color:#fff;padding:56px 60px;display:flex;flex-direction:column;justify-content:space-between;position:relative;overflow:hidden">
+    <div style="position:absolute;inset:0;background:radial-gradient(120% 90% at 100% 0%, rgba(255,255,255,.10), transparent 60%);pointer-events:none"></div>
+    <div style="display:flex;align-items:center;gap:13px;position:relative">
+      <div style="width:40px;height:40px;border-radius:11px;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.22);display:grid;place-items:center;font-family:Spectral,serif;font-size:20px;font-weight:600">A</div>
+      <div style="font-family:Spectral,serif;font-size:17px;font-weight:500;letter-spacing:.01em">Adams Infinite Legacy</div>
+    </div>
+    <div style="position:relative;max-width:440px">
+      <div style="font-size:12px;letter-spacing:.16em;text-transform:uppercase;opacity:.72;margin-bottom:20px">Founder &amp; Board Portal</div>
+      <div style="font-family:Spectral,serif;font-size:40px;line-height:1.14;font-weight:500;letter-spacing:-.01em">Everything to launch the foundation, in one place.</div>
+      <div style="margin-top:22px;font-size:15px;line-height:1.6;opacity:.8">Track your formation checklist, sign governance documents through DocuSeal, schedule board meetings, and keep private notes — all secured to your account.</div>
+    </div>
+    <div style="position:relative;display:flex;gap:26px;font-size:12.5px;opacity:.72">
+      <span>California Nonprofit Public Benefit Corporation</span>
+      <span>IRC § 501(c)(3)</span>
+    </div>
+  </div>
+  <div data-m="loginform" style="display:flex;align-items:center;justify-content:center;padding:40px">
+    <form onSubmit="{{ doLogin }}" style="width:100%;max-width:372px">
+      <div style="font-family:Spectral,serif;font-size:27px;font-weight:500;letter-spacing:-.01em">Welcome back</div>
+      <div style="color:var(--muted);font-size:14px;margin-top:7px">Sign in to your Adams Infinite Legacy account.</div>
+
+      <div style="margin-top:30px;display:flex;flex-direction:column;gap:7px">
+        <label style="font-size:12.5px;font-weight:600;color:var(--ink)">Username or email</label>
+        <input value="{{ email }}" onChange="{{ setEmail }}" placeholder="username or email address" style="width:100%;padding:12px 14px;border:1px solid var(--line);border-radius:10px;background:var(--panel);font-size:14px;color:var(--ink);outline:none" style-focus="border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)">
+      </div>
+      <div style="margin-top:16px;display:flex;flex-direction:column;gap:7px">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <label style="font-size:12.5px;font-weight:600;color:var(--ink)">Password</label>
+          <span style="font-size:12px;color:var(--accent);cursor:pointer">Forgot?</span>
+        </div>
+        <input type="password" value="{{ password }}" onChange="{{ setPassword }}" placeholder="••••••••••" style="width:100%;padding:12px 14px;border:1px solid var(--line);border-radius:10px;background:var(--panel);font-size:14px;color:var(--ink);outline:none" style-focus="border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)">
+      </div>
+
+      <sc-if value="{{ loginError }}" hint-placeholder-val="x">
+        <div style="margin-top:14px;font-size:12.5px;color:var(--danger);background:var(--warn-soft);padding:9px 12px;border-radius:8px">{{ loginError }}</div>
+      </sc-if>
+
+      <div style="margin-top:18px;display:flex;align-items:center;gap:9px;font-size:13px;color:var(--muted)">
+        <input type="checkbox" checked="{{ remember }}" onChange="{{ toggleRemember }}" style="width:15px;height:15px;accent-color:var(--brand)">
+        <span>Keep me signed in on this device</span>
+      </div>
+
+      <button type="submit" style="margin-top:24px;width:100%;padding:13px;border:none;border-radius:10px;background:var(--brand);color:#fff;font-size:14.5px;font-weight:600;cursor:pointer;transition:filter .15s" style-hover="filter:brightness(1.08)">Sign in</button>
+
+      <div style="margin-top:18px;padding:12px 14px;background:var(--accent-soft);border-radius:9px;font-size:12px;color:var(--brand);line-height:1.5">
+        <strong>Demo:</strong> use any email &amp; password (or leave blank) to enter the portal.
+      </div>
+    </form>
+  </div>
+</div>
+</sc-if>
+
+
+<sc-if value="{{ loggedIn }}" hint-placeholder-val="x">
+<div data-nav="{{ navAttr }}" style="display:flex;min-height:100vh">
+
+  <div data-m="backdrop" onClick="{{ closeNav }}"></div>
+
+  <!-- SIDEBAR -->
+  <aside data-m="sidebar" style="width:252px;flex:none;background:var(--panel);border-right:1px solid var(--line);display:flex;flex-direction:column;padding:20px 15px;position:sticky;top:0;height:100vh">
+    <div style="display:flex;align-items:center;gap:11px;padding:6px 8px 20px">
+      <div style="width:36px;height:36px;border-radius:10px;background:var(--brand);color:#fff;display:grid;place-items:center;font-family:Spectral,serif;font-size:18px;font-weight:600">A</div>
+      <div style="line-height:1.15">
+        <div style="font-family:Spectral,serif;font-size:15px;font-weight:600">Adams Infinite</div>
+        <div style="font-size:10.5px;color:var(--muted);letter-spacing:.13em">LEGACY PORTAL</div>
+      </div>
+    </div>
+
+    <div style="font-size:10.5px;letter-spacing:.12em;color:var(--muted);padding:8px 10px 6px">WORKSPACE</div>
+    <sc-for list="{{ navItems }}" as="item" hint-placeholder-count="5">
+      <button onClick="{{ item.go }}" style="{{ item.style }}" style-hover="background:var(--accent-soft)">
+        <span style="display:flex;width:18px;height:18px;flex:none">{{ item.icon }}</span>
+        <span style="flex:1;text-align:left">{{ item.label }}</span>
+        <sc-if value="{{ item.badge }}" hint-placeholder-val="{{ 0 }}">
+          <span style="{{ item.badgeStyle }}">{{ item.badge }}</span>
+        </sc-if>
+      </button>
+    </sc-for>
+
+    <div style="margin-top:auto;border-top:1px solid var(--line);padding-top:12px">
+      <div style="display:flex;align-items:center;gap:11px;padding:8px 8px">
+        <div style="width:36px;height:36px;border-radius:50%;background:var(--accent);color:#fff;display:grid;place-items:center;font-size:13px;font-weight:600;flex:none">AA</div>
+        <div style="min-width:0;flex:1">
+          <div style="font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Alitalia Adams</div>
+          <div style="font-size:11px;color:var(--muted)">President &amp; Founder</div>
+        </div>
+        <button onClick="{{ logout }}" title="Sign out" style="border:none;background:transparent;color:var(--muted);cursor:pointer;padding:6px;border-radius:7px;display:flex" style-hover="background:var(--accent-soft);color:var(--ink)">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg>
+        </button>
+      </div>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <div style="flex:1;display:flex;flex-direction:column;min-width:0">
+    <header data-m="header" style="display:flex;align-items:center;gap:16px;padding:16px 30px;border-bottom:1px solid var(--line);background:color-mix(in srgb, var(--panel) 72%, transparent);backdrop-filter:blur(8px);position:sticky;top:0;z-index:20">
+      <button data-m="hamburger" onClick="{{ openNav }}" title="Menu" style="display:none;align-items:center;justify-content:center;border:1px solid var(--line);background:var(--panel);color:var(--ink);width:38px;height:38px;border-radius:9px;cursor:pointer;flex:none;padding:0" style-hover="background:var(--bg)">
+        <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+      </button>
+      <div data-m="htext" style="flex:1;min-width:0">
+        <div data-mt="title" style="font-family:Spectral,serif;font-size:20px;font-weight:600;letter-spacing:-.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ pageTitle }}</div>
+        <div style="font-size:12.5px;color:var(--muted);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ pageSub }}</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:12px;flex:none">
+        <div data-m="search" style="display:flex;align-items:center;gap:8px;background:var(--bg);border:1px solid var(--line);border-radius:9px;padding:8px 12px;width:220px">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3-3"/></svg>
+          <input value="{{ search }}" onChange="{{ setSearch }}" placeholder="Search documents…" style="border:none;background:transparent;outline:none;font-size:13px;color:var(--ink);width:100%">
+        </div>
+        <button data-m="newnote" onClick="{{ newNote }}" style="display:flex;align-items:center;gap:7px;border:none;background:var(--brand);color:#fff;font-size:13px;font-weight:600;padding:9px 14px;border-radius:9px;cursor:pointer" style-hover="filter:brightness(1.08)">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+          <span data-mt="lbl">New note</span>
+        </button>
+      </div>
+    </header>
+
+    <main data-m="main" style="flex:1;padding:28px 30px 60px;overflow:auto">
+
+      <!-- ============ DASHBOARD ============ -->
+      <sc-if value="{{ isDashboard }}" hint-placeholder-val="x">
+      <div style="max-width:1180px;margin:0 auto">
+
+        <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:20px;flex-wrap:wrap;margin-bottom:22px">
+          <div>
+            <div style="font-family:Spectral,serif;font-size:28px;font-weight:500;letter-spacing:-.01em">{{ greeting }}, Alitalia.</div>
+            <div style="color:var(--muted);font-size:14px;margin-top:5px">Here's where things stand with the foundation's launch.</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;background:var(--panel);border:1px solid var(--line);border-radius:11px;padding:11px 16px">
+            <div style="position:relative;width:44px;height:44px;flex:none">
+              <div style="{{ ringStyle }}"></div>
+              <div style="position:absolute;inset:0;display:grid;place-items:center;font-size:12px;font-weight:700;color:var(--brand)">{{ progressPct }}%</div>
+            </div>
+            <div>
+              <div style="font-size:13px;font-weight:600">Launch progress</div>
+              <div style="font-size:12px;color:var(--muted)">{{ doneCount }} of {{ totalCount }} tasks complete</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- KPI ROW -->
+        <div data-m="kpi" style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:18px">
+          <div style="background:var(--panel);border:1px solid var(--line);border-radius:13px;padding:16px 17px">
+            <div style="font-size:12.5px;color:var(--muted)">Awaiting signature</div>
+            <div style="font-family:Spectral,serif;font-size:30px;font-weight:600;margin-top:6px;color:var(--warn)">{{ pendingSign }}</div>
+            <div style="font-size:12px;color:var(--muted);margin-top:2px">documents in DocuSeal</div>
+          </div>
+          <div style="background:var(--panel);border:1px solid var(--line);border-radius:13px;padding:16px 17px">
+            <div style="font-size:12.5px;color:var(--muted)">Signed</div>
+            <div style="font-family:Spectral,serif;font-size:30px;font-weight:600;margin-top:6px;color:var(--good)">{{ signedCount }}</div>
+            <div style="font-size:12px;color:var(--muted);margin-top:2px">completed &amp; filed</div>
+          </div>
+          <div style="background:var(--panel);border:1px solid var(--line);border-radius:13px;padding:16px 17px">
+            <div style="font-size:12.5px;color:var(--muted)">Open tasks</div>
+            <div style="font-family:Spectral,serif;font-size:30px;font-weight:600;margin-top:6px">{{ openTasks }}</div>
+            <div style="font-size:12px;color:var(--muted);margin-top:2px">on launch checklist</div>
+          </div>
+          <div style="background:var(--panel);border:1px solid var(--line);border-radius:13px;padding:16px 17px">
+            <div style="font-size:12.5px;color:var(--muted)">Next meeting</div>
+            <div style="font-family:Spectral,serif;font-size:20px;font-weight:600;margin-top:9px">{{ nextMeetingDate }}</div>
+            <div style="font-size:12px;color:var(--muted);margin-top:3px">{{ nextMeetingTitle }}</div>
+          </div>
+        </div>
+
+        <!-- LAYOUT-SPECIFIC BODY -->
+        <div data-m="dashbody" style="{{ dashBodyStyle }}">
+
+          <div style="display:flex;flex-direction:column;gap:18px;min-width:0">
+            <!-- Checklist snapshot -->
+            <div style="background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:20px">
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:15px">
+                <div style="font-family:Spectral,serif;font-size:16px;font-weight:600">Launch checklist</div>
+                <button onClick="{{ goChecklist }}" style="border:none;background:transparent;color:var(--accent);font-size:12.5px;font-weight:600;cursor:pointer">View all →</button>
+              </div>
+              <div style="height:8px;background:var(--bg);border-radius:20px;overflow:hidden;margin-bottom:16px">
+                <div style="{{ barStyle }}"></div>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:2px">
+                <sc-for list="{{ nextTasks }}" as="t" hint-placeholder-count="4">
+                  <button onClick="{{ t.toggle }}" style="display:flex;align-items:center;gap:12px;text-align:left;border:none;background:transparent;cursor:pointer;padding:9px 8px;border-radius:9px;width:100%" style-hover="background:var(--bg)">
+                    <span style="{{ t.boxStyle }}">{{ t.check }}</span>
+                    <span style="flex:1;font-size:13.5px;color:var(--ink)">{{ t.label }}</span>
+                    <span style="font-size:11px;color:var(--muted)">{{ t.phase }}</span>
+                  </button>
+                </sc-for>
+              </div>
+            </div>
+
+            <!-- Recent documents -->
+            <div style="background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:20px">
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+                <div style="font-family:Spectral,serif;font-size:16px;font-weight:600">Recent documents</div>
+                <button onClick="{{ goDocuments }}" style="border:none;background:transparent;color:var(--accent);font-size:12.5px;font-weight:600;cursor:pointer">Open library →</button>
+              </div>
+              <sc-for list="{{ recentDocs }}" as="d" hint-placeholder-count="4">
+                <div style="display:flex;align-items:center;gap:14px;padding:12px 6px;border-bottom:1px solid var(--line)">
+                  <span style="width:34px;height:34px;border-radius:8px;background:var(--accent-soft);color:var(--brand);display:grid;place-items:center;flex:none">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M6 2h8l4 4v16H6z"/><path d="M14 2v5h5"/></svg>
+                  </span>
+                  <div style="flex:1;min-width:0">
+                    <div style="font-size:13.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ d.name }}</div>
+                    <div style="font-size:11.5px;color:var(--muted)">{{ d.cat }} · Updated {{ d.updated }}</div>
+                  </div>
+                  <span style="{{ d.badgeStyle }}">{{ d.statusLabel }}</span>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+
+          <div style="display:flex;flex-direction:column;gap:18px;min-width:0">
+            <!-- Upcoming meetings -->
+            <div style="background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:20px">
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+                <div style="font-family:Spectral,serif;font-size:16px;font-weight:600">Upcoming meetings</div>
+                <button onClick="{{ goCalendar }}" style="border:none;background:transparent;color:var(--accent);font-size:12.5px;font-weight:600;cursor:pointer">Calendar →</button>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:11px">
+                <sc-for list="{{ upcoming }}" as="m" hint-placeholder-count="3">
+                  <div style="display:flex;gap:13px;align-items:center">
+                    <div style="width:46px;height:52px;border-radius:10px;background:var(--bg);border:1px solid var(--line);display:flex;flex-direction:column;align-items:center;justify-content:center;flex:none">
+                      <div style="font-size:10px;letter-spacing:.08em;color:var(--danger);font-weight:700">JUL</div>
+                      <div style="font-family:Spectral,serif;font-size:20px;font-weight:600;line-height:1">{{ m.day }}</div>
+                    </div>
+                    <div style="min-width:0;flex:1">
+                      <div style="font-size:13.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ m.title }}</div>
+                      <div style="font-size:11.5px;color:var(--muted)">{{ m.time }} · {{ m.who }}</div>
+                    </div>
+                    <sc-if value="{{ m.showJoin }}" hint-placeholder-val="x">
+                      <a href="{{ m.zoomUrl }}" target="_blank" title="Join Zoom" style="display:inline-flex;align-items:center;gap:6px;text-decoration:none;background:#2D8CFF;color:#fff;font-size:11.5px;font-weight:600;padding:6px 11px;border-radius:8px;flex:none" style-hover="filter:brightness(1.07)">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M4 8a2 2 0 0 1 2-2h7a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2zM17 10l4-2.5v9L17 14z"/></svg>
+                        Join
+                      </a>
+                    </sc-if>
+                  </div>
+                </sc-for>
+              </div>
+            </div>
+
+          </div>
+
+        </div>
+      </div>
+      </sc-if>
+
+      <!-- ============ DOCUMENTS ============ -->
+      <sc-if value="{{ isDocuments }}" hint-placeholder-val="x">
+      <div style="max-width:1080px;margin:0 auto">
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px">
+          <sc-for list="{{ docTabs }}" as="tab" hint-placeholder-count="4">
+            <button onClick="{{ tab.go }}" style="{{ tab.style }}" style-hover="border-color:var(--accent)">{{ tab.label }}<span style="opacity:.6;margin-left:6px">{{ tab.count }}</span></button>
+          </sc-for>
+        </div>
+
+        <div style="background:var(--panel);border:1px solid var(--line);border-radius:14px;overflow:hidden">
+          <div data-m="dochead" style="display:grid;grid-template-columns:minmax(0,1fr) 130px 170px 150px;gap:12px;padding:13px 20px;border-bottom:1px solid var(--line);font-size:11.5px;letter-spacing:.05em;color:var(--muted);text-transform:uppercase;font-weight:600">
+            <div>Document</div><div>Category</div><div>Status</div><div style="text-align:right">Action</div>
+          </div>
+          <sc-for list="{{ filteredDocs }}" as="d" hint-placeholder-count="6">
+            <div data-m="docrow" style="display:grid;grid-template-columns:minmax(0,1fr) 130px 170px 150px;gap:12px;padding:15px 20px;border-bottom:1px solid var(--line);align-items:center" style-hover="background:var(--bg)">
+              <div style="display:flex;align-items:center;gap:13px;min-width:0">
+                <span style="width:38px;height:38px;border-radius:9px;background:var(--accent-soft);color:var(--brand);display:grid;place-items:center;flex:none">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M6 2h8l4 4v16H6z"/><path d="M14 2v5h5"/></svg>
+                </span>
+                <div style="min-width:0">
+                  <div style="font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ d.name }}</div>
+                  <div style="font-size:12px;color:var(--muted);line-height:1.4;margin-top:2px;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical">{{ d.desc }}</div>
+                  <div style="font-size:11px;color:var(--muted);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ d.pages }} pp · {{ d.signText }}</div>
+                </div>
+              </div>
+              <div style="font-size:13px;color:var(--muted)">{{ d.cat }}</div>
+              <div><span style="{{ d.badgeStyle }}">{{ d.statusLabel }}</span></div>
+              <div style="text-align:right">
+                <button onClick="{{ d.open }}" style="{{ d.actionStyle }}" style-hover="filter:brightness(1.06)">{{ d.actionLabel }}</button>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;margin-top:14px;font-size:12px;color:var(--muted)">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+          Blue fields in each document are DocuSeal electronic-signature fields. Signing here updates the document's status.
+        </div>
+      </div>
+      </sc-if>
+
+      <!-- ============ CHECKLIST ============ -->
+      <sc-if value="{{ isChecklist }}" hint-placeholder-val="x">
+      <div style="max-width:820px;margin:0 auto">
+        <div style="background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:22px;margin-bottom:20px;display:flex;align-items:center;gap:20px">
+          <div style="position:relative;width:64px;height:64px;flex:none">
+            <div style="{{ ringStyleLg }}"></div>
+            <div style="position:absolute;inset:0;display:grid;place-items:center;font-size:16px;font-weight:700;color:var(--brand)">{{ progressPct }}%</div>
+          </div>
+          <div style="flex:1">
+            <div style="font-family:Spectral,serif;font-size:19px;font-weight:600">Foundation launch checklist</div>
+            <div style="font-size:13.5px;color:var(--muted);margin-top:3px">{{ doneCount }} of {{ totalCount }} steps complete across formation, governance, compliance, and fundraising.</div>
+          </div>
+        </div>
+
+        <sc-for list="{{ phases }}" as="p" hint-placeholder-count="4">
+          <div style="margin-bottom:18px">
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;padding:0 2px">
+              <div style="font-family:Spectral,serif;font-size:15px;font-weight:600">{{ p.name }}</div>
+              <div style="font-size:11.5px;color:var(--muted);background:var(--bg);border:1px solid var(--line);padding:2px 9px;border-radius:20px">{{ p.count }}</div>
+            </div>
+            <div style="background:var(--panel);border:1px solid var(--line);border-radius:14px;overflow:hidden">
+              <sc-for list="{{ p.items }}" as="t" hint-placeholder-count="3">
+                <div style="display:flex;align-items:flex-start;gap:13px;padding:14px 18px;border-bottom:1px solid var(--line)" style-hover="background:var(--bg)">
+                  <button onClick="{{ t.toggle }}" style="{{ t.boxStyle }}" style-hover="border-color:var(--accent)">{{ t.check }}</button>
+                  <div style="flex:1;min-width:0">
+                    <div style="{{ t.labelStyle }}">{{ t.label }}</div>
+                    <div style="{{ t.howStyle }}">{{ t.how }}</div>
+                    <sc-if value="{{ t.docName }}" hint-placeholder-val="x"><div style="font-size:11.5px;color:var(--accent);font-weight:600;margin-top:4px">Linked document · {{ t.docName }}</div></sc-if>
+                  </div>
+                  <sc-if value="{{ t.hasDoc }}" hint-placeholder-val="x">
+                    <button onClick="{{ t.openDoc }}" style="border:1px solid var(--line);background:var(--panel);color:var(--brand);font-size:12px;font-weight:600;padding:7px 12px;border-radius:8px;cursor:pointer;flex:none;margin-top:1px" style-hover="border-color:var(--accent)">Open</button>
+                  </sc-if>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+        </sc-for>
+      </div>
+      </sc-if>
+
+      <!-- ============ CALENDAR ============ -->
+      <sc-if value="{{ isCalendar }}" hint-placeholder-val="x">
+      <div style="max-width:1080px;margin:0 auto">
+        <sc-if value="{{ calNotConnected }}" hint-placeholder-val="{{ true }}">
+          <div style="background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:52px 30px;text-align:center;max-width:460px;margin:40px auto">
+            <div style="width:58px;height:58px;border-radius:14px;background:var(--bg);border:1px solid var(--line);display:grid;place-items:center;margin:0 auto 18px">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.7"><rect x="3" y="5" width="18" height="16" rx="2.5"/><path d="M3 9h18M8 3v4M16 3v4"/></svg>
+            </div>
+            <div style="font-family:Spectral,serif;font-size:20px;font-weight:600">Connect your calendar</div>
+            <div style="font-size:13.5px;color:var(--muted);margin-top:8px;line-height:1.55">Sync board meetings, committee sessions, and festival planning with Google Calendar to see everything in one place.</div>
+            <button onClick="{{ connectCal }}" style="margin-top:22px;display:inline-flex;align-items:center;gap:10px;border:1px solid var(--line);background:var(--panel);color:var(--ink);font-size:14px;font-weight:600;padding:11px 20px;border-radius:10px;cursor:pointer" style-hover="border-color:var(--accent);box-shadow:0 2px 10px rgba(0,0,0,.06)">
+              <span style="display:flex">{{ googleIcon }}</span>
+              Connect Google Calendar
+            </button>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ calConnected }}" hint-placeholder-val="x">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;margin-bottom:16px">
+            <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+              <div style="font-family:Spectral,serif;font-size:22px;font-weight:600">July 2026</div>
+              <div style="display:flex;align-items:center;gap:7px;background:var(--good-soft);color:var(--good);font-size:12px;font-weight:600;padding:5px 11px;border-radius:20px">
+                <span style="display:flex">{{ googleIconSm }}</span> Google Calendar connected
+              </div>
+              <sc-if value="{{ zoomConnected }}" hint-placeholder-val="x">
+                <div style="display:flex;align-items:center;gap:7px;background:#e7f1ff;color:#2160c4;font-size:12px;font-weight:600;padding:5px 11px;border-radius:20px">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M4 8a2 2 0 0 1 2-2h7a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2zM17 10l4-2.5v9L17 14z"/></svg>
+                  Zoom connected
+                </div>
+              </sc-if>
+              <sc-if value="{{ zoomNotConnected }}" hint-placeholder-val="{{ true }}">
+                <button onClick="{{ connectZoom }}" style="display:flex;align-items:center;gap:7px;border:1px solid #2D8CFF;background:var(--panel);color:#2160c4;font-size:12px;font-weight:600;padding:5px 12px;border-radius:20px;cursor:pointer" style-hover="background:#e7f1ff">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M4 8a2 2 0 0 1 2-2h7a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2zM17 10l4-2.5v9L17 14z"/></svg>
+                  Connect Zoom
+                </button>
+              </sc-if>
+            </div>
+            <div style="display:flex;align-items:center;gap:12px">
+              <sc-if value="{{ zoomConnected }}" hint-placeholder-val="x">
+                <button onClick="{{ disconnectZoom }}" style="border:none;background:transparent;color:var(--muted);font-size:12px;font-weight:600;cursor:pointer" style-hover="color:var(--danger)">Disconnect Zoom</button>
+              </sc-if>
+              <div style="font-size:12.5px;color:var(--muted)">alitalia@adamsinfinitelegacy.org</div>
+            </div>
+          </div>
+
+          <div data-m="calwrap" style="display:grid;grid-template-columns:1fr 300px;gap:18px;align-items:start">
+            <div style="background:var(--panel);border:1px solid var(--line);border-radius:14px;overflow:hidden">
+              <div style="display:grid;grid-template-columns:repeat(7,1fr);border-bottom:1px solid var(--line)">
+                <sc-for list="{{ weekdays }}" as="w" hint-placeholder-count="7">
+                  <div style="text-align:center;padding:11px 0;font-size:11px;letter-spacing:.05em;color:var(--muted);font-weight:600">{{ w }}</div>
+                </sc-for>
+              </div>
+              <div data-m="calmonth" style="display:grid;grid-template-columns:repeat(7,1fr)">
+                <sc-for list="{{ calDays }}" as="c" hint-placeholder-count="35">
+                  <div style="{{ c.cellStyle }}">
+                    <div style="{{ c.numStyle }}">{{ c.day }}</div>
+                    <sc-if value="{{ c.hasMeeting }}" hint-placeholder-val="x">
+                      <div style="{{ c.eventStyle }}">{{ c.eventLabel }}</div>
+                    </sc-if>
+                  </div>
+                </sc-for>
+              </div>
+            </div>
+
+            <div style="background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px">
+              <div style="font-family:Spectral,serif;font-size:15px;font-weight:600;margin-bottom:14px">This month</div>
+              <div style="display:flex;flex-direction:column;gap:14px">
+                <sc-for list="{{ meetings }}" as="m" hint-placeholder-count="4">
+                  <div style="display:flex;gap:12px">
+                    <div style="width:4px;border-radius:4px;background:var(--accent);flex:none"></div>
+                    <div style="min-width:0;flex:1">
+                      <div style="font-size:13.5px;font-weight:600">{{ m.title }}</div>
+                      <div style="font-size:12px;color:var(--muted);margin-top:2px">Jul {{ m.day }} · {{ m.time }}</div>
+                      <div style="font-size:12px;color:var(--muted)">{{ m.who }}</div>
+                      <sc-if value="{{ m.showJoin }}" hint-placeholder-val="x">
+                        <a href="{{ m.zoomUrl }}" target="_blank" style="display:inline-flex;align-items:center;gap:6px;margin-top:7px;text-decoration:none;background:#2D8CFF;color:#fff;font-size:11.5px;font-weight:600;padding:5px 11px;border-radius:7px" style-hover="filter:brightness(1.07)">
+                          <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M4 8a2 2 0 0 1 2-2h7a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2zM17 10l4-2.5v9L17 14z"/></svg>
+                          Join Zoom
+                        </a>
+                      </sc-if>
+                    </div>
+                  </div>
+                </sc-for>
+              </div>
+              <button onClick="{{ disconnectCal }}" style="margin-top:18px;width:100%;border:1px solid var(--line);background:var(--panel);color:var(--muted);font-size:12.5px;font-weight:600;padding:9px;border-radius:9px;cursor:pointer" style-hover="border-color:var(--danger);color:var(--danger)">Disconnect</button>
+            </div>
+          </div>
+        </sc-if>
+      </div>
+      </sc-if>
+
+      <!-- ============ NOTES ============ -->
+      <sc-if value="{{ isNotes }}" hint-placeholder-val="x">
+      <div style="max-width:1000px;margin:0 auto">
+        <div data-m="noteswrap" style="display:grid;grid-template-columns:300px 1fr;gap:18px;align-items:start;height:calc(100vh - 210px);min-height:440px">
+          <div data-m="noteslist" style="background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:12px;display:flex;flex-direction:column;height:100%;overflow:hidden">
+            <button onClick="{{ newNote }}" style="display:flex;align-items:center;justify-content:center;gap:7px;border:1px dashed var(--line);background:var(--bg);color:var(--brand);font-size:13px;font-weight:600;padding:10px;border-radius:10px;cursor:pointer;margin-bottom:10px" style-hover="border-color:var(--accent)">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg> New note
+            </button>
+            <div style="overflow:auto;display:flex;flex-direction:column;gap:4px">
+              <sc-for list="{{ notes }}" as="n" hint-placeholder-count="3">
+                <button onClick="{{ n.select }}" style="{{ n.style }}" style-hover="background:var(--bg)">
+                  <div style="font-size:13.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--ink)">{{ n.title }}</div>
+                  <div style="font-size:11.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px">{{ n.preview }}</div>
+                  <div style="font-size:10.5px;color:var(--muted);margin-top:4px">{{ n.updated }}</div>
+                </button>
+              </sc-for>
+            </div>
+          </div>
+
+          <div data-m="noteeditor" style="background:var(--panel);border:1px solid var(--line);border-radius:14px;display:flex;flex-direction:column;height:100%;overflow:hidden">
+            <sc-if value="{{ hasActiveNote }}" hint-placeholder-val="x">
+              <div style="padding:16px 20px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:12px">
+                <input value="{{ noteTitle }}" onChange="{{ setNoteTitle }}" placeholder="Note title" style="flex:1;border:none;background:transparent;outline:none;font-family:Spectral,serif;font-size:19px;font-weight:600;color:var(--ink)">
+                <span style="font-size:11.5px;color:var(--muted);flex:none">{{ noteSaved }}</span>
+                <button onClick="{{ deleteNote }}" title="Delete" style="border:none;background:transparent;color:var(--muted);cursor:pointer;padding:6px;border-radius:7px;display:flex" style-hover="background:var(--warn-soft);color:var(--danger)">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/></svg>
+                </button>
+              </div>
+              <textarea value="{{ noteBody }}" onChange="{{ setNoteBody }}" placeholder="Start typing…" style="flex:1;border:none;background:transparent;outline:none;resize:none;padding:20px;font-size:14.5px;line-height:1.65;color:var(--ink)"></textarea>
+            </sc-if>
+            <sc-if value="{{ noActiveNote }}" hint-placeholder-val="x">
+              <div style="flex:1;display:grid;place-items:center;text-align:center;color:var(--muted);padding:40px">
+                <div>
+                  <div style="font-family:Spectral,serif;font-size:18px;color:var(--ink);margin-bottom:6px">No note selected</div>
+                  <div style="font-size:13px">Pick a note on the left, or create a new one.</div>
+                </div>
+              </div>
+            </sc-if>
+          </div>
+        </div>
+      </div>
+      </sc-if>
+
+      <!-- ============ BOARD VOTES ============ -->
+      <sc-if value="{{ isVotes }}" hint-placeholder-val="x">
+      <div style="max-width:900px;margin:0 auto">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:18px">
+          <div>
+            <div style="font-family:Spectral,serif;font-size:22px;font-weight:600">Board votes &amp; motions</div>
+            <div style="font-size:13.5px;color:var(--muted);margin-top:3px">Put a decision to the board, collect each director's vote, and record the result.</div>
+          </div>
+          <button onClick="{{ newMotion }}" style="display:flex;align-items:center;gap:8px;border:none;background:var(--brand);color:#fff;font-size:13.5px;font-weight:600;padding:11px 16px;border-radius:10px;cursor:pointer" style-hover="filter:brightness(1.08)">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg> New motion
+          </button>
+        </div>
+
+        <sc-if value="{{ noMotions }}" hint-placeholder-val="x">
+          <div style="background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:52px 30px;text-align:center;max-width:460px;margin:30px auto">
+            <div style="width:56px;height:56px;border-radius:14px;background:var(--bg);border:1px solid var(--line);display:grid;place-items:center;margin:0 auto 16px">
+              <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+            </div>
+            <div style="font-family:Spectral,serif;font-size:19px;font-weight:600">No motions yet</div>
+            <div style="font-size:13.5px;color:var(--muted);margin-top:8px;line-height:1.55">When the board needs to decide something — adopting the bylaws, approving the budget, authorizing the bank account — create a motion here and each director casts their vote.</div>
+          </div>
+        </sc-if>
+
+        <div style="display:flex;flex-direction:column;gap:16px">
+          <sc-for list="{{ motions }}" as="mo" hint-placeholder-count="2">
+            <div style="background:var(--panel);border:1px solid var(--line);border-radius:15px;overflow:hidden">
+              <div style="padding:18px 20px;border-bottom:1px solid var(--line)">
+                <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:14px">
+                  <div style="min-width:0">
+                    <div style="font-family:Spectral,serif;font-size:17px;font-weight:600;line-height:1.3">{{ mo.title }}</div>
+                    <div style="font-size:13px;color:var(--muted);margin-top:5px;line-height:1.5">{{ mo.desc }}</div>
+                    <div style="font-size:11.5px;color:var(--muted);margin-top:8px">{{ mo.meta }}</div>
+                    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;align-items:center">
+                      <sc-if value="{{ mo.hasZoom }}" hint-placeholder-val="x">
+                        <a href="{{ mo.zoomUrl }}" target="_blank" style="display:inline-flex;align-items:center;gap:6px;text-decoration:none;background:#e7f1ff;color:#2160c4;font-size:11.5px;font-weight:600;padding:4px 10px;border-radius:7px" style-hover="filter:brightness(.97)">
+                          <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M4 8a2 2 0 0 1 2-2h7a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2zM17 10l4-2.5v9L17 14z"/></svg>
+                          Join vote meeting
+                        </a>
+                      </sc-if>
+                      <sc-if value="{{ mo.notified }}" hint-placeholder-val="x">
+                        <span style="display:inline-flex;align-items:center;gap:6px;background:var(--good-soft);color:var(--good);font-size:11.5px;font-weight:600;padding:4px 10px;border-radius:7px">
+                          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16v16H4z"/><path d="m4 6 8 6 8-6"/></svg>
+                          {{ mo.notifiedText }}
+                        </span>
+                      </sc-if>
+                      <button onClick="{{ mo.notify }}" style="border:1px solid var(--line);background:var(--panel);color:var(--brand);font-size:11.5px;font-weight:600;padding:4px 11px;border-radius:7px;cursor:pointer" style-hover="border-color:var(--accent)">{{ mo.notifyLabel }}</button>
+                      <button onClick="{{ mo.previewEmail }}" style="display:inline-flex;align-items:center;gap:5px;border:1px solid var(--line);background:var(--panel);color:var(--muted);font-size:11.5px;font-weight:600;padding:4px 11px;border-radius:7px;cursor:pointer" style-hover="border-color:var(--accent);color:var(--brand)">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+                        Preview email
+                      </button>
+                    </div>
+                  </div>
+                  <div style="display:flex;flex-direction:column;align-items:flex-end;gap:8px;flex:none">
+                    <span style="{{ mo.resultStyle }}">{{ mo.resultLabel }}</span>
+                    <button onClick="{{ mo.remove }}" title="Delete motion" style="border:none;background:transparent;color:var(--muted);cursor:pointer;padding:5px;border-radius:7px;display:flex" style-hover="background:var(--warn-soft);color:var(--danger)">
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/></svg>
+                    </button>
+                  </div>
+                </div>
+
+                <div style="display:flex;gap:6px;margin-top:14px;height:9px;border-radius:20px;overflow:hidden;background:var(--bg)">
+                  <div style="{{ mo.forBar }}"></div>
+                  <div style="{{ mo.againstBar }}"></div>
+                  <div style="{{ mo.abstainBar }}"></div>
+                </div>
+                <div style="display:flex;gap:16px;margin-top:9px;font-size:12px;color:var(--muted);flex-wrap:wrap">
+                  <span style="display:flex;align-items:center;gap:6px"><span style="width:9px;height:9px;border-radius:50%;background:var(--good)"></span>For {{ mo.forN }}</span>
+                  <span style="display:flex;align-items:center;gap:6px"><span style="width:9px;height:9px;border-radius:50%;background:var(--danger)"></span>Against {{ mo.againstN }}</span>
+                  <span style="display:flex;align-items:center;gap:6px"><span style="width:9px;height:9px;border-radius:50%;background:var(--muted)"></span>Abstain {{ mo.abstainN }}</span>
+                  <span style="margin-left:auto">{{ mo.castN }} of {{ mo.totalN }} directors voted</span>
+                </div>
+              </div>
+
+              <div style="padding:8px 10px">
+                <sc-for list="{{ mo.voters }}" as="v" hint-placeholder-count="7">
+                  <div style="display:flex;align-items:center;gap:12px;padding:9px 10px;border-radius:10px" style-hover="background:var(--bg)">
+                    <div style="{{ v.avatarStyle }}">{{ v.initials }}</div>
+                    <div style="flex:1;min-width:0">
+                      <div style="font-size:13.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ v.name }}<span style="{{ v.youStyle }}">You</span></div>
+                      <div style="font-size:11.5px;color:var(--muted)">{{ v.role }}</div>
+                    </div>
+                    <sc-if value="{{ v.canVote }}" hint-placeholder-val="x">
+                      <div style="display:flex;gap:6px;flex:none">
+                        <button onClick="{{ v.voteFor }}" style="{{ v.forStyle }}">For</button>
+                        <button onClick="{{ v.voteAgainst }}" style="{{ v.againstStyle }}">Against</button>
+                        <button onClick="{{ v.voteAbstain }}" style="{{ v.abstainStyle }}">Abstain</button>
+                      </div>
+                    </sc-if>
+                    <sc-if value="{{ v.otherPending }}" hint-placeholder-val="x">
+                      <button onClick="{{ v.remind }}" style="border:1px solid var(--line);background:var(--panel);color:var(--muted);font-size:12px;font-weight:600;padding:6px 12px;border-radius:8px;cursor:pointer;flex:none" style-hover="border-color:var(--accent)">Remind</button>
+                    </sc-if>
+                    <sc-if value="{{ v.otherVoted }}" hint-placeholder-val="x">
+                      <span style="{{ v.tagStyle }}">{{ v.voteLabel }}</span>
+                    </sc-if>
+                  </div>
+                </sc-for>
+              </div>
+              <div style="padding:12px 16px;border-top:1px solid var(--line);display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:var(--bg)">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="flex:none"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/></svg>
+                <div style="flex:1;min-width:0;font-size:12.5px;color:var(--muted)">{{ mo.docHint }}</div>
+                <button onClick="{{ mo.draft }}" style="{{ mo.draftStyle }}" style-hover="filter:brightness(1.06)">{{ mo.draftLabel }}</button>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+      </sc-if>
+
+      <!-- ============ TEAM & ACCESS ============ -->
+      <sc-if value="{{ isTeam }}" hint-placeholder-val="x">
+      <div style="max-width:920px;margin:0 auto">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:16px">
+          <div>
+            <div style="font-family:Spectral,serif;font-size:22px;font-weight:600">Team &amp; access</div>
+            <div style="font-size:13.5px;color:var(--muted);margin-top:3px">Set up logins for your board so they can sign in to vote and sign documents.</div>
+          </div>
+          <button onClick="{{ addMember }}" style="display:flex;align-items:center;gap:8px;border:none;background:var(--brand);color:#fff;font-size:13.5px;font-weight:600;padding:11px 16px;border-radius:10px;cursor:pointer" style-hover="filter:brightness(1.08)">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg> Add member
+          </button>
+        </div>
+
+        <div style="display:flex;align-items:flex-start;gap:11px;background:var(--accent-soft);border-radius:12px;padding:13px 16px;margin-bottom:14px">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="var(--brand)" stroke-width="1.9" style="flex:none;margin-top:1px"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+          <div style="font-size:12.5px;color:var(--brand);line-height:1.55">Each board member signs in with a <strong>username &amp; password</strong> you set — they don't need a foundation email. Their <strong>personal email</strong> is where DocuSeal sends documents to sign. Give <strong>Vote</strong> access to weigh in on motions; you keep <strong>Sign</strong>/admin rights.</div>
+        </div>
+
+        <!-- Hostinger email connection -->
+        <sc-if value="{{ emailNotConnected }}" hint-placeholder-val="{{ true }}">
+          <div style="display:flex;align-items:center;gap:14px;background:var(--panel);border:1px solid var(--line);border-radius:13px;padding:15px 18px;margin-bottom:18px">
+            <div style="width:42px;height:42px;border-radius:11px;background:#673de6;color:#fff;display:grid;place-items:center;flex:none;font-weight:800;font-size:18px;font-family:Spectral,serif">h</div>
+            <div style="flex:1;min-width:0">
+              <div style="font-size:14px;font-weight:600">Connect foundation email to send documents</div>
+              <div style="font-size:12.5px;color:var(--muted);line-height:1.5;margin-top:2px">Link your Hostinger mailbox so DocuSeal invitations and reminders are sent from your foundation address to each member's personal email.</div>
+            </div>
+            <button onClick="{{ connectEmail }}" style="border:1px solid var(--line);background:var(--panel);color:var(--ink);font-size:13px;font-weight:600;padding:10px 16px;border-radius:10px;cursor:pointer;flex:none" style-hover="border-color:#673de6;box-shadow:0 2px 10px rgba(0,0,0,.06)">Connect Hostinger</button>
+          </div>
+        </sc-if>
+        <sc-if value="{{ emailConnected }}" hint-placeholder-val="x">
+          <div style="display:flex;align-items:center;gap:14px;background:var(--good-soft);border:1px solid var(--good);border-radius:13px;padding:13px 18px;margin-bottom:18px">
+            <div style="width:34px;height:34px;border-radius:9px;background:#673de6;color:#fff;display:grid;place-items:center;flex:none;font-weight:800;font-size:15px;font-family:Spectral,serif">h</div>
+            <div style="flex:1;min-width:0">
+              <div style="font-size:13.5px;font-weight:600;color:var(--good)">Hostinger email connected</div>
+              <div style="font-size:12px;color:var(--muted)">Sending as admin@adamsinfinitelegacy.org via Hostinger</div>
+            </div>
+            <button onClick="{{ disconnectEmail }}" style="border:1px solid var(--line);background:var(--panel);color:var(--muted);font-size:12.5px;font-weight:600;padding:8px 14px;border-radius:9px;cursor:pointer;flex:none" style-hover="border-color:var(--danger);color:var(--danger)">Disconnect</button>
+          </div>
+        </sc-if>
+
+        <div style="background:var(--panel);border:1px solid var(--line);border-radius:14px;overflow:hidden">
+          <div data-m="teamhead" style="display:grid;grid-template-columns:minmax(0,1fr) 150px 150px 120px;gap:12px;padding:12px 20px;border-bottom:1px solid var(--line);font-size:11px;letter-spacing:.05em;color:var(--muted);text-transform:uppercase;font-weight:600">
+            <div>Member</div><div>Login status</div><div>Permissions</div><div style="text-align:right">Manage</div>
+          </div>
+          <sc-for list="{{ team }}" as="m" hint-placeholder-count="7">
+            <div data-m="teamrow" style="display:grid;grid-template-columns:minmax(0,1fr) 150px 150px 120px;gap:12px;padding:14px 20px;border-bottom:1px solid var(--line);align-items:center" style-hover="background:var(--bg)">
+              <div style="display:flex;align-items:center;gap:13px;min-width:0">
+                <div style="{{ m.avatarStyle }}">{{ m.initials }}</div>
+                <div style="min-width:0">
+                  <div style="font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ m.name }}<span style="{{ m.youStyle }}">You</span></div>
+                  <div style="font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ m.emailLine }}</div>
+                </div>
+              </div>
+              <div><span style="{{ m.statusStyle }}">{{ m.statusLabel }}</span></div>
+              <div style="display:flex;gap:6px;flex-wrap:wrap">
+                <sc-if value="{{ m.vote }}" hint-placeholder-val="x"><span style="font-size:11px;font-weight:600;color:var(--brand);background:var(--accent-soft);padding:3px 9px;border-radius:20px">Vote</span></sc-if>
+                <sc-if value="{{ m.sign }}" hint-placeholder-val="x"><span style="font-size:11px;font-weight:600;color:var(--brand);background:var(--accent-soft);padding:3px 9px;border-radius:20px">Sign</span></sc-if>
+                <sc-if value="{{ m.noPerms }}" hint-placeholder-val="x"><span style="font-size:11px;color:var(--muted)">—</span></sc-if>
+              </div>
+              <div style="text-align:right">
+                <button onClick="{{ m.manage }}" style="border:1px solid var(--line);background:var(--panel);color:var(--brand);font-size:12.5px;font-weight:600;padding:8px 13px;border-radius:9px;cursor:pointer" style-hover="border-color:var(--accent)">Manage</button>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+      </sc-if>
+
+    </main>
+  </div>
+</div>
+</sc-if>
+
+
+<!-- ============ AI DRAFT MODAL ============ -->
+<sc-if value="{{ draftDocOpen }}" hint-placeholder-val="x">
+<div onClick="{{ closeDraftDoc }}" style="position:fixed;inset:0;background:rgba(20,18,14,.5);backdrop-filter:blur(3px);z-index:100;display:flex;align-items:center;justify-content:center;padding:30px;animation:ailfade .2s ease both">
+  <div onClick="{{ stop }}" style="background:var(--panel);border-radius:16px;width:100%;max-width:660px;max-height:90vh;overflow:hidden;display:flex;flex-direction:column;animation:ailpop .22s ease both;box-shadow:0 30px 80px rgba(0,0,0,.3)">
+    <div style="display:flex;align-items:center;gap:12px;padding:15px 20px;border-bottom:1px solid var(--line)">
+      <div style="width:32px;height:32px;border-radius:9px;background:var(--accent-soft);color:var(--brand);display:grid;place-items:center;flex:none">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/></svg>
+      </div>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:14px;font-weight:700">AI document draft</div>
+        <div style="font-size:11.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ draftDocMotion }}</div>
+      </div>
+      <button onClick="{{ closeDraftDoc }}" style="border:none;background:transparent;color:var(--muted);cursor:pointer;padding:6px;border-radius:7px;display:flex" style-hover="background:var(--bg)">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+      </button>
+    </div>
+
+    <div style="padding:16px 20px;overflow:auto;flex:1;background:var(--bg)">
+      <sc-if value="{{ draftLoading }}" hint-placeholder-val="{{ true }}">
+        <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:50px 20px;text-align:center">
+          <div style="width:34px;height:34px;border:3px solid var(--line);border-top-color:var(--accent);border-radius:50%;animation:ailspin .8s linear infinite"></div>
+          <div style="font-size:13.5px;color:var(--muted)">Drafting the document from your motion…</div>
+        </div>
+      </sc-if>
+      <sc-if value="{{ draftReady }}" hint-placeholder-val="x">
+        <div style="display:flex;flex-direction:column;gap:7px;margin-bottom:12px">
+          <label style="font-size:12px;font-weight:600;color:var(--muted)">Document title</label>
+          <input value="{{ draftDocTitle }}" onChange="{{ setDraftDocTitle }}" style="width:100%;padding:10px 13px;border:1px solid var(--line);border-radius:9px;background:var(--panel);font-size:14px;font-weight:600;color:var(--ink);outline:none" style-focus="border-color:var(--accent)">
+        </div>
+        <div style="background:#fff;border:1px solid var(--line);border-radius:10px;box-shadow:0 2px 12px rgba(0,0,0,.05)">
+          <textarea value="{{ draftDocBody }}" onChange="{{ setDraftDocBody }}" style="width:100%;min-height:320px;resize:vertical;border:none;background:transparent;outline:none;padding:22px 26px;font-size:13px;line-height:1.7;color:#333;font-family:'Spectral',Georgia,serif"></textarea>
+        </div>
+        <div style="font-size:11.5px;color:var(--muted);margin-top:10px;line-height:1.5">Review and edit this draft, then have a California nonprofit attorney check it before it's signed. Sending it routes it to DocuSeal for all board members to sign.</div>
+      </sc-if>
+    </div>
+
+    <div style="padding:15px 20px;border-top:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;gap:10px">
+      <sc-if value="{{ draftReady }}" hint-placeholder-val="x">
+        <button onClick="{{ regenDraft }}" style="border:1px solid var(--line);background:var(--panel);color:var(--brand);font-size:12.5px;font-weight:600;padding:9px 14px;border-radius:9px;cursor:pointer" style-hover="border-color:var(--accent)">Regenerate</button>
+      </sc-if>
+      <sc-if value="{{ draftLoading }}" hint-placeholder-val="{{ true }}"><span></span></sc-if>
+      <div style="display:flex;gap:10px">
+        <button onClick="{{ closeDraftDoc }}" style="border:1px solid var(--line);background:var(--panel);color:var(--ink);font-size:13px;font-weight:600;padding:9px 16px;border-radius:9px;cursor:pointer" style-hover="background:var(--bg)">Cancel</button>
+        <sc-if value="{{ draftReady }}" hint-placeholder-val="x">
+          <button onClick="{{ sendDraftToDocuSeal }}" style="display:flex;align-items:center;gap:8px;border:none;background:#1a73e8;color:#fff;font-size:13px;font-weight:600;padding:9px 16px;border-radius:9px;cursor:pointer" style-hover="filter:brightness(1.08)">
+            <span style="width:18px;height:18px;border-radius:5px;background:rgba(255,255,255,.22);display:grid;place-items:center;font-size:11px;font-weight:800">D</span>
+            Send to DocuSeal
+          </button>
+        </sc-if>
+      </div>
+    </div>
+  </div>
+</div>
+</sc-if>
+
+<!-- ============ MANAGE ACCESS MODAL ============ -->
+<sc-if value="{{ acctOpen }}" hint-placeholder-val="x">
+<div onClick="{{ closeAcct }}" style="position:fixed;inset:0;background:rgba(20,18,14,.5);backdrop-filter:blur(3px);z-index:100;display:flex;align-items:center;justify-content:center;padding:30px;animation:ailfade .2s ease both">
+  <div onClick="{{ stop }}" style="background:var(--panel);border-radius:16px;width:100%;max-width:500px;overflow:hidden;display:flex;flex-direction:column;animation:ailpop .22s ease both;box-shadow:0 30px 80px rgba(0,0,0,.3)">
+    <div style="display:flex;align-items:center;gap:13px;padding:16px 20px;border-bottom:1px solid var(--line)">
+      <div style="{{ acctAvatarStyle }}">{{ acctInitials }}</div>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:15px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ acctName }}</div>
+        <div style="font-size:12px;color:var(--muted)">{{ acctRole }}</div>
+      </div>
+      <button onClick="{{ closeAcct }}" style="border:none;background:transparent;color:var(--muted);cursor:pointer;padding:6px;border-radius:7px;display:flex" style-hover="background:var(--bg)">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+      </button>
+    </div>
+    <div style="padding:20px;display:flex;flex-direction:column;gap:16px;max-height:70vh;overflow:auto">
+      <div style="display:flex;flex-direction:column;gap:7px">
+        <label style="font-size:12.5px;font-weight:600">Username <span style="color:var(--muted);font-weight:400">(used to sign in)</span></label>
+        <input value="{{ acctUsername }}" onChange="{{ setAcctUsername }}" placeholder="e.g. judy.adams" style="width:100%;padding:11px 13px;border:1px solid var(--line);border-radius:10px;background:var(--panel);font-size:14px;color:var(--ink);outline:none;font-family:ui-monospace,monospace" style-focus="border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)">
+      </div>
+      <div style="display:flex;flex-direction:column;gap:7px">
+        <label style="font-size:12.5px;font-weight:600">Personal email <span style="color:var(--muted);font-weight:400">(where DocuSeal documents are sent)</span></label>
+        <input value="{{ acctEmail }}" onChange="{{ setAcctEmail }}" placeholder="their personal email address" style="width:100%;padding:11px 13px;border:1px solid var(--line);border-radius:10px;background:var(--panel);font-size:14px;color:var(--ink);outline:none" style-focus="border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)">
+      </div>
+      <div style="display:flex;flex-direction:column;gap:7px">
+        <label style="font-size:12.5px;font-weight:600">Temporary password</label>
+        <div style="display:flex;gap:8px">
+          <input value="{{ acctPw }}" onChange="{{ setAcctPw }}" placeholder="Set a password to share" style="flex:1;padding:11px 13px;border:1px solid var(--line);border-radius:10px;background:var(--panel);font-size:14px;color:var(--ink);outline:none;font-family:ui-monospace,monospace" style-focus="border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)">
+          <button onClick="{{ genPw }}" style="border:1px solid var(--line);background:var(--panel);color:var(--brand);font-size:12.5px;font-weight:600;padding:0 14px;border-radius:10px;cursor:pointer;white-space:nowrap" style-hover="border-color:var(--accent)">Generate</button>
+        </div>
+        <div style="font-size:11.5px;color:var(--muted)">Share this with the member privately. They'll be asked to change it on first sign-in.</div>
+      </div>
+
+      <div style="border-top:1px solid var(--line);padding-top:16px;display:flex;flex-direction:column;gap:12px">
+        <div style="font-size:12.5px;font-weight:600">Permissions</div>
+        <button onClick="{{ toggleVote }}" style="display:flex;align-items:center;gap:12px;border:1px solid var(--line);background:var(--panel);border-radius:11px;padding:12px 14px;cursor:pointer;text-align:left;width:100%" style-hover="border-color:var(--accent)">
+          <span style="{{ voteCheckStyle }}">{{ voteCheck }}</span>
+          <span style="flex:1"><span style="font-size:13.5px;font-weight:600;display:block">Vote on motions</span><span style="font-size:12px;color:var(--muted)">Cast For / Against / Abstain on board votes</span></span>
+        </button>
+        <button onClick="{{ toggleSign }}" style="display:flex;align-items:center;gap:12px;border:1px solid var(--line);background:var(--panel);border-radius:11px;padding:12px 14px;cursor:pointer;text-align:left;width:100%" style-hover="border-color:var(--accent)">
+          <span style="{{ signCheckStyle }}">{{ signCheck }}</span>
+          <span style="flex:1"><span style="font-size:13.5px;font-weight:600;display:block">Sign documents</span><span style="font-size:12px;color:var(--muted)">Sign governance &amp; donor documents in DocuSeal</span></span>
+        </button>
+      </div>
+    </div>
+    <div style="padding:15px 20px;border-top:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;gap:10px">
+      <sc-if value="{{ acctCanRevoke }}" hint-placeholder-val="x">
+        <button onClick="{{ revokeAcct }}" style="border:none;background:transparent;color:var(--danger);font-size:12.5px;font-weight:600;padding:9px 4px;border-radius:9px;cursor:pointer">Revoke access</button>
+      </sc-if>
+      <sc-if value="{{ acctNoRevoke }}" hint-placeholder-val="x"><span></span></sc-if>
+      <div style="display:flex;gap:10px">
+        <button onClick="{{ closeAcct }}" style="border:1px solid var(--line);background:var(--panel);color:var(--ink);font-size:13px;font-weight:600;padding:9px 16px;border-radius:9px;cursor:pointer" style-hover="background:var(--bg)">Cancel</button>
+        <button onClick="{{ saveAcct }}" style="border:none;background:var(--brand);color:#fff;font-size:13px;font-weight:600;padding:9px 18px;border-radius:9px;cursor:pointer" style-hover="filter:brightness(1.08)">{{ acctSaveLabel }}</button>
+      </div>
+    </div>
+  </div>
+</div>
+</sc-if>
+
+<!-- ============ NEW MOTION MODAL ============ -->
+<sc-if value="{{ draftOpen }}" hint-placeholder-val="x">
+<div onClick="{{ closeDraft }}" style="position:fixed;inset:0;background:rgba(20,18,14,.5);backdrop-filter:blur(3px);z-index:100;display:flex;align-items:center;justify-content:center;padding:30px;animation:ailfade .2s ease both">
+  <div onClick="{{ stop }}" style="background:var(--panel);border-radius:16px;width:100%;max-width:520px;overflow:hidden;display:flex;flex-direction:column;animation:ailpop .22s ease both;box-shadow:0 30px 80px rgba(0,0,0,.3)">
+    <div style="display:flex;align-items:center;gap:12px;padding:16px 20px;border-bottom:1px solid var(--line)">
+      <div style="font-family:Spectral,serif;font-size:17px;font-weight:600;flex:1">New motion</div>
+      <button onClick="{{ closeDraft }}" style="border:none;background:transparent;color:var(--muted);cursor:pointer;padding:6px;border-radius:7px;display:flex" style-hover="background:var(--bg)">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+      </button>
+    </div>
+    <div style="padding:20px;display:flex;flex-direction:column;gap:16px">
+      <div style="display:flex;flex-direction:column;gap:7px">
+        <label style="font-size:12.5px;font-weight:600">Motion</label>
+        <input value="{{ draftTitle }}" onChange="{{ setDraftTitle }}" placeholder="e.g. Adopt the Bylaws of Adams Infinite Legacy" style="width:100%;padding:11px 13px;border:1px solid var(--line);border-radius:10px;background:var(--panel);font-size:14px;color:var(--ink);outline:none" style-focus="border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)">
+      </div>
+      <div style="display:flex;flex-direction:column;gap:7px">
+        <label style="font-size:12.5px;font-weight:600">Details <span style="color:var(--muted);font-weight:400">(optional)</span></label>
+        <textarea value="{{ draftDesc }}" onChange="{{ setDraftDesc }}" placeholder="What exactly is the board deciding? Add any context directors need." style="width:100%;min-height:90px;resize:vertical;padding:11px 13px;border:1px solid var(--line);border-radius:10px;background:var(--panel);font-size:14px;line-height:1.5;color:var(--ink);outline:none" style-focus="border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)"></textarea>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:7px">
+        <label style="font-size:12.5px;font-weight:600">Related meeting <span style="color:var(--muted);font-weight:400">(optional)</span></label>
+        <select value="{{ draftMeeting }}" onChange="{{ setDraftMeeting }}" style="width:100%;padding:11px 13px;border:1px solid var(--line);border-radius:10px;background:var(--panel);font-size:14px;color:var(--ink);outline:none" style-focus="border-color:var(--accent)">
+          <sc-for list="{{ meetingOptions }}" as="o" hint-placeholder-count="4">
+            <option value="{{ o.value }}">{{ o.label }}</option>
+          </sc-for>
+        </select>
+      </div>
+      <div style="display:flex;align-items:flex-start;gap:9px;background:var(--accent-soft);border-radius:10px;padding:11px 13px">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--brand)" stroke-width="1.9" style="flex:none;margin-top:1px"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+        <div style="font-size:12px;color:var(--brand);line-height:1.5">Creating this motion schedules a <strong>Zoom vote meeting</strong>, adds it to your <strong>calendar</strong>, and <strong>emails</strong> board members with vote access to review and vote.</div>
+      </div>
+    </div>
+    <div style="padding:15px 20px;border-top:1px solid var(--line);display:flex;justify-content:flex-end;gap:10px">
+      <button onClick="{{ closeDraft }}" style="border:1px solid var(--line);background:var(--panel);color:var(--ink);font-size:13px;font-weight:600;padding:9px 16px;border-radius:9px;cursor:pointer" style-hover="background:var(--bg)">Cancel</button>
+      <button onClick="{{ createMotion }}" style="{{ createBtnStyle }}">Create motion</button>
+    </div>
+  </div>
+</div>
+</sc-if>
+
+<!-- ============ EMAIL PREVIEW MODAL ============ -->
+<sc-if value="{{ emailPrevOpen }}" hint-placeholder-val="x">
+<div onClick="{{ closeEmailPrev }}" style="position:fixed;inset:0;background:rgba(20,18,14,.5);backdrop-filter:blur(3px);z-index:100;display:flex;align-items:center;justify-content:center;padding:30px;animation:pop .18s ease">
+  <div onClick="{{ stop }}" style="background:var(--panel);border-radius:16px;width:100%;max-width:560px;max-height:88vh;overflow:auto;box-shadow:0 30px 80px rgba(0,0,0,.3)">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid var(--line)">
+      <div style="display:flex;align-items:center;gap:11px">
+        <div style="width:34px;height:34px;border-radius:9px;background:var(--accent-soft);display:grid;place-items:center;flex:none">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="var(--brand)" stroke-width="1.9"><path d="M4 4h16v16H4z"/><path d="m4 6 8 6 8-6"/></svg>
+        </div>
+        <div>
+          <div style="font-size:14px;font-weight:700">Email to the board</div>
+          <div style="font-size:12px;color:var(--muted)">This is exactly what each voting member receives</div>
+        </div>
+      </div>
+      <button onClick="{{ closeEmailPrev }}" style="border:none;background:transparent;cursor:pointer;color:var(--muted);font-size:20px;line-height:1;padding:4px">×</button>
+    </div>
+    <div style="padding:18px 20px">
+      <div style="border:1px solid var(--line);border-radius:12px;overflow:hidden">
+        <div style="padding:13px 16px;border-bottom:1px solid var(--line);background:var(--bg)">
+          <div style="display:flex;gap:8px;font-size:12px;margin-bottom:4px"><span style="color:var(--muted);width:52px;flex:none">From</span><span style="color:var(--ink)">{{ epFrom }}</span></div>
+          <div style="display:flex;gap:8px;font-size:12px;margin-bottom:4px"><span style="color:var(--muted);width:52px;flex:none">To</span><span style="color:var(--ink)">{{ epTo }}</span></div>
+          <div style="display:flex;gap:8px;font-size:12px"><span style="color:var(--muted);width:52px;flex:none">Subject</span><span style="color:var(--ink);font-weight:600">{{ epSubject }}</span></div>
+        </div>
+        <div style="padding:20px 18px">
+          <div style="font-family:Spectral,serif;font-size:18px;font-weight:600;color:var(--ink);margin-bottom:4px">Adams Infinite Legacy</div>
+          <div style="font-size:13.5px;color:var(--ink);line-height:1.6;margin-bottom:16px">Hello, the board is asked to vote on the motion below. Please review the details and cast your vote in the portal.</div>
+
+          <div style="font-size:10.5px;font-weight:700;color:var(--brand);letter-spacing:.06em;text-transform:uppercase;margin-bottom:6px">You are voting on</div>
+          <div style="font-family:Spectral,serif;font-size:16px;font-weight:600;color:var(--ink);line-height:1.35;margin-bottom:6px">{{ epTitle }}</div>
+          <div style="font-size:13px;color:var(--muted);line-height:1.55;margin-bottom:18px">{{ epDesc }}</div>
+
+          <div style="display:flex;flex-direction:column;gap:10px;background:var(--bg);border:1px solid var(--line);border-radius:11px;padding:14px 16px;margin-bottom:18px">
+            <div style="display:flex;align-items:center;gap:10px">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--brand)" stroke-width="1.9" style="flex:none"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+              <div style="font-size:13px;color:var(--ink)"><strong>Discussion meeting:</strong> {{ epWhen }}</div>
+            </div>
+            <sc-if value="{{ epHasZoom }}" hint-placeholder-val="x">
+            <div style="display:flex;align-items:center;gap:10px">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="#2160c4" style="flex:none"><path d="M4 8a2 2 0 0 1 2-2h7a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2zM17 10l4-2.5v9L17 14z"/></svg>
+              <a href="{{ epZoom }}" target="_blank" style="font-size:13px;color:#2160c4;font-weight:600;text-decoration:none">Join the Zoom discussion</a>
+            </div>
+            </sc-if>
+          </div>
+
+          <a href="#" onClick="{{ closeEmailPrev }}" style="display:block;text-align:center;background:var(--accent);color:#fff;font-size:14px;font-weight:600;padding:12px;border-radius:10px;text-decoration:none;margin-bottom:10px">Review &amp; vote in the portal →</a>
+          <div style="font-size:11.5px;color:var(--muted);text-align:center;line-height:1.5">The official vote is cast in the portal. The Zoom meeting is for discussion only.</div>
+        </div>
+      </div>
+    </div>
+    <div style="padding:14px 20px;border-top:1px solid var(--line);display:flex;justify-content:flex-end">
+      <button onClick="{{ closeEmailPrev }}" style="border:1px solid var(--line);background:var(--panel);color:var(--ink);font-size:13px;font-weight:600;padding:9px 18px;border-radius:9px;cursor:pointer" style-hover="background:var(--bg)">Close</button>
+    </div>
+  </div>
+</div>
+</sc-if>
+
+<!-- ============ DOCUSEAL MODAL ============ -->
+<sc-if value="{{ modalOpen }}" hint-placeholder-val="x">
+<div onClick="{{ closeModal }}" style="position:fixed;inset:0;background:rgba(20,18,14,.5);backdrop-filter:blur(3px);z-index:100;display:flex;align-items:center;justify-content:center;padding:30px;animation:ailfade .2s ease both">
+  <div onClick="{{ stop }}" style="background:var(--panel);border-radius:16px;width:100%;max-width:640px;max-height:90vh;overflow:hidden;display:flex;flex-direction:column;animation:ailpop .22s ease both;box-shadow:0 30px 80px rgba(0,0,0,.3)">
+    <div style="display:flex;align-items:center;gap:12px;padding:15px 20px;border-bottom:1px solid var(--line)">
+      <div style="width:30px;height:30px;border-radius:8px;background:#1a73e8;color:#fff;display:grid;place-items:center;font-weight:700;font-size:14px;flex:none">D</div>
+      <div style="flex:1">
+        <div style="font-size:14px;font-weight:700">DocuSeal</div>
+        <div style="font-size:11.5px;color:var(--muted)">Secure electronic signature</div>
+      </div>
+      <button onClick="{{ closeModal }}" style="border:none;background:transparent;color:var(--muted);cursor:pointer;padding:6px;border-radius:7px;display:flex" style-hover="background:var(--bg)">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+      </button>
+    </div>
+
+    <div style="padding:20px 22px;overflow:auto;background:var(--bg)">
+      <div style="background:#fff;border:1px solid var(--line);border-radius:8px;padding:22px 26px;box-shadow:0 2px 14px rgba(0,0,0,.06);color:#222;margin-bottom:16px">
+        <div style="text-align:center;font-family:Spectral,serif;font-size:12px;letter-spacing:.06em;color:#666;text-transform:uppercase">Adams Infinite Legacy</div>
+        <div style="text-align:center;font-family:Spectral,serif;font-size:18px;font-weight:600;margin-top:5px">{{ modalDocName }}</div>
+        <div style="height:1px;background:#eee;margin:14px 0"></div>
+        <div style="font-size:12.5px;line-height:1.7;color:#444">
+          <div style="height:8px;background:#f0f0f0;border-radius:3px;width:100%;margin-bottom:7px"></div>
+          <div style="height:8px;background:#f0f0f0;border-radius:3px;width:92%;margin-bottom:7px"></div>
+          <div style="height:8px;background:#f0f0f0;border-radius:3px;width:96%"></div>
+        </div>
+      </div>
+
+      <div style="background:var(--accent-soft);border-radius:11px;padding:14px 16px;margin-bottom:16px">
+        <div style="font-size:11px;font-weight:700;color:var(--brand);letter-spacing:.05em;text-transform:uppercase;margin-bottom:6px">About this document</div>
+        <div style="font-size:13px;line-height:1.55;color:var(--ink)">{{ modalDesc }}</div>
+        <div style="font-size:12.5px;line-height:1.5;color:var(--ink);margin-top:10px"><strong style="color:var(--brand)">What to do — </strong>{{ modalTodo }}</div>
+      </div>
+
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+        <div style="font-size:13px;font-weight:700;color:var(--ink)">Signers · full board required</div>
+        <div style="font-size:12px;font-weight:600;color:var(--muted)">{{ modalSignedCount }} of {{ modalTotalSigners }} signed</div>
+      </div>
+      <sc-if value="{{ modalCanSign }}" hint-placeholder-val="x">
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:12px">
+        <sc-if value="{{ modalNotified }}" hint-placeholder-val="x">
+          <span style="display:inline-flex;align-items:center;gap:6px;background:var(--good-soft);color:var(--good);font-size:11.5px;font-weight:600;padding:4px 10px;border-radius:7px">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16v16H4z"/><path d="m4 6 8 6 8-6"/></svg>
+            {{ modalNotifiedText }}
+          </span>
+        </sc-if>
+        <button onClick="{{ notifyDoc }}" style="border:1px solid #1a73e8;background:#eaf1fd;color:#1a73e8;font-size:11.5px;font-weight:600;padding:4px 11px;border-radius:7px;cursor:pointer" style-hover="filter:brightness(.98)">{{ modalNotifyLabel }}</button>
+      </div>
+      </sc-if>
+      <div style="height:6px;background:var(--line);border-radius:20px;overflow:hidden;margin-bottom:14px">
+        <div style="{{ modalBarStyle }}"></div>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <sc-for list="{{ modalSigners }}" as="s" hint-placeholder-count="7">
+          <div style="display:flex;align-items:center;gap:12px;background:var(--panel);border:1px solid var(--line);border-radius:11px;padding:10px 13px">
+            <div style="{{ s.avatarStyle }}">{{ s.initials }}</div>
+            <div style="flex:1;min-width:0">
+              <div style="font-size:13.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ s.name }}<span style="{{ s.youStyle }}">You</span></div>
+              <div style="font-size:11.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ s.role }}</div>
+            </div>
+            <sc-if value="{{ s.signed }}" hint-placeholder-val="x">
+              <span style="display:inline-flex;align-items:center;gap:5px;font-size:11.5px;font-weight:600;color:var(--good);background:var(--good-soft);padding:4px 10px;border-radius:20px">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l4.5 4.5L19 7"/></svg>Signed
+              </span>
+            </sc-if>
+            <sc-if value="{{ s.pending }}" hint-placeholder-val="x">
+              <button onClick="{{ s.action }}" style="{{ s.actionStyle }}" style-hover="filter:brightness(1.06)">{{ s.actionLabel }}</button>
+            </sc-if>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+
+    <div style="padding:15px 20px;border-top:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;gap:12px">
+      <div style="font-size:12px;color:var(--muted)">{{ modalStatusText }}</div>
+      <div style="display:flex;gap:10px">
+        <button onClick="{{ closeModal }}" style="border:1px solid var(--line);background:var(--panel);color:var(--ink);font-size:13px;font-weight:600;padding:9px 16px;border-radius:9px;cursor:pointer" style-hover="background:var(--bg)">Close</button>
+        <sc-if value="{{ modalCanSign }}" hint-placeholder-val="x">
+          <button onClick="{{ remindAll }}" style="border:1px solid var(--line);background:var(--panel);color:var(--brand);font-size:13px;font-weight:600;padding:9px 14px;border-radius:9px;cursor:pointer" style-hover="border-color:var(--accent)">Remind pending</button>
+          <button onClick="{{ signAll }}" style="border:none;background:#1a73e8;color:#fff;font-size:13px;font-weight:600;padding:9px 18px;border-radius:9px;cursor:pointer" style-hover="filter:brightness(1.08)">Sign all (demo)</button>
+        </sc-if>
+      </div>
+    </div>
+  </div>
+</div>
+</sc-if>
+
+<!-- TOAST -->
+<sc-if value="{{ toast }}" hint-placeholder-val="x">
+  <div style="position:fixed;bottom:26px;left:50%;transform:translateX(-50%);z-index:200;background:var(--ink);color:var(--bg);font-size:13px;font-weight:500;padding:12px 20px;border-radius:11px;box-shadow:0 12px 40px rgba(0,0,0,.25);animation:ailfade .25s ease both">{{ toast }}</div>
+</sc-if>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:880},&quot;theme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;premium&quot;,&quot;warm&quot;,&quot;clinical&quot;],&quot;default&quot;:&quot;warm&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Appearance&quot;},&quot;dashboardLayout&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;Overview grid&quot;,&quot;Two-column feed&quot;],&quot;default&quot;:&quot;Two-column feed&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Appearance&quot;}}">
+class Component extends DCLogic {
+  state = {
+    loggedIn: false,
+    email: "",
+    password: "",
+    remember: true,
+    loginError: "",
+    screen: "dashboard",
+    search: "",
+    sig: {},
+    docNotified: {},
+    tasks: {},
+    notes: [
+      { id: "n1", title: "Counsel review — bylaws", body: "Ask California nonprofit counsel to review Article IX (conflicts of interest & self-dealing) and Article X (indemnification) before the board adopts the Bylaws.\n\nConfirm the indemnification and volunteer-liability language matches our D&O policy.", updated: "Jun 28, 2026" },
+      { id: "n2", title: "Festival sponsor pricing", body: "Set tier prices before publishing the Sponsorship Prospectus:\n\n• Presenting — $?\n• Gold — $?\n• Silver — $?\n• Community — $?\n\nConfirm the acknowledgment-vs-advertising treatment with a tax advisor.", updated: "Jun 30, 2026" },
+      { id: "n3", title: "Bank account checklist", body: "For the Wells/local credit-union appointment, bring:\n\n• Endorsed-filed Articles of Incorporation\n• EIN confirmation letter (IRS)\n• Signed Board Resolution & Written Consent\n• Photo ID for each authorized signatory\n\nDecide the two-signature threshold — proposing $2,500.", updated: "Jul 1, 2026" },
+      { id: "n4", title: "Board meeting agenda — Jul 8", body: "1. Call to order & confirm quorum\n2. Adopt Bylaws\n3. Ratify officer elections\n4. Approve Conflict of Interest Policy + collect disclosures\n5. Authorize bank account\n6. Approve Get Well Soon Festival as a program\n7. Set fiscal year-end (Dec 31)", updated: "Jul 1, 2026" },
+      { id: "n5", title: "Grant eligibility — first draft", body: "Program serves individuals experiencing or surviving chronic illness.\n\nOpen questions for the workshop:\n• Residency / geographic scope?\n• Income or need documentation required?\n• Max award per recipient?\n• How recipients apply and how the board selects.", updated: "Jun 29, 2026" },
+      { id: "n6", title: "Follow-ups", body: "• Nancy — send sponsor prospect list\n• Charles — set up shared drive for corporate records\n• Lee — get D&O + general liability quotes\n• Courtney — file Statement of Information (SI-100)\n• Me — schedule counsel review before Jul 8", updated: "Jul 1, 2026" }
+    ],
+    activeNoteId: "n1",
+    noteSaved: "Saved",
+    calConnected: false,
+    emailConnected: false,
+    zoomConnected: false,
+    modal: null,
+    toast: "",
+    motions: [
+      { id: "mo1", title: "Adopt the Bylaws of Adams Infinite Legacy", desc: "Approve the bylaws as the governing rules of the corporation, subject to counsel's final review.", meeting: "m3", created: "Jul 1, 2026", votes: { alitalia: "for", courtney: "for" }, zoomUrl: "https://zoom.us/j/84029571", notifiedAt: "Jul 1, 2026", notifiedCount: 6, voteDay: 8, voteTime: "10:00 AM" }
+    ],
+    draft: null,
+    accounts: {
+      alitalia: { username: "alitalia", email: "alitalia.adams@gmail.com", status: "active", vote: true, sign: true },
+      judy: { username: "judy.adams", email: "judyadams54@gmail.com", status: "active", vote: true, sign: false },
+      lee: { username: "lee.taylor", email: "leetaylor.ii@outlook.com", status: "active", vote: true, sign: false },
+      courtney: { username: "courtney.woo", email: "cwoo.design@gmail.com", status: "active", vote: true, sign: false },
+      charles: { username: "charles.p", email: "charles.pleasant@yahoo.com", status: "active", vote: true, sign: false },
+      joe: { username: "joe.grumbine", email: "jgrumbine@gmail.com", status: "active", vote: true, sign: false },
+      nancy: { username: "nancy.hughes", email: "nancy.hughes22@gmail.com", status: "active", vote: true, sign: false }
+    },
+    acct: null,
+    extraMembers: [],
+    customDocs: [],
+    drafting: null,
+    navOpen: false
+  };
+
+  roster() { return this.MEMBERS.concat(this.state.extraMembers || []); }
+
+  meetingsView() {
+    return this.allMeetings().map(m => Object.assign({}, m, {
+      showJoin: !!m.zoom && this.state.zoomConnected,
+      zoomUrl: m.zoomUrl || ("https://zoom.us/j/" + (8300000000 + (m.day * 111111)))
+    }));
+  }
+  allMeetings() {
+    const motionMeetings = (this.state.motions || []).filter(mo => mo.voteDay && !mo.meeting).map(mo => ({
+      id: "vote-" + mo.id, day: mo.voteDay, time: mo.voteTime || "4:00 PM",
+      title: "Board vote: " + mo.title, who: "Board — review & vote",
+      zoom: !!mo.zoomUrl, zoomUrl: mo.zoomUrl, isVote: true
+    }));
+    return this.MEETINGS.concat(motionMeetings).sort((a, b) => a.day - b.day);
+  }
+
+  THEMES = {
+    premium: "--bg:#f4f3ee;--panel:#ffffff;--ink:#282820;--muted:#79776d;--line:#e7e4db;--accent:#5f7856;--accent-soft:#e9efe4;--brand:#41533a;--danger:#b4553f;--warn:#a9762f;--warn-soft:#f4ebd6;--good:#4f7a4a;--good-soft:#e6efe4;",
+    warm: "--bg:#faf4ed;--panel:#fffdf9;--ink:#332b24;--muted:#8b8074;--line:#efe5d8;--accent:#c17a52;--accent-soft:#f6e8dc;--brand:#a15c39;--danger:#b4553f;--warn:#a9762f;--warn-soft:#f6ead4;--good:#6a8a52;--good-soft:#ecefdf;",
+    clinical: "--bg:#eef4f8;--panel:#ffffff;--ink:#122636;--muted:#65809a;--line:#dde8ef;--accent:#2f7f93;--accent-soft:#dcedf1;--brand:#1d5f70;--danger:#c15b48;--warn:#a9762f;--warn-soft:#f4ead4;--good:#2f8a6a;--good-soft:#dcefe6;"
+  };
+
+  BASE_DOCS = [
+    { id: "bylaws", name: "Bylaws of Adams Infinite Legacy", cat: "Governance", status: "draft", updated: "Jun 24, 2026", pages: 18 },
+    { id: "minutes", name: "Organizational Board Minutes", cat: "Governance", status: "draft", updated: "Jun 20, 2026", pages: 4 },
+    { id: "resolution", name: "Board Resolution & Written Consent", cat: "Governance", status: "draft", updated: "Jul 1, 2026", pages: 3 },
+    { id: "boardvote", name: "Board Action & Vote", cat: "Governance", status: "draft", updated: "Jul 1, 2026", pages: 2 },
+    { id: "festivalresolution", name: "Board Resolution — Festival & Sponsorship", cat: "Governance", status: "draft", updated: "Jul 2, 2026", pages: 2 },
+    { id: "prospectus", name: "Sponsorship Prospectus — Get Well Soon Festival", cat: "Fundraising", status: "draft", updated: "Jun 27, 2026", pages: 2 },
+    { id: "sponsoragreement", name: "Sponsorship Agreement (per sponsor)", cat: "Fundraising", status: "draft", updated: "Jul 2, 2026", pages: 3 },
+    { id: "sponsorack", name: "Sponsor Acknowledgment Letter", cat: "Fundraising", status: "draft", updated: "Jun 27, 2026", pages: 1 },
+    { id: "cash", name: "Donor Letter — Cash Gift", cat: "Donor Letters", status: "draft", updated: "Jun 18, 2026", pages: 1 },
+    { id: "inkind", name: "Donor Letter — In-Kind Gift", cat: "Donor Letters", status: "draft", updated: "Jun 18, 2026", pages: 1 },
+    { id: "quidpro", name: "Donor Letter — Quid Pro Quo", cat: "Donor Letters", status: "draft", updated: "Jun 18, 2026", pages: 1 },
+    { id: "yearend", name: "Donor Letter — Year-End Summary", cat: "Donor Letters", status: "draft", updated: "Jun 18, 2026", pages: 1 }
+  ];
+
+  PHASES = [
+    { name: "Form the Corporation & Get Your Tax ID", items: [
+      { id: "articles", label: "File Articles of Incorporation with the CA Secretary of State" },
+      { id: "ein", label: "Obtain a federal Employer Identification Number (IRS Form SS-4)" }
+    ]},
+    { name: "Hold the Organizational Board Meeting", items: [
+      { id: "orgmeeting", label: "Hold the organizational meeting of the Board of Directors" },
+      { id: "bylaws", label: "Adopt & certify the Bylaws", doc: "bylaws" },
+      { id: "officers", label: "Elect officers and record them in the minutes" },
+      { id: "office", label: "Set the corporation's principal office address" },
+      { id: "fiscalyear", label: "Establish the fiscal year-end (December 31)" },
+      { id: "nocomp", label: "Confirm directors serve without compensation (expenses only)" },
+      { id: "coi", label: "Adopt Conflict of Interest Policy & collect signed disclosures from all directors" },
+      { id: "retention", label: "Adopt the Document Retention & Destruction Policy" },
+      { id: "whistleblower", label: "Adopt the Whistleblower Policy" },
+      { id: "giftpolicy", label: "Adopt the Gift Acceptance Policy" },
+      { id: "privacy", label: "Adopt the Privacy Notice & Data Protection Policy" },
+      { id: "assistcriteria", label: "Adopt the Financial Assistance Eligibility & Selection Criteria" },
+      { id: "festival", label: "Approve & plan the “Get Well Soon” Wellness Festival" },
+      { id: "ratify", label: "Ratify prior organizational acts of the directors & officers" },
+      { id: "minutes", label: "Approve & sign the Organizational Board Minutes", doc: "minutes" }
+    ]},
+    { name: "Banking, Signatories & Insurance", items: [
+      { id: "bank", label: "Open the corporate bank account & designate authorized signatories" },
+      { id: "dualsig", label: "Set the two-signature threshold for large disbursements" },
+      { id: "insurance", label: "Obtain D&O and general liability insurance" }
+    ]},
+    { name: "Tax Exemption & Charitable Registration", items: [
+      { id: "si100", label: "File the Statement of Information (Form SI-100)" },
+      { id: "f1023", label: "File IRS Form 1023 / 1023-EZ for 501(c)(3) recognition & pay the user fee" },
+      { id: "ct1", label: "Register with the CA Attorney General Registry of Charities (Form CT-1)" },
+      { id: "ftb3500", label: "File CA FTB Form 3500A after the federal determination letter" },
+      { id: "rrf", label: "Calendar annual renewals (Form RRF-1) & Form 990 filings" }
+    ]},
+    { name: "Ready to Raise Money", items: [
+      { id: "prices", label: "Set sponsorship tier prices in the Prospectus", doc: "prospectus" },
+      { id: "donorletters", label: "Finalize the donor acknowledgment letter templates", doc: "cash" }
+    ]}
+  ];
+
+  TASK_HELP = {
+    articles: "Go to the California Secretary of State's website (bizfileOnline) and file the Articles of Incorporation for a 501(c)(3). Once approved you get a stamped copy — save it; it's the foundation's birth certificate.",
+    orgmeeting: "Gather all seven directors (in person or by video) for the first official meeting. Use the Organizational Board Minutes as your agenda and record what's decided.",
+    bylaws: "Have your attorney review the Bylaws, then the board votes to adopt them at the meeting. Sign them in the portal and keep a copy in your records.",
+    officers: "At the meeting, formally confirm who holds each officer role (President, Treasurer, Secretary, etc.) and write it into the minutes.",
+    minutes: "After the meeting, finish the Minutes with the real dates and decisions. The Secretary and President sign them here in the portal, then file them with your records.",
+    office: "Decide the official mailing address for the foundation and record it in the Bylaws and minutes. It can be your home or a P.O. box.",
+    fiscalyear: "Confirm the foundation's financial year runs January 1–December 31 (the standard choice). This sets when your taxes and reports are due.",
+    ratify: "In the minutes, add a line approving any actions taken before the meeting (like reserving the name or early expenses) so they become official.",
+    ein: "Apply for a free EIN (the foundation's tax ID) at IRS.gov — search 'apply for EIN online.' Takes about 10 minutes and you get the number right away. You'll need it for the bank account and the 501(c)(3) application.",
+    f1023: "File IRS Form 1023 (or the shorter 1023-EZ if you qualify) to become an official 501(c)(3). There's a fee (about $275–$600). This is the big one — consider having your accountant help. Best practice: file within 27 months of the Articles so your exemption is retroactive to formation.",
+    ftb3500: "File California Form 3500A so the foundation is also exempt from state income tax. Do this after the IRS determination letter arrives — it depends on federal approval.",
+    si100: "File Form SI-100 with the CA Secretary of State (online, small fee). It lists your officers and address, and you re-file it every two years. Deadline: within 90 days of filing the Articles.",
+    ct1: "Register with the California Attorney General's Registry of Charities (Form CT-1) so you can legally fundraise. Deadline: within 30 days of receiving any money or assets — and before you fundraise.",
+    rrf: "Put the yearly deadlines on your calendar: the California renewal (Form RRF-1) and the IRS Form 990. Missing these can cost your tax-exempt status.",
+    coi: "Adopt the Conflict of Interest Policy at the board meeting, then have every director sign the disclosure form. Keep the signed forms on file.",
+    retention: "Adopt the policy that says which records to keep, for how long, and when it's safe to destroy old ones.",
+    whistleblower: "Adopt the policy that lets staff or volunteers report concerns without fear of retaliation.",
+    giftpolicy: "Adopt the policy setting rules for what kinds of donations you'll accept (cash easily; certain property only with conditions).",
+    privacy: "Adopt the policy explaining how you protect donors' and recipients' personal information.",
+    bank: "Take your stamped Articles, EIN letter, and signed Board Resolution to a bank and open the foundation's account. Name who's allowed to sign. (This is why the EIN and signed minutes come first.)",
+    dualsig: "Decide the dollar amount above which two people must approve a payment (many small nonprofits use $2,500) and record it in the minutes.",
+    insurance: "Get quotes for Directors & Officers (D&O) insurance and general liability insurance, then buy coverage to protect the board and the organization.",
+    nocomp: "Confirm in the minutes that directors volunteer their time and are only paid back for real expenses (like travel) — never a salary.",
+    assistcriteria: "Write down who qualifies for help and how you'll choose recipients (illness type, need, documents required, award amounts). The board approves it.",
+    festival: "Set a date, budget, and plan for the Get Well Soon Wellness Festival, and have the board approve it as an official program of the foundation.",
+    prices: "Decide the price for each sponsor level (Presenting, Gold, Silver, Community) in the Prospectus — then it's ready to send to potential sponsors.",
+    donorletters: "Review the four donor thank-you letter templates and add your EIN so they're ready to send the moment someone donates."
+  };
+
+  MEMBERS = [
+    { id: "alitalia", name: "Alitalia Adams", role: "President & Founder", initials: "AA", you: true },
+    { id: "judy", name: "Judy Adams", role: "Vice Chair", initials: "JA" },
+    { id: "lee", name: "Lee Taylor II", role: "Treasurer (CFO)", initials: "LT" },
+    { id: "courtney", name: "Courtney Woo", role: "Secretary", initials: "CW" },
+    { id: "charles", name: "Charles Pleasant", role: "Chief Information Officer", initials: "CP" },
+    { id: "joe", name: "Joe Grumbine", role: "Community Health Education Chair", initials: "JG" },
+    { id: "nancy", name: "Nancy Hughes", role: "Philanthropy Chair", initials: "NH" }
+  ];
+
+  DEFAULT_SIG = {};
+
+  DOC_INFO = {
+    bylaws: { desc: "The rulebook for how the foundation operates — its purpose, board, officers, meetings, and required policies.", todo: "Have California nonprofit counsel review, then the full board adopts and signs. Certify it and keep it in the corporate records." },
+    minutes: { desc: "The official record of your first (organizational) board meeting and the resolutions that formally start the corporation.", todo: "Confirm the details (dates, addresses, filing numbers), then the board approves and the Secretary & President sign." },
+    resolution: { desc: "A written consent that authorizes banking, credit cards, signatories, and other corporate actions without holding a separate meeting.", todo: "Fill in the institution / account details and authorized signatories, then all directors sign to authorize." },
+    boardvote: { desc: "A reusable record of a board decision — approved either by a vote at a meeting or by unanimous written consent.", todo: "Describe the matter and how it was approved, then have the directors sign to record the decision." },
+    festivalresolution: { desc: "The resolution that officially establishes the Get Well Soon Wellness Festival as a program of the foundation and approves the tiered sponsorship program.", todo: "Adopt at a board meeting or by written consent, then route to all directors to sign in DocuSeal." },
+    prospectus: { desc: "The sponsorship menu for the Get Well Soon Wellness Festival — the tiers, benefits, and recognition offered to sponsors.", todo: "Set the tier prices, confirm the acknowledgment-vs-advertising wording with a tax advisor, then publish and share it with prospects." },
+    sponsoragreement: { desc: "The agreement completed for each individual sponsor — their details, level, and benefits — with a page explaining what each level means and a board-approval page. The board approves and both parties sign.", todo: "Fill in the sponsor's details, level, and amount; the board approves (vote), then the sponsor and an officer sign in DocuSeal." },
+    sponsorack: { desc: "A letter that formally acknowledges a sponsor's support and any benefits they received in return.", todo: "Fill in the sponsor, amount, date, and recognition; note the value of any benefits provided; sign and send." },
+    cash: { desc: "A tax-receipt letter thanking a donor for a cash gift, with the IRS wording they need to deduct it.", todo: "Insert the amount, date, and EIN; confirm no goods or services were given; sign and send to the donor." },
+    inkind: { desc: "A receipt for a donated item or service — it describes the gift but does not state a dollar value.", todo: "Describe the donated item, add the date and EIN (no value), then sign and send." },
+    quidpro: { desc: "A receipt for a payment where the donor got something in return (like an event ticket) — it shows the deductible portion.", todo: "Enter the payment, the fair-market value received, and the deductible difference; add the EIN; sign and send." },
+    yearend: { desc: "A year-end summary of all of a donor's contributions during the year, for their tax records.", todo: "List the gifts and total for the year, add the year and EIN; sign and send in January." }
+  };
+
+  MEETINGS = [
+    { id: "m1", title: "Counsel intro call", day: 2, time: "9:00 AM", who: "Alitalia & nonprofit counsel", zoom: true },
+    { id: "m2", title: "EIN + bank account errands", day: 6, time: "1:00 PM", who: "Alitalia, Lee Taylor II" },
+    { id: "m3", title: "Organizational Board Meeting", day: 8, time: "10:00 AM", who: "All directors", zoom: true },
+    { id: "m4", title: "Conflict-of-interest disclosures due", day: 10, time: "5:00 PM", who: "All directors" },
+    { id: "m5", title: "Governance policy drafting", day: 13, time: "11:00 AM", who: "Courtney Woo, Charles Pleasant", zoom: true },
+    { id: "m6", title: "Bylaws Adoption Review", day: 15, time: "2:00 PM", who: "Alitalia, Courtney & counsel", zoom: true },
+    { id: "m7", title: "D&O insurance quote review", day: 20, time: "10:30 AM", who: "Lee Taylor II, Alitalia", zoom: true },
+    { id: "m8", title: "Finance Committee", day: 22, time: "11:00 AM", who: "Lee Taylor II, Alitalia", zoom: true },
+    { id: "m9", title: "Grant criteria workshop", day: 24, time: "3:00 PM", who: "Joe Grumbine, Alitalia", zoom: true },
+    { id: "m10", title: "Sponsor outreach call", day: 27, time: "1:30 PM", who: "Nancy Hughes", zoom: true },
+    { id: "m11", title: "Festival Planning Kickoff", day: 29, time: "3:00 PM", who: "Nancy Hughes, Joe Grumbine", zoom: true }
+  ];
+
+  ICONS = {
+    dashboard: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="3" width="7" height="7" rx="1.6"/><rect x="14" y="3" width="7" height="7" rx="1.6"/><rect x="3" y="14" width="7" height="7" rx="1.6"/><rect x="14" y="14" width="7" height="7" rx="1.6"/></svg>',
+    documents: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M6 2h8l4 4v16H6z"/><path d="M14 2v5h5"/></svg>',
+    checklist: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="2.5"/><path d="M8.5 12l2.4 2.4 4.6-5"/></svg>',
+    calendar: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="5" width="18" height="16" rx="2.5"/><path d="M3 9h18M8 3v4M16 3v4"/></svg>',
+    notes: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"><path d="M4 4h16v11l-5 5H4z"/><path d="M20 15h-5v5"/></svg>',
+    votes: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>',
+    team: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13A4 4 0 0 1 16 11"/></svg>'
+  };
+
+  GOOGLE = '<svg width="18" height="18" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.5 12.2c0-.7-.06-1.4-.18-2.06H12v3.9h5.9a5.05 5.05 0 0 1-2.19 3.31v2.75h3.54c2.07-1.9 3.25-4.72 3.25-8z"/><path fill="#34A853" d="M12 23c2.94 0 5.4-.97 7.2-2.63l-3.54-2.75c-.98.66-2.24 1.05-3.66 1.05-2.81 0-5.2-1.9-6.05-4.46H2.29v2.84A11 11 0 0 0 12 23z"/><path fill="#FBBC05" d="M5.95 14.21a6.6 6.6 0 0 1 0-4.42V6.95H2.29a11 11 0 0 0 0 9.9z"/><path fill="#EA4335" d="M12 5.33c1.6 0 3.03.55 4.16 1.62l3.12-3.12A11 11 0 0 0 12 1 11 11 0 0 0 2.29 6.95l3.66 2.84C6.8 7.23 9.19 5.33 12 5.33z"/></svg>';
+
+  componentDidMount() {
+    try {
+      const raw = localStorage.getItem("ail_portal_v12");
+      if (raw) {
+        const s = JSON.parse(raw);
+        this.setState(prev => ({
+          loggedIn: !!s.loggedIn,
+          screen: s.screen || prev.screen,
+          sig: s.sig || {},
+          docNotified: s.docNotified || {},
+          tasks: Object.assign({}, prev.tasks, s.tasks || {}),
+          notes: Array.isArray(s.notes) && s.notes.length ? s.notes : prev.notes,
+          activeNoteId: s.activeNoteId || prev.activeNoteId,
+          calConnected: !!s.calConnected,
+          motions: Array.isArray(s.motions) ? s.motions : prev.motions,
+          accounts: s.accounts && typeof s.accounts === "object" ? s.accounts : prev.accounts,
+          extraMembers: Array.isArray(s.extraMembers) ? s.extraMembers : prev.extraMembers,
+          customDocs: Array.isArray(s.customDocs) ? s.customDocs : prev.customDocs,
+          emailConnected: !!s.emailConnected,
+          zoomConnected: !!s.zoomConnected
+        }));
+      }
+    } catch (e) {}
+  }
+
+  persist(over) {
+    const s = Object.assign({}, this.state, over || {});
+    try {
+      localStorage.setItem("ail_portal_v12", JSON.stringify({
+        loggedIn: s.loggedIn, screen: s.screen, sig: s.sig, docNotified: s.docNotified,
+        tasks: s.tasks, notes: s.notes, activeNoteId: s.activeNoteId, calConnected: s.calConnected, motions: s.motions, accounts: s.accounts, extraMembers: s.extraMembers, customDocs: s.customDocs, emailConnected: s.emailConnected, zoomConnected: s.zoomConnected
+      }));
+    } catch (e) {}
+  }
+
+  set(patch) { this.setState(patch); this.persist(patch); }
+  flash(msg) { this.setState({ toast: msg }); clearTimeout(this._t); this._t = setTimeout(() => this.setState({ toast: "" }), 2200); }
+
+  sigFor(id) { return Object.assign({}, this.DEFAULT_SIG[id] || {}, this.state.sig[id] || {}); }
+  signedCountFor(id) { const s = this.sigFor(id); return this.roster().filter(m => s[m.id]).length; }
+  docStatusOf(d) {
+    const n = this.signedCountFor(d.id), total = this.roster().length;
+    if (n >= total) return "signed";
+    if (n > 0 || d.status === "sent" || d.status === "signed") return "sent";
+    return "draft";
+  }
+
+  statusMeta(status) {
+    if (status === "signed") return { label: "Fully signed", style: "display:inline-flex;align-items:center;gap:6px;font-size:11.5px;font-weight:600;padding:4px 10px;border-radius:20px;background:var(--good-soft);color:var(--good)" };
+    if (status === "sent") return { label: "Awaiting signatures", style: "display:inline-flex;align-items:center;gap:6px;font-size:11.5px;font-weight:600;padding:4px 10px;border-radius:20px;background:var(--warn-soft);color:var(--warn)" };
+    return { label: "Draft", style: "display:inline-flex;align-items:center;gap:6px;font-size:11.5px;font-weight:600;padding:4px 10px;border-radius:20px;background:var(--bg);color:var(--muted);border:1px solid var(--line)" };
+  }
+
+  el(html) { return React.createElement("span", { style: { display: "flex", width: 18, height: 18 }, dangerouslySetInnerHTML: { __html: html } }); }
+
+  renderVals() {
+    const theme = this.THEMES[this.props.theme] || this.THEMES.premium;
+    const shellStyle = "font-family:'Public Sans',system-ui,-apple-system,sans-serif;min-height:100vh;background:var(--bg);color:var(--ink);-webkit-font-smoothing:antialiased;" + theme;
+    const layoutGrid = (this.props.dashboardLayout || "Overview grid") !== "Two-column feed";
+
+    // progress
+    let done = 0, total = 0;
+    this.PHASES.forEach(p => p.items.forEach(t => { total++; if (this.state.tasks[t.id]) done++; }));
+    const progressPct = Math.round((done / total) * 100);
+    const openTasks = total - done;
+    const openVotes = this.state.motions.filter(m => !(m.votes || {})["alitalia"]).length;
+
+    const toggleTask = (id) => () => {
+      const tasks = Object.assign({}, this.state.tasks, { [id]: !this.state.tasks[id] });
+      this.set({ tasks });
+    };
+
+    const checkSvg = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l4.5 4.5L19 7"/></svg>';
+    const boxOn = "width:22px;height:22px;border-radius:7px;border:none;background:var(--accent);display:grid;place-items:center;cursor:pointer;flex:none";
+    const boxOff = "width:22px;height:22px;border-radius:7px;border:1.8px solid var(--line);background:var(--panel);cursor:pointer;flex:none";
+
+    // documents
+    const docs = this.BASE_DOCS.concat(this.state.customDocs || []).map(d => {
+      const st = this.docStatusOf(d);
+      const meta = this.statusMeta(st);
+      const isSigned = st === "signed";
+      const nSig = this.signedCountFor(d.id), totSig = this.roster().length;
+      const signText = isSigned ? ("Signed by all " + totSig + " board members") : (st === "draft" ? ("Updated " + d.updated) : (nSig + " of " + totSig + " board members signed"));
+      const info = this.DOC_INFO[d.id] || {};
+      return Object.assign({}, d, {
+        status: st, statusLabel: meta.label, badgeStyle: meta.style, signText,
+        desc: info.desc || d.desc || "", todo: info.todo || d.todo || "",
+        open: () => this.openModal(d.id),
+        actionLabel: isSigned ? "View" : "Open in DocuSeal",
+        actionStyle: isSigned
+          ? "border:1px solid var(--line);background:var(--panel);color:var(--ink);font-size:12.5px;font-weight:600;padding:8px 13px;border-radius:9px;cursor:pointer"
+          : "border:none;background:var(--brand);color:#fff;font-size:12.5px;font-weight:600;padding:8px 13px;border-radius:9px;cursor:pointer"
+      });
+    });
+    const q = this.state.search.trim().toLowerCase();
+    const cat = this.state.docCat || "All";
+    let filteredDocs = docs.filter(d => cat === "All" || d.cat === cat);
+    if (q) filteredDocs = filteredDocs.filter(d => d.name.toLowerCase().includes(q));
+    const cats = ["All", "Governance", "Fundraising", "Donor Letters"];
+    const docTabs = cats.map(c => ({
+      label: c, count: c === "All" ? docs.length : docs.filter(d => d.cat === c).length,
+      go: () => this.setState({ docCat: c }),
+      style: "border:1px solid " + (cat === c ? "var(--accent)" : "var(--line)") + ";background:" + (cat === c ? "var(--accent-soft)" : "var(--panel)") + ";color:" + (cat === c ? "var(--brand)" : "var(--ink)") + ";font-size:13px;font-weight:600;padding:8px 14px;border-radius:9px;cursor:pointer"
+    }));
+
+    const pendingSign = docs.filter(d => d.status === "sent").length;
+    const signedCount = docs.filter(d => d.status === "signed").length;
+
+    // nav
+    const mkNav = (key, label, icon, badge) => {
+      const active = this.state.screen === key;
+      return {
+        label, icon: this.el(icon), badge: badge || null,
+        go: () => this.set({ screen: key, navOpen: false }),
+        style: "display:flex;align-items:center;gap:12px;width:100%;border:none;cursor:pointer;padding:10px 12px;border-radius:9px;font-size:13.5px;font-weight:" + (active ? "600" : "500") + ";transition:background .15s;background:" + (active ? "var(--accent-soft)" : "transparent") + ";color:" + (active ? "var(--brand)" : "var(--ink)"),
+        badgeStyle: "font-size:11px;font-weight:700;min-width:19px;height:19px;padding:0 5px;border-radius:20px;display:grid;place-items:center;background:" + (active ? "var(--brand)" : "var(--accent)") + ";color:#fff"
+      };
+    };
+    const navItems = [
+      mkNav("dashboard", "Dashboard", this.ICONS.dashboard),
+      mkNav("documents", "Documents", this.ICONS.documents, pendingSign),
+      mkNav("checklist", "Launch Checklist", this.ICONS.checklist, openTasks),
+      mkNav("votes", "Board Votes", this.ICONS.votes, openVotes),
+      mkNav("calendar", "Calendar", this.ICONS.calendar),
+      mkNav("notes", "Notes", this.ICONS.notes),
+      mkNav("team", "Team & Access", this.ICONS.team)
+    ];
+
+    // checklist render
+    const phaseName = {};
+    this.PHASES.forEach(p => p.items.forEach(t => phaseName[t.id] = p.name));
+    const phases = this.PHASES.map(p => {
+      const items = p.items.map(t => {
+        const on = !!this.state.tasks[t.id];
+        const doc = t.doc ? this.BASE_DOCS.find(d => d.id === t.doc) : null;
+        return {
+          label: t.label, toggle: toggleTask(t.id), check: on ? this.el(checkSvg) : "",
+          boxStyle: on ? boxOn : boxOff,
+          labelStyle: "font-size:14px;font-weight:600;color:var(--ink);" + (on ? "text-decoration:line-through;opacity:.5" : ""),
+          how: this.TASK_HELP[t.id] || "", howStyle: "font-size:12.5px;line-height:1.5;color:var(--muted);margin-top:3px;" + (on ? "opacity:.5" : ""),
+          hasDoc: !!doc, docName: doc ? doc.name : "", openDoc: doc ? (() => this.openModal(doc.id)) : (() => {})
+        };
+      });
+      return { name: p.name, count: p.items.filter(t => this.state.tasks[t.id]).length + "/" + p.items.length, items };
+    });
+
+    // dashboard next tasks
+    const flat = [];
+    this.PHASES.forEach(p => p.items.forEach(t => flat.push(Object.assign({}, t, { phase: p.name }))));
+    const nextTasks = flat.filter(t => !this.state.tasks[t.id]).slice(0, 4).map(t => ({
+      label: t.label, phase: t.phase, toggle: toggleTask(t.id), check: "",
+      boxStyle: boxOff
+    }));
+    const recentDocs = docs.slice(0, 4);
+    const upcoming = this.meetingsView().slice(0, 3);
+
+    // rings
+    const ang = progressPct * 3.6;
+    const ringStyle = "position:absolute;inset:0;border-radius:50%;background:conic-gradient(var(--accent) " + ang + "deg, var(--line) 0);mask:radial-gradient(farthest-side,transparent 62%,#000 63%);-webkit-mask:radial-gradient(farthest-side,transparent 62%,#000 63%)";
+    const ringStyleLg = "position:absolute;inset:0;border-radius:50%;background:conic-gradient(var(--accent) " + ang + "deg, var(--line) 0);mask:radial-gradient(farthest-side,transparent 66%,#000 67%);-webkit-mask:radial-gradient(farthest-side,transparent 66%,#000 67%)";
+    const barStyle = "height:100%;width:" + progressPct + "%;background:var(--accent);border-radius:20px;transition:width .3s";
+
+    const dashBodyStyle = layoutGrid
+      ? "display:grid;grid-template-columns:1.5fr 1fr;gap:18px;align-items:start"
+      : "display:grid;grid-template-columns:1fr 340px;gap:18px;align-items:start";
+
+    // calendar
+    const weekdays = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"];
+    const meetingByDay = {};
+    this.allMeetings().forEach(m => meetingByDay[m.day] = m);
+    const calDays = [];
+    const lead = 3; // Jul 1 2026 is Wednesday
+    for (let i = 0; i < lead; i++) calDays.push({ day: "", cellStyle: "min-height:96px;border-right:1px solid var(--line);border-bottom:1px solid var(--line);background:var(--bg)", numStyle: "", hasMeeting: false });
+    for (let d = 1; d <= 31; d++) {
+      const m = meetingByDay[d];
+      const today = d === 1;
+      calDays.push({
+        day: d,
+        cellStyle: "min-height:96px;padding:7px 8px;border-right:1px solid var(--line);border-bottom:1px solid var(--line);" + (today ? "background:var(--accent-soft)" : ""),
+        numStyle: today
+          ? "width:24px;height:24px;border-radius:50%;background:var(--brand);color:#fff;display:grid;place-items:center;font-size:12.5px;font-weight:700"
+          : "font-size:12.5px;color:var(--muted);font-weight:600;padding:2px",
+        hasMeeting: !!m,
+        eventStyle: "margin-top:6px;background:var(--accent);color:#fff;font-size:10.5px;font-weight:600;padding:4px 6px;border-radius:6px;line-height:1.25",
+        eventLabel: m ? (m.time.replace(":00", "") + " " + m.title) : ""
+      });
+    }
+
+    // notes
+    const notes = this.state.notes.map(n => ({
+      title: n.title || "Untitled note",
+      preview: (n.body || "").split("\n")[0].slice(0, 46) || "No additional text",
+      updated: n.updated,
+      select: () => this.setState({ activeNoteId: n.id }),
+      style: "text-align:left;border:none;cursor:pointer;padding:11px 12px;border-radius:10px;width:100%;background:" + (this.state.activeNoteId === n.id ? "var(--accent-soft)" : "transparent")
+    }));
+    const active = this.state.notes.find(n => n.id === this.state.activeNoteId);
+
+    // board votes / motions
+    const VC = { for: "var(--good)", against: "var(--danger)", abstain: "var(--muted)" };
+    const meetingTitle = {};
+    this.MEETINGS.forEach(m => meetingTitle[m.id] = m.title + " · Jul " + m.day);
+    const motionsView = this.state.motions.map(mo => {
+      const votes = mo.votes || {};
+      const forN = this.roster().filter(m => votes[m.id] === "for").length;
+      const againstN = this.roster().filter(m => votes[m.id] === "against").length;
+      const abstainN = this.roster().filter(m => votes[m.id] === "abstain").length;
+      const total = this.roster().length;
+      const castN = forN + againstN + abstainN;
+      const majority = Math.floor(total / 2) + 1;
+      let rLabel, rBg, rFg;
+      if (forN >= majority) { rLabel = "Passed"; rBg = "var(--good-soft)"; rFg = "var(--good)"; }
+      else if (againstN >= majority || (castN === total && forN < majority)) { rLabel = "Failed"; rBg = "var(--warn-soft)"; rFg = "var(--danger)"; }
+      else { rLabel = "Open · voting"; rBg = "var(--bg)"; rFg = "var(--muted)"; }
+      const pct = n => (n / total * 100) + "%";
+      const bar = (n, c) => "width:" + pct(n) + ";background:" + c + ";transition:width .3s" + (n === 0 ? ";display:none" : "");
+      const voters = this.roster().map(m => {
+        const v = votes[m.id];
+        const btn = (kind, label) => {
+          const on = v === kind;
+          const col = VC[kind];
+          return "border:1px solid " + (on ? col : "var(--line)") + ";background:" + (on ? col : "var(--panel)") + ";color:" + (on ? "#fff" : "var(--muted)") + ";font-size:12px;font-weight:600;padding:6px 11px;border-radius:8px;cursor:pointer";
+        };
+        const tagColor = v ? VC[v] : "var(--muted)";
+        return {
+          name: m.name, role: m.role, initials: m.initials,
+          youStyle: m.you ? "display:inline-block;margin-left:7px;font-size:10px;font-weight:700;color:var(--brand);background:var(--accent-soft);padding:1px 7px;border-radius:20px;vertical-align:middle" : "display:none",
+          avatarStyle: "width:34px;height:34px;border-radius:50%;display:grid;place-items:center;font-size:12px;font-weight:700;flex:none;color:#fff;background:" + (v ? tagColor : "var(--muted)"),
+          canVote: !!m.you,
+          otherPending: !m.you && !v,
+          otherVoted: !m.you && !!v,
+          voteLabel: v ? (v.charAt(0).toUpperCase() + v.slice(1)) : "",
+          tagStyle: "font-size:11.5px;font-weight:600;padding:4px 11px;border-radius:20px;color:#fff;flex:none;background:" + tagColor,
+          forStyle: btn("for"), againstStyle: btn("against"), abstainStyle: btn("abstain"),
+          voteFor: () => this.castVote(mo.id, m.id, "for"),
+          voteAgainst: () => this.castVote(mo.id, m.id, "against"),
+          voteAbstain: () => this.castVote(mo.id, m.id, "abstain"),
+          remind: () => this.flash("Reminder sent to " + m.name)
+        };
+      });
+      return {
+        title: mo.title, desc: mo.desc || "No additional details.",
+        meta: "Created " + mo.created + (mo.meeting && meetingTitle[mo.meeting] ? " · " + meetingTitle[mo.meeting] : ""),
+        hasZoom: !!mo.zoomUrl, zoomUrl: mo.zoomUrl || "",
+        notified: !!mo.notifiedAt,
+        notifiedText: mo.notifiedAt ? ("Board emailed · " + (mo.notifiedCount || 0) + " sent") : "",
+        notifyLabel: mo.notifiedAt ? "Resend email" : "Email board to vote",
+        notify: () => this.notifyBoard(mo.id),
+        previewEmail: () => this.setState({ emailPreview: mo.id }),
+        resultLabel: rLabel, resultStyle: "font-size:12px;font-weight:700;padding:5px 12px;border-radius:20px;background:" + rBg + ";color:" + rFg,
+        forN, againstN, abstainN, castN, totalN: total,
+        forBar: bar(forN, VC.for), againstBar: bar(againstN, VC.against), abstainBar: bar(abstainN, VC.abstain),
+        voters, remove: () => this.removeMotion(mo.id),
+        docHint: mo.docId ? "Document drafted and sent to DocuSeal for signing." : (rLabel === "Passed" ? "Motion passed — draft the document for signing." : "Have AI draft the related document for signing."),
+        draftLabel: mo.docId ? "View document" : "Draft document with AI",
+        draftStyle: "display:flex;align-items:center;gap:7px;border:none;font-size:12.5px;font-weight:600;padding:8px 14px;border-radius:9px;cursor:pointer;flex:none;color:#fff;background:" + (mo.docId ? "var(--brand)" : "var(--accent)"),
+        draft: mo.docId ? (() => this.openModal(mo.docId)) : (() => this.startDraft(mo.id))
+      };
+    });
+    const d = this.state.draft || {};
+    const meetingOptions = [{ value: "", label: "— None —" }].concat(this.MEETINGS.map(m => ({ value: m.id, label: m.title + " · Jul " + m.day })));
+    // motion notification email preview
+    const epMotion = this.state.emailPreview ? this.state.motions.find(m => m.id === this.state.emailPreview) : null;
+    let emailPrev = null;
+    if (epMotion) {
+      const recips = this.notifiableVoters();
+      const ev = epMotion.votes || {};
+      const efor = this.roster().filter(m => ev[m.id] === "for").length;
+      const eagainst = this.roster().filter(m => ev[m.id] === "against").length;
+      const eabstain = this.roster().filter(m => ev[m.id] === "abstain").length;
+      const etotal = this.roster().length;
+      const ecast = efor + eagainst + eabstain;
+      const emaj = Math.floor(etotal / 2) + 1;
+      let erLabel, erBg, erFg;
+      if (efor >= emaj) { erLabel = "Passed"; erBg = "var(--good-soft)"; erFg = "var(--good)"; }
+      else if (eagainst >= emaj || (ecast === etotal && efor < emaj)) { erLabel = "Failed"; erBg = "var(--warn-soft)"; erFg = "var(--danger)"; }
+      else { erLabel = "Voting open"; erBg = "var(--bg)"; erFg = "var(--muted)"; }
+      const epct = n => (n / etotal * 100) + "%";
+      emailPrev = {
+        subject: "Board vote requested: " + epMotion.title,
+        fromLine: "Alitalia Adams · Adams Infinite Legacy <board@adamsinfinitelegacy.org>",
+        toLine: recips.length ? recips.map(m => m.name.split(" ")[0]).join(", ") + " + you" : "Board members with vote access",
+        title: epMotion.title,
+        desc: epMotion.desc || "No additional details provided.",
+        whenText: epMotion.voteDay ? ("Thursday, July " + epMotion.voteDay + ", 2026 · " + (epMotion.voteTime || "4:00 PM") + " PT") : "To be scheduled",
+        hasZoom: !!epMotion.zoomUrl,
+        zoomUrl: epMotion.zoomUrl || "",
+        forN: efor, againstN: eagainst, abstainN: eabstain, castN: ecast, totalN: etotal,
+        resultLabel: erLabel,
+        resultStyle: "font-size:11px;font-weight:700;padding:4px 11px;border-radius:20px;background:" + erBg + ";color:" + erFg,
+        forBarStyle: "height:100%;width:" + epct(efor) + ";background:var(--good)" + (efor === 0 ? ";display:none" : ""),
+        againstBarStyle: "height:100%;width:" + epct(eagainst) + ";background:var(--danger)" + (eagainst === 0 ? ";display:none" : ""),
+        abstainBarStyle: "height:100%;width:" + epct(eabstain) + ";background:var(--muted)" + (eabstain === 0 ? ";display:none" : ""),
+        tallyText: ecast + " of " + etotal + " directors have voted",
+        closeEmail: () => this.setState({ emailPreview: null })
+      };
+    }
+    // team & access
+    const acctStatusMeta = (st) => {
+      if (st === "active") return { label: "Active", style: "display:inline-flex;font-size:11.5px;font-weight:600;padding:4px 10px;border-radius:20px;background:var(--good-soft);color:var(--good)" };
+      if (st === "invited") return { label: "Invited", style: "display:inline-flex;font-size:11.5px;font-weight:600;padding:4px 10px;border-radius:20px;background:var(--warn-soft);color:var(--warn)" };
+      return { label: "No login", style: "display:inline-flex;font-size:11.5px;font-weight:600;padding:4px 10px;border-radius:20px;background:var(--bg);color:var(--muted);border:1px solid var(--line)" };
+    };
+    const team = this.roster().map(m => {
+      const a = this.state.accounts[m.id] || { status: "none", vote: false, sign: false };
+      const meta = acctStatusMeta(a.status);
+      return {
+        name: m.name, role: m.role, initials: m.initials,
+        youStyle: m.you ? "display:inline-block;margin-left:7px;font-size:10px;font-weight:700;color:var(--brand);background:var(--accent-soft);padding:1px 7px;border-radius:20px;vertical-align:middle" : "display:none",
+        avatarStyle: "width:38px;height:38px;border-radius:50%;display:grid;place-items:center;font-size:13px;font-weight:700;flex:none;color:#fff;background:" + (a.status === "active" ? "var(--accent)" : a.status === "invited" ? "var(--warn)" : "var(--muted)"),
+        emailLine: (a.username ? "@" + a.username : "No username") + (a.email ? " · " + a.email : ""),
+        statusLabel: meta.label, statusStyle: meta.style,
+        vote: !!a.vote, sign: !!a.sign, noPerms: !a.vote && !a.sign,
+        manage: () => this.manageMember(m.id)
+      };
+    });
+    // acct modal
+    const ac = this.state.acct;
+    const acctMember = ac ? this.roster().find(m => m.id === ac.id) : null;
+    const acctBox = (on) => on
+      ? "width:22px;height:22px;border-radius:7px;border:none;background:var(--accent);display:grid;place-items:center;flex:none;color:#fff"
+      : "width:22px;height:22px;border-radius:7px;border:1.8px solid var(--line);background:var(--panel);flex:none";
+    const acctCheckSvg = React.createElement("span", { style: { display: "flex" }, dangerouslySetInnerHTML: { __html: '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l4.5 4.5L19 7"/></svg>' } });
+
+    // modal
+    const modalDoc = this.state.modal ? this.BASE_DOCS.concat(this.state.customDocs || []).find(d => d.id === this.state.modal) : null;
+    const mInfo = modalDoc ? (this.DOC_INFO[modalDoc.id] || { desc: modalDoc.desc, todo: modalDoc.todo }) : {};
+    let modalSigners = [], modalSignedCount = 0;
+    const modalTotalSigners = this.roster().length;
+    let modalBarStyle = "height:100%;width:0;background:var(--good);border-radius:20px", modalAllSigned = false;
+    if (modalDoc) {
+      const sig = this.sigFor(modalDoc.id);
+      modalSignedCount = this.roster().filter(m => sig[m.id]).length;
+      modalAllSigned = modalSignedCount >= modalTotalSigners;
+      modalBarStyle = "height:100%;width:" + Math.round(modalSignedCount / modalTotalSigners * 100) + "%;background:var(--good);border-radius:20px;transition:width .3s";
+      modalSigners = this.roster().map(m => {
+        const signed = !!sig[m.id];
+        return {
+          name: m.name, role: m.role, initials: m.initials, signed, pending: !signed,
+          youStyle: m.you ? "display:inline-block;margin-left:7px;font-size:10px;font-weight:700;color:var(--brand);background:var(--accent-soft);padding:1px 7px;border-radius:20px;vertical-align:middle" : "display:none",
+          avatarStyle: "width:34px;height:34px;border-radius:50%;display:grid;place-items:center;font-size:12px;font-weight:700;flex:none;color:#fff;background:" + (signed ? "var(--good)" : "var(--muted)"),
+          actionLabel: m.you ? "Sign now" : "Remind",
+          actionStyle: m.you ? "border:none;background:#1a73e8;color:#fff;font-size:12px;font-weight:600;padding:7px 14px;border-radius:8px;cursor:pointer;flex:none" : "border:1px solid var(--line);background:var(--panel);color:var(--muted);font-size:12px;font-weight:600;padding:7px 12px;border-radius:8px;cursor:pointer;flex:none",
+          action: m.you ? (() => this.signMember(m.id)) : (() => this.flash("Reminder sent to " + m.name))
+        };
+      });
+    }
+
+    return {
+      shellStyle,
+      loggedIn: this.state.loggedIn, notLoggedIn: !this.state.loggedIn,
+      email: this.state.email, password: this.state.password, remember: this.state.remember, loginError: this.state.loginError,
+      setEmail: e => this.setState({ email: e.target.value, loginError: "" }),
+      setPassword: e => this.setState({ password: e.target.value, loginError: "" }),
+      toggleRemember: () => this.setState({ remember: !this.state.remember }),
+      doLogin: e => { e.preventDefault(); this.set({ loggedIn: true, screen: "dashboard" }); },
+      logout: () => this.set({ loggedIn: false, password: "" }),
+
+      navItems,
+      navAttr: this.state.navOpen ? "open" : "closed",
+      openNav: () => this.setState({ navOpen: true }),
+      closeNav: () => this.setState({ navOpen: false }),
+      isDashboard: this.state.screen === "dashboard",
+      isDocuments: this.state.screen === "documents",
+      isChecklist: this.state.screen === "checklist",
+      isCalendar: this.state.screen === "calendar",
+      isNotes: this.state.screen === "notes",
+      isVotes: this.state.screen === "votes",
+      isTeam: this.state.screen === "team",
+      pageTitle: ({ dashboard: "Dashboard", documents: "Documents", checklist: "Launch Checklist", calendar: "Calendar", notes: "Notes", votes: "Board Votes", team: "Team & Access" })[this.state.screen],
+      pageSub: ({ dashboard: "Adams Infinite Legacy · Founder workspace", documents: "Governance, fundraising & donor letters", checklist: "Steps to launch the foundation", calendar: "Board meetings & planning sessions", notes: "Private to your account", votes: "Motions & board decisions", team: "Board member logins & permissions" })[this.state.screen],
+      search: this.state.search, setSearch: e => this.setState({ search: e.target.value }),
+      goChecklist: () => this.set({ screen: "checklist" }),
+      goDocuments: () => this.set({ screen: "documents" }),
+      goCalendar: () => this.set({ screen: "calendar" }),
+      goNotes: () => this.set({ screen: "notes" }),
+
+      greeting: (() => { const h = new Date().getHours(); return h < 12 ? "Good morning" : h < 18 ? "Good afternoon" : "Good evening"; })(),
+      progressPct, doneCount: done, totalCount: total, openTasks, pendingSign, signedCount,
+      ringStyle, ringStyleLg, barStyle, dashBodyStyle,
+      nextMeetingDate: "Jul " + this.MEETINGS[0].day, nextMeetingTitle: this.MEETINGS[0].title,
+      nextTasks, recentDocs, upcoming,
+
+      docTabs, filteredDocs,
+      phases,
+
+      weekdays, calDays, meetings: this.meetingsView(),
+      calConnected: this.state.calConnected, calNotConnected: !this.state.calConnected,
+      connectCal: () => { this.set({ calConnected: true }); this.flash("Google Calendar connected"); },
+      disconnectCal: () => this.set({ calConnected: false }),
+      zoomConnected: this.state.zoomConnected, zoomNotConnected: !this.state.zoomConnected,
+      connectZoom: () => { this.set({ zoomConnected: true }); this.flash("Zoom connected"); },
+      disconnectZoom: () => this.set({ zoomConnected: false }),
+      emailConnected: this.state.emailConnected, emailNotConnected: !this.state.emailConnected,
+      connectEmail: () => { this.set({ emailConnected: true }); this.flash("Hostinger email connected"); },
+      disconnectEmail: () => this.set({ emailConnected: false }),
+      googleIcon: this.el(this.GOOGLE), googleIconSm: this.el(this.GOOGLE),
+
+      notes,
+      hasActiveNote: !!active, noActiveNote: !active,
+      noteTitle: active ? active.title : "", noteBody: active ? active.body : "", noteSaved: this.state.noteSaved,
+      setNoteTitle: e => this.updateNote("title", e.target.value),
+      setNoteBody: e => this.updateNote("body", e.target.value),
+      newNote: () => this.newNote(),
+      deleteNote: () => this.deleteNote(),
+
+      modalOpen: !!this.state.modal, modalDocName: modalDoc ? modalDoc.name : "",
+      modalDesc: mInfo.desc || "", modalTodo: mInfo.todo || "",
+      modalSigners, modalSignedCount, modalTotalSigners, modalBarStyle,
+      modalNotified: modalDoc ? !!(this.state.docNotified || {})[modalDoc.id] : false,
+      modalNotifiedText: modalDoc && (this.state.docNotified || {})[modalDoc.id] ? ("Board emailed to sign · " + (this.state.docNotified[modalDoc.id].count || 0) + " sent") : "",
+      modalNotifyLabel: modalDoc && (this.state.docNotified || {})[modalDoc.id] ? "Resend email" : "Email board to sign",
+      notifyDoc: () => modalDoc && this.notifyDocSigners(modalDoc.id),
+      modalCanSign: !!modalDoc && !modalAllSigned,
+      modalStatusText: modalAllSigned ? "Completed · all board members have signed" : (modalSignedCount + " of " + modalTotalSigners + " signatures collected via DocuSeal"),
+      signAll: () => this.signAll(),
+      remindAll: () => modalDoc && this.notifyDocSigners(modalDoc.id),
+      closeModal: () => this.setState({ modal: null }),
+      stop: e => e.stopPropagation(),
+
+      motions: motionsView, noMotions: motionsView.length === 0,
+      emailPrevOpen: !!emailPrev,
+      epSubject: emailPrev ? emailPrev.subject : "",
+      epFrom: emailPrev ? emailPrev.fromLine : "",
+      epTo: emailPrev ? emailPrev.toLine : "",
+      epTitle: emailPrev ? emailPrev.title : "",
+      epDesc: emailPrev ? emailPrev.desc : "",
+      epWhen: emailPrev ? emailPrev.whenText : "",
+      epHasZoom: emailPrev ? emailPrev.hasZoom : false,
+      epZoom: emailPrev ? emailPrev.zoomUrl : "",
+      closeEmailPrev: emailPrev ? emailPrev.closeEmail : (() => {}),
+      newMotion: () => this.setState({ draft: { title: "", desc: "", meeting: "" } }),
+      draftOpen: !!this.state.draft,
+      draftTitle: d.title || "", draftDesc: d.desc || "", draftMeeting: d.meeting || "",
+      meetingOptions,
+      setDraftTitle: e => this.setState({ draft: Object.assign({}, this.state.draft, { title: e.target.value }) }),
+      setDraftDesc: e => this.setState({ draft: Object.assign({}, this.state.draft, { desc: e.target.value }) }),
+      setDraftMeeting: e => this.setState({ draft: Object.assign({}, this.state.draft, { meeting: e.target.value }) }),
+      closeDraft: () => this.setState({ draft: null }),
+      createMotion: () => this.createMotion(),
+      createBtnStyle: "border:none;font-size:13px;font-weight:600;padding:9px 18px;border-radius:9px;color:#fff;background:var(--brand);cursor:" + ((d.title || "").trim() ? "pointer" : "not-allowed") + ";opacity:" + ((d.title || "").trim() ? "1" : ".5"),
+
+      team,
+      addMember: () => this.addMember(),
+      acctOpen: !!ac,
+      acctName: acctMember ? acctMember.name : (ac ? ac.name : ""),
+      acctRole: acctMember ? acctMember.role : (ac ? ac.role : ""),
+      acctInitials: acctMember ? acctMember.initials : "?",
+      acctAvatarStyle: "width:40px;height:40px;border-radius:50%;display:grid;place-items:center;font-size:14px;font-weight:700;flex:none;color:#fff;background:var(--accent)",
+      acctEmail: ac ? (ac.email || "") : "",
+      acctUsername: ac ? (ac.username || "") : "",
+      acctPw: ac ? (ac.pw || "") : "",
+      setAcctEmail: e => this.setState({ acct: Object.assign({}, this.state.acct, { email: e.target.value }) }),
+      setAcctUsername: e => this.setState({ acct: Object.assign({}, this.state.acct, { username: e.target.value }) }),
+      setAcctPw: e => this.setState({ acct: Object.assign({}, this.state.acct, { pw: e.target.value }) }),
+      genPw: () => this.genPw(),
+      voteCheck: ac && ac.vote ? acctCheckSvg : "", voteCheckStyle: acctBox(ac && ac.vote),
+      signCheck: ac && ac.sign ? acctCheckSvg : "", signCheckStyle: acctBox(ac && ac.sign),
+      toggleVote: () => this.setState({ acct: Object.assign({}, this.state.acct, { vote: !this.state.acct.vote }) }),
+      toggleSign: () => this.setState({ acct: Object.assign({}, this.state.acct, { sign: !this.state.acct.sign }) }),
+      acctCanRevoke: !!ac && ac.id !== "alitalia" && (ac.status === "active" || ac.status === "invited"),
+      acctNoRevoke: !(!!ac && ac.id !== "alitalia" && (ac.status === "active" || ac.status === "invited")),
+      revokeAcct: () => this.revokeAcct(),
+      saveAcct: () => this.saveAcct(),
+      acctSaveLabel: ac && (ac.status === "none" || !ac.status) ? "Send invite" : "Save changes",
+      closeAcct: () => this.setState({ acct: null }),
+
+      draftDocOpen: !!this.state.drafting,
+      draftDocMotion: this.state.drafting ? this.state.drafting.motionTitle : "",
+      draftLoading: !!this.state.drafting && this.state.drafting.status === "loading",
+      draftReady: !!this.state.drafting && this.state.drafting.status === "ready",
+      draftDocTitle: this.state.drafting ? (this.state.drafting.title || "") : "",
+      draftDocBody: this.state.drafting ? (this.state.drafting.body || "") : "",
+      setDraftDocTitle: e => this.setState({ drafting: Object.assign({}, this.state.drafting, { title: e.target.value }) }),
+      setDraftDocBody: e => this.setState({ drafting: Object.assign({}, this.state.drafting, { body: e.target.value }) }),
+      regenDraft: () => this.startDraft(this.state.drafting.motionId, true),
+      sendDraftToDocuSeal: () => this.sendDraftToDocuSeal(),
+      closeDraftDoc: () => this.setState({ drafting: null }),
+
+      toast: this.state.toast
+    };
+  }
+
+  openModal(id) { this.setState({ modal: id }); }
+
+  castVote(motionId, memberId, choice) {
+    const motions = this.state.motions.map(m => {
+      if (m.id !== motionId) return m;
+      const votes = Object.assign({}, m.votes || {});
+      if (votes[memberId] === choice) delete votes[memberId]; else votes[memberId] = choice;
+      return Object.assign({}, m, { votes });
+    });
+    this.set({ motions });
+    this.flash("Your vote was recorded");
+  }
+  createMotion() {
+    const d = this.state.draft || {};
+    if (!(d.title || "").trim()) return;
+    const id = "mo" + Date.now();
+    const zoomUrl = this.state.zoomConnected ? ("https://zoom.us/j/" + (8400000000 + Math.floor(Math.random() * 8999999))) : "";
+    const recipients = this.notifiableVoters().length;
+    const notifiedAt = this.state.emailConnected ? "Jul 1, 2026" : "";
+    // schedule the vote meeting: use the linked meeting's slot, else the next open day
+    const linked = d.meeting ? this.MEETINGS.find(x => x.id === d.meeting) : null;
+    let voteDay, voteTime;
+    if (linked) { voteDay = linked.day; voteTime = linked.time; }
+    else {
+      const used = {}; this.allMeetings().forEach(x => used[x.day] = true);
+      voteDay = 3; while (voteDay < 31 && used[voteDay]) voteDay++;
+      voteTime = "4:00 PM";
+    }
+    const motion = { id, title: d.title.trim(), desc: (d.desc || "").trim(), meeting: d.meeting || "", created: "Jul 1, 2026", votes: {}, zoomUrl, notifiedAt, notifiedCount: notifiedAt ? recipients : 0, voteDay, voteTime };
+    this.set({ motions: [motion].concat(this.state.motions), draft: null, screen: "votes" });
+    let msg = "Motion created";
+    if (zoomUrl) msg += " · Zoom vote meeting added to calendar";
+    if (notifiedAt) msg += " · " + recipients + " board members emailed";
+    else msg += " · connect email to notify the board";
+    this.flash(msg);
+  }
+  notifiableVoters() {
+    return this.roster().filter(m => {
+      const a = this.state.accounts[m.id];
+      return a && a.vote && a.email && !m.you;
+    });
+  }
+  notifyBoard(id) {
+    if (!this.state.emailConnected) { this.flash("Email isn't connected yet — ask IT to connect Hostinger in Team & Access"); return; }
+    const recipients = this.notifiableVoters().length;
+    const motions = this.state.motions.map(m => m.id === id ? Object.assign({}, m, { notifiedAt: "Jul 1, 2026", notifiedCount: recipients }) : m);
+    this.set({ motions });
+    this.flash("Emailed " + recipients + " board members to review & vote");
+  }
+  removeMotion(id) {
+    this.set({ motions: this.state.motions.filter(m => m.id !== id) });
+  }
+
+  manageMember(id) {
+    const a = this.state.accounts[id] || { status: "none", email: "", username: "", vote: true, sign: true };
+    this.setState({ acct: { id, email: a.email || "", username: a.username || "", pw: "", status: a.status || "none", vote: a.vote !== false, sign: a.sign !== false } });
+  }
+  addMember() {
+    const id = "mem" + Date.now();
+    const extraMembers = (this.state.extraMembers || []).concat([{ id, name: "New board member", role: "Director", initials: "NM" }]);
+    this.setState({ extraMembers, acct: { id, email: "", pw: "", status: "none", vote: true, sign: true, isNew: true } });
+    this.persist({ extraMembers });
+  }
+  genPw() {
+    const chars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789";
+    let p = ""; for (let i = 0; i < 10; i++) p += chars[Math.floor(Math.random() * chars.length)];
+    this.setState({ acct: Object.assign({}, this.state.acct, { pw: p }) });
+  }
+  saveAcct() {
+    const ac = this.state.acct; if (!ac) return;
+    const wasNew = ac.status === "none" || !ac.status;
+    const entry = { username: ac.username || "", email: ac.email || "", status: wasNew ? "invited" : ac.status, vote: !!ac.vote, sign: !!ac.sign };
+    const accounts = Object.assign({}, this.state.accounts, { [ac.id]: entry });
+    this.set({ accounts, acct: null });
+    this.flash(wasNew ? "Invite sent — login details ready to share" : "Access updated");
+  }
+  revokeAcct() {
+    const ac = this.state.acct; if (!ac) return;
+    const accounts = Object.assign({}, this.state.accounts);
+    delete accounts[ac.id];
+    this.set({ accounts, acct: null });
+    this.flash("Access revoked");
+  }
+
+  async startDraft(motionId, regen) {
+    const mo = this.state.motions.find(m => m.id === motionId);
+    if (!mo) return;
+    this.setState({ drafting: { motionId, motionTitle: mo.title, status: "loading", title: "", body: "" } });
+    const meeting = mo.meeting ? (this.MEETINGS.find(x => x.id === mo.meeting) || {}) : {};
+    const prompt = "You are a legal document assistant for Adams Infinite Legacy, a California nonprofit public benefit corporation (501(c)(3)) founded by Alitalia Adams. The board of directors has voted on the following motion:\n\nMOTION: " + mo.title + "\nDETAILS: " + (mo.desc || "(none)") + (meeting.title ? ("\nMEETING: " + meeting.title) : "") + "\n\nDraft the formal governance document that enacts this motion (for example a board resolution, consent, or the adopted instrument itself). Use clear, professional nonprofit-governance language. Include: a title, a recitals/whereas section, the resolved/operative clauses, an effective date of July 1, 2026, and a signature block listing all seven directors (Alitalia Adams, President & Founder; Judy Adams, Vice Chair; Lee Taylor II, Treasurer; Courtney Woo, Secretary; Charles Pleasant, CIO; Joe Grumbine, Community Health Education Chair; Nancy Hughes, Philanthropy Chair). Use [bracketed placeholders] for anything unknown. Return ONLY the document text, no commentary.";
+    try {
+      const text = await window.claude.complete({ messages: [{ role: "user", content: prompt }], max_tokens: 1600 });
+      if (!this.state.drafting || this.state.drafting.motionId !== motionId) return;
+      const title = mo.title.replace(/^Adopt (the )?/i, "").replace(/^Approve (the )?/i, "");
+      this.setState({ drafting: { motionId, motionTitle: mo.title, status: "ready", title: title.charAt(0).toUpperCase() + title.slice(1), body: (text || "").trim() } });
+    } catch (e) {
+      this.setState({ drafting: { motionId, motionTitle: mo.title, status: "ready", title: mo.title, body: "The AI draft could not be generated right now. You can write the document here manually, then send it to DocuSeal for signing." } });
+    }
+  }
+  sendDraftToDocuSeal() {
+    const dr = this.state.drafting; if (!dr) return;
+    const docId = "aidoc" + Date.now();
+    const doc = { id: docId, name: (dr.title || "Board document").trim(), cat: "Governance", status: "sent", updated: "Jul 1, 2026", pages: Math.max(1, Math.round((dr.body || "").length / 1800)), desc: "AI-drafted document enacting a board motion. Review with counsel before it is relied upon.", todo: "Each board member signs in DocuSeal. Once all have signed, it's complete and filed.", body: dr.body };
+    const customDocs = (this.state.customDocs || []).concat([doc]);
+    const motions = this.state.motions.map(m => m.id === dr.motionId ? Object.assign({}, m, { docId }) : m);
+    this.set({ customDocs, motions, drafting: null, modal: docId });
+    this.flash("Document sent to DocuSeal for all board members to sign");
+  }
+
+  signMember(memberId) {
+    const doc = this.state.modal; if (!doc) return;
+    const cur = Object.assign({}, this.sigFor(doc), { [memberId]: true });
+    const sig = Object.assign({}, this.state.sig, { [doc]: cur });
+    this.set({ sig });
+    const nowAll = this.roster().every(m => cur[m.id]);
+    if (nowAll) this.flash("All signatures collected — board notified by email");
+    else this.flash(memberId === "alitalia" ? "You signed via DocuSeal" : "Signature recorded");
+  }
+  signAll() {
+    const doc = this.state.modal; if (!doc) return;
+    const cur = {}; this.roster().forEach(m => cur[m.id] = true);
+    const sig = Object.assign({}, this.state.sig, { [doc]: cur });
+    this.set({ sig });
+    this.flash("All signatures collected — board notified by email");
+    setTimeout(() => this.setState({ modal: null }), 900);
+  }
+  notifyDocSigners(docId) {
+    if (!this.state.emailConnected) { this.flash("Email isn't connected yet — ask IT to connect Hostinger in Team & Access"); return; }
+    const sig = this.sigFor(docId);
+    const pending = this.roster().filter(m => this.accountFor(m.id) && this.accountFor(m.id).email && !sig[m.id] && !m.you).length;
+    const docNotified = Object.assign({}, this.state.docNotified, { [docId]: { at: "Jul 1, 2026", count: pending } });
+    this.set({ docNotified });
+    this.flash("Emailed " + pending + " board members to sign via DocuSeal");
+  }
+  accountFor(id) { return (this.state.accounts || {})[id]; }
+
+  updateNote(field, value) {
+    const notes = this.state.notes.map(n => n.id === this.state.activeNoteId ? Object.assign({}, n, { [field]: value, updated: "Just now" }) : n);
+    this.setState({ notes, noteSaved: "Saving…" });
+    this.persist({ notes });
+    clearTimeout(this._ns);
+    this._ns = setTimeout(() => this.setState({ noteSaved: "Saved" }), 600);
+  }
+  newNote() {
+    const id = "n" + Date.now();
+    const notes = [{ id, title: "", body: "", updated: "Just now" }].concat(this.state.notes);
+    this.set({ notes, activeNoteId: id, screen: "notes" });
+  }
+  deleteNote() {
+    const notes = this.state.notes.filter(n => n.id !== this.state.activeNoteId);
+    this.set({ notes, activeNoteId: notes[0] ? notes[0].id : null });
+  }
+}
+</script>
+</body>
+</html>
