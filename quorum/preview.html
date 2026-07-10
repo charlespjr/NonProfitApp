@@ -153,6 +153,18 @@
   footer .cols{display:flex;justify-content:space-between;gap:24px;flex-wrap:wrap;align-items:center}
   footer b{color:rgba(251,246,238,.9)}
   footer .legal{margin-top:20px;font-size:12px;max-width:720px}
+
+  /* Mobile vertical rhythm — desktop spacing reads as dead bands on phones */
+  @media(max-width:760px){
+    .hero{padding:52px 0 0}
+    .hero .shotwrap{margin:38px auto -70px}
+    .heropad{height:100px}
+    section{padding:54px 0}
+    .flow,.built,.duo,.screens,.lives,.tiers{margin-top:34px}
+    .kicker p{font-size:15px}
+    .screen .cap{flex-wrap:wrap}
+    .replaces{padding:24px 22px 16px}
+  }
 </style>
 </head>
 <body>
