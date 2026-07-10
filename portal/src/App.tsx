@@ -13,6 +13,7 @@ import { Votes } from './screens/Votes'
 import { Team } from './screens/Team'
 import {
   AIDraftModal,
+  ChangePasswordModal,
   DocuSealModal,
   EmailPreviewModal,
   ManageAccessModal,
@@ -26,6 +27,14 @@ export default function App() {
   const shellStyle = {
     ...sx("font-family:'Public Sans',system-ui,-apple-system,sans-serif;min-height:100vh;background:var(--bg);color:var(--ink);-webkit-font-smoothing:antialiased"),
     ...sx(THEMES[state.theme]),
+  }
+
+  if (store.mode === 'checking') {
+    return (
+      <div style={{ ...shellStyle, ...sx('display:grid;place-items:center') }}>
+        <div style={sx('width:34px;height:34px;border:3px solid var(--line);border-top-color:var(--accent);border-radius:50%;animation:ailspin .8s linear infinite')} />
+      </div>
+    )
   }
 
   // Board members without admin rights never see Team & Access.
@@ -52,6 +61,7 @@ export default function App() {
           <NewMotionModal />
           <ManageAccessModal />
           <EmailPreviewModal />
+          <ChangePasswordModal />
         </>
       )}
       <Toast message={state.toast} />

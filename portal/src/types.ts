@@ -103,6 +103,8 @@ export interface DraftingState {
 
 export interface AcctForm {
   id: string
+  /** Editable only when creating a new member in api mode. */
+  name?: string
   username: string
   email: string
   pw: string
