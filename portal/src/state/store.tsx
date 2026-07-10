@@ -18,6 +18,7 @@ import {
   mockSignatures,
   mockZoom,
 } from '../services'
+import { api, ApiError, type ApiMember, type ApiOrg, type ApiSession } from '../services/api'
 import type {
   Account,
   AppState,
@@ -104,6 +105,18 @@ function loadPersisted(): PersistedState {
 export interface Store {
   state: AppState
   currentUser: CurrentUser | null
+  /** 'demo' = static hosting with seeded accounts; 'api' = real backend. */
+  mode: 'checking' | 'api' | 'demo'
+  apiOrg: ApiOrg | null
+  apiMe: ApiMember | null
+
+  // auth (api mode)
+  register(input: { orgName: string; name: string; email: string; username: string; password: string }): Promise<void>
+  changePassword(password: string): Promise<void>
+
+  // billing (api mode)
+  checkout(tier: 'growth' | 'launch_partner'): Promise<void>
+  openBillingPortal(): Promise<void>
 
   // derived domain helpers
   roster(): Member[]
@@ -171,37 +184,165 @@ export interface Store {
 
 const StoreCtx = createContext<Store | null>(null)
 
+/** The slice of state that syncs to the server per-org in api mode. */
+const BOARD_KEYS = [
+  'sig',
+  'docNotified',
+  'tasks',
+  'notes',
+  'activeNoteId',
+  'calConnected',
+  'emailConnected',
+  'zoomConnected',
+  'motions',
+  'customDocs',
+  'theme',
+  'dashboardLayout',
+] as const
+
+type BoardSlice = Pick<AppState, (typeof BOARD_KEYS)[number]>
+
+function boardSlice(state: AppState): BoardSlice {
+  const out = {} as Record<string, unknown>
+  for (const k of BOARD_KEYS) out[k] = state[k]
+  return out as BoardSlice
+}
+
 export function StoreProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<AppState>(() => ({ ...loadPersisted(), ...defaultUi }))
+  const [mode, setMode] = useState<'checking' | 'api' | 'demo'>('checking')
+  const [apiOrg, setApiOrg] = useState<ApiOrg | null>(null)
+  const [apiMe, setApiMe] = useState<ApiMember | null>(null)
+  const [apiMembers, setApiMembers] = useState<ApiMember[]>([])
   const toastTimer = useRef<ReturnType<typeof setTimeout>>()
   const noteTimer = useRef<ReturnType<typeof setTimeout>>()
+  const syncTimer = useRef<ReturnType<typeof setTimeout>>()
+  const versionRef = useRef(0)
+  const hydratingRef = useRef(false)
 
-  // Persist the durable slice whenever it changes.
+  const accountsFrom = (list: ApiMember[]): Record<string, Account> => {
+    const accounts: Record<string, Account> = {}
+    for (const m of list) {
+      accounts[m.id] = {
+        username: m.username,
+        email: m.email,
+        status: m.status,
+        vote: m.canVote,
+        sign: m.canSign,
+        admin: m.isAdmin,
+      }
+    }
+    return accounts
+  }
+
+  const hydrateSession = useCallback(async (sess: ApiSession) => {
+    hydratingRef.current = true
+    const [{ data, version }, { members }] = await Promise.all([api.getState(), api.members()])
+    versionRef.current = version
+    setApiOrg(sess.org)
+    setApiMe(sess.me)
+    setApiMembers(members)
+    setState((s) => ({
+      ...s,
+      ...defaultUi,
+      // server board state overrides local; unset keys fall back to clean defaults
+      sig: {},
+      docNotified: {},
+      tasks: {},
+      notes: [],
+      activeNoteId: null,
+      calConnected: false,
+      emailConnected: false,
+      zoomConnected: false,
+      motions: [],
+      customDocs: [],
+      ...(data as Partial<BoardSlice>),
+      accounts: accountsFrom(members),
+      extraMembers: [],
+      sessionUserId: sess.me.id,
+      screen: 'dashboard',
+    }))
+    // allow the persist effect to run again after this render settles
+    setTimeout(() => (hydratingRef.current = false), 0)
+  }, [])
+
+  // Boot: decide api vs demo mode once.
   useEffect(() => {
-    const p: PersistedState = {
-      sessionUserId: state.sessionUserId,
-      screen: state.screen,
-      sig: state.sig,
-      docNotified: state.docNotified,
-      tasks: state.tasks,
-      notes: state.notes,
-      activeNoteId: state.activeNoteId,
-      calConnected: state.calConnected,
-      emailConnected: state.emailConnected,
-      zoomConnected: state.zoomConnected,
-      motions: state.motions,
-      accounts: state.accounts,
-      extraMembers: state.extraMembers,
-      customDocs: state.customDocs,
-      theme: state.theme,
-      dashboardLayout: state.dashboardLayout,
+    let cancelled = false
+    void (async () => {
+      const detected = await api.detectMode()
+      if (cancelled) return
+      if (detected === 'demo') {
+        setMode('demo')
+        return
+      }
+      try {
+        const sess = await api.me()
+        if (cancelled) return
+        await hydrateSession(sess)
+      } catch {
+        if (!cancelled) setState((s) => ({ ...s, sessionUserId: null }))
+      }
+      if (!cancelled) setMode('api')
+    })()
+    return () => {
+      cancelled = true
     }
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(p))
-    } catch {
-      /* storage full/unavailable — state remains in memory */
+  }, [hydrateSession])
+
+  // Persistence. Demo mode: localStorage (original behavior). Api mode:
+  // debounced PUT of the board slice with optimistic versioning.
+  useEffect(() => {
+    if (mode === 'demo') {
+      const p: PersistedState = {
+        sessionUserId: state.sessionUserId,
+        screen: state.screen,
+        sig: state.sig,
+        docNotified: state.docNotified,
+        tasks: state.tasks,
+        notes: state.notes,
+        activeNoteId: state.activeNoteId,
+        calConnected: state.calConnected,
+        emailConnected: state.emailConnected,
+        zoomConnected: state.zoomConnected,
+        motions: state.motions,
+        accounts: state.accounts,
+        extraMembers: state.extraMembers,
+        customDocs: state.customDocs,
+        theme: state.theme,
+        dashboardLayout: state.dashboardLayout,
+      }
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(p))
+      } catch {
+        /* storage full/unavailable — state remains in memory */
+      }
+      return
     }
-  }, [state])
+    if (mode !== 'api' || !state.sessionUserId || hydratingRef.current) return
+    const snapshot = boardSlice(state)
+    clearTimeout(syncTimer.current)
+    syncTimer.current = setTimeout(async () => {
+      try {
+        const { version } = await api.putState(snapshot as Record<string, unknown>, versionRef.current)
+        versionRef.current = version
+      } catch (e) {
+        if (e instanceof ApiError && e.status === 409) {
+          // Someone else (another board member) wrote first — take the
+          // server's copy. Last-write-wins is acceptable for this state.
+          try {
+            const { data, version } = await api.getState()
+            versionRef.current = version
+            hydratingRef.current = true
+            setState((s) => ({ ...s, ...(data as Partial<BoardSlice>) }))
+            setTimeout(() => (hydratingRef.current = false), 0)
+          } catch {
+            /* offline — retry on next change */
+          }
+        }
+      }
+    }, 700)
+  }, [state, mode])
 
   const set = useCallback((patch: Partial<AppState>) => {
     setState((s) => ({ ...s, ...patch }))
@@ -213,10 +354,12 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     toastTimer.current = setTimeout(() => setState((s) => ({ ...s, toast: '' })), 2200)
   }, [])
 
-  const roster = useCallback(
-    () => MEMBERS.concat(state.extraMembers),
-    [state.extraMembers],
-  )
+  const roster = useCallback((): Member[] => {
+    if (mode === 'api') {
+      return apiMembers.map((m) => ({ id: m.id, name: m.name, role: m.roleTitle, initials: m.initials }))
+    }
+    return MEMBERS.concat(state.extraMembers)
+  }, [mode, apiMembers, state.extraMembers])
 
   const currentUser: CurrentUser | null = useMemo(() => {
     if (!state.sessionUserId) return null
@@ -290,10 +433,19 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 
   // ------------------------------------------------------------------ auth
   const login = useCallback(
-    async (identifier: string, _password: string, _remember: boolean) => {
+    async (identifier: string, password: string, _remember: boolean) => {
       const id = identifier.trim().toLowerCase()
       if (!id) {
         set({ loginError: 'Enter your username or email to sign in.' })
+        return
+      }
+      if (mode === 'api') {
+        try {
+          const sess = await api.login(identifier, password)
+          await hydrateSession(sess)
+        } catch (e) {
+          set({ loginError: e instanceof ApiError ? e.message : 'Could not reach the server — try again.' })
+        }
         return
       }
       const entry = Object.entries(state.accounts).find(
@@ -303,16 +455,51 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         set({ loginError: 'No account matches that username or email. Ask your admin for access.' })
         return
       }
-      await services.auth.login(identifier, _password)
+      await services.auth.login(identifier, password)
       set({ sessionUserId: entry[0], screen: 'dashboard', loginError: '' })
     },
-    [state.accounts, set],
+    [mode, state.accounts, set, hydrateSession],
+  )
+
+  const register = useCallback(
+    async (input: { orgName: string; name: string; email: string; username: string; password: string }) => {
+      if (mode !== 'api') {
+        set({ loginError: 'Registration needs the backend — this static demo uses the seeded accounts.' })
+        return
+      }
+      try {
+        const sess = await api.register(input)
+        await hydrateSession(sess)
+      } catch (e) {
+        set({ loginError: e instanceof ApiError ? e.message : 'Could not reach the server — try again.' })
+      }
+    },
+    [mode, set, hydrateSession],
+  )
+
+  const changePassword = useCallback(
+    async (password: string) => {
+      if (mode !== 'api') return
+      await api.changePassword(password)
+      setApiMe((m) => (m ? { ...m, mustChangePassword: false } : m))
+      flash('Password updated')
+    },
+    [mode, flash],
   )
 
   const logout = useCallback(() => {
+    if (mode === 'api') {
+      void api.logout()
+      setApiMe(null)
+      setApiOrg(null)
+      setApiMembers([])
+      versionRef.current = 0
+      setState((s) => ({ ...s, ...defaultUi, sessionUserId: null }))
+      return
+    }
     void services.auth.logout()
     set({ sessionUserId: null })
-  }, [set])
+  }, [mode, set])
 
   const go = useCallback((screen: ScreenKey) => set({ screen, navOpen: false }), [set])
 
@@ -583,13 +770,17 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   )
 
   const addMember = useCallback(() => {
+    if (mode === 'api') {
+      set({ acct: { id: '', name: '', email: '', username: '', pw: '', status: 'none', vote: true, sign: false, isNew: true } })
+      return
+    }
     const id = 'mem' + Date.now()
     setState((s) => ({
       ...s,
       extraMembers: [...s.extraMembers, { id, name: 'New board member', role: 'Director', initials: 'NM' }],
       acct: { id, email: '', username: '', pw: '', status: 'none', vote: true, sign: true, isNew: true },
     }))
-  }, [])
+  }, [mode, set])
 
   const genPw = useCallback(() => {
     const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789'
@@ -598,9 +789,47 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     setState((s) => (s.acct ? { ...s, acct: { ...s.acct, pw: p } } : s))
   }, [])
 
-  const saveAcct = useCallback(() => {
+  const refreshMembers = useCallback(async () => {
+    const { members } = await api.members()
+    setApiMembers(members)
+    setState((s) => ({ ...s, accounts: accountsFrom(members) }))
+  }, [])
+
+  const saveAcct = useCallback(async () => {
     const ac = state.acct
     if (!ac) return
+    if (mode === 'api') {
+      try {
+        if (ac.isNew) {
+          if (!(ac.name || '').trim()) {
+            flash('Enter the member’s name')
+            return
+          }
+          await api.createMember({
+            name: ac.name!.trim(),
+            username: ac.username,
+            email: ac.email,
+            password: ac.pw || undefined,
+            canVote: ac.vote,
+            canSign: ac.sign,
+          })
+        } else {
+          await api.updateMember(ac.id, {
+            username: ac.username,
+            email: ac.email,
+            canVote: ac.vote,
+            canSign: ac.sign,
+            ...(ac.pw ? { password: ac.pw } : {}),
+          })
+        }
+        await refreshMembers()
+        set({ acct: null })
+        flash(ac.isNew ? 'Invite sent — login details ready to share' : 'Access updated')
+      } catch (e) {
+        flash(e instanceof ApiError ? e.message : 'Could not save — try again')
+      }
+      return
+    }
     const wasNew = ac.status === 'none'
     const existing = state.accounts[ac.id]
     const entry: Account = {
@@ -613,18 +842,53 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     }
     setState((s) => ({ ...s, accounts: { ...s.accounts, [ac.id]: entry }, acct: null }))
     flash(wasNew ? 'Invite sent — login details ready to share' : 'Access updated')
-  }, [state.acct, state.accounts, flash])
+  }, [mode, state.acct, state.accounts, flash, set, refreshMembers])
 
-  const revokeAcct = useCallback(() => {
+  const revokeAcct = useCallback(async () => {
     const ac = state.acct
     if (!ac) return
+    if (mode === 'api') {
+      try {
+        await api.deleteMember(ac.id)
+        await refreshMembers()
+        set({ acct: null })
+        flash('Access revoked')
+      } catch (e) {
+        flash(e instanceof ApiError ? e.message : 'Could not revoke — try again')
+      }
+      return
+    }
     setState((s) => {
       const accounts = { ...s.accounts }
       delete accounts[ac.id]
       return { ...s, accounts, acct: null }
     })
     flash('Access revoked')
-  }, [state.acct, flash])
+  }, [mode, state.acct, flash, set, refreshMembers])
+
+  // -------------------------------------------------------------- billing
+  const checkout = useCallback(
+    async (tier: 'growth' | 'launch_partner') => {
+      try {
+        const { url } = await api.checkout(tier)
+        window.location.href = url
+      } catch (e) {
+        flash(e instanceof ApiError && e.status === 503
+          ? 'Billing isn’t configured yet — add the Stripe keys to enable subscriptions.'
+          : 'Could not start checkout — try again.')
+      }
+    },
+    [flash],
+  )
+
+  const openBillingPortal = useCallback(async () => {
+    try {
+      const { url } = await api.billingPortal()
+      window.location.href = url
+    } catch (e) {
+      flash(e instanceof ApiError ? e.message : 'Could not open the billing portal.')
+    }
+  }, [flash])
 
   // ------------------------------------------------------------ integrations
   const connectCal = useCallback(() => {
@@ -655,6 +919,13 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const store: Store = {
     state,
     currentUser,
+    mode,
+    apiOrg,
+    apiMe,
+    register,
+    changePassword,
+    checkout,
+    openBillingPortal,
     roster,
     allMeetings,
     meetingsView,

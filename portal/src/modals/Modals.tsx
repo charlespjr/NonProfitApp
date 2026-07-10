@@ -337,14 +337,26 @@ export function ManageAccessModal() {
   return (
     <ModalShell onClose={close} maxWidth={500}>
       <div style={sx('display:flex;align-items:center;gap:13px;padding:16px 20px;border-bottom:1px solid var(--line)')}>
-        <Avatar initials={member?.initials || '?'} bg="var(--accent)" size={40} fontSize={14} />
+        <Avatar initials={member?.initials || (ac.name || '?').trim().charAt(0).toUpperCase() || '?'} bg="var(--accent)" size={40} fontSize={14} />
         <div style={sx('flex:1;min-width:0')}>
-          <div style={sx('font-size:15px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis')}>{member?.name || ''}</div>
-          <div style={sx('font-size:12px;color:var(--muted)')}>{member?.role || ''}</div>
+          <div style={sx('font-size:15px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis')}>{member?.name || ac.name || 'New board member'}</div>
+          <div style={sx('font-size:12px;color:var(--muted)')}>{member?.role || (ac.isNew ? 'Director' : '')}</div>
         </div>
         <button className="hv-bg" onClick={close} style={closeBtnStyle}><IconClose /></button>
       </div>
       <div style={sx('padding:20px;display:flex;flex-direction:column;gap:16px;max-height:70vh;overflow:auto')}>
+        {ac.isNew && (
+          <div style={sx('display:flex;flex-direction:column;gap:7px')}>
+            <label style={fieldLabel}>Full name</label>
+            <input
+              className="inp"
+              value={ac.name || ''}
+              onChange={(e) => store.set({ acct: { ...ac, name: e.target.value } })}
+              placeholder="e.g. Judy Adams"
+              style={fieldInput}
+            />
+          </div>
+        )}
         <div style={sx('display:flex;flex-direction:column;gap:7px')}>
           <label style={fieldLabel}>Username <span style={sx('color:var(--muted);font-weight:400')}>(used to sign in)</span></label>
           <input
@@ -431,6 +443,48 @@ export function ManageAccessModal() {
           </button>
         </div>
       </div>
+    </ModalShell>
+  )
+}
+
+// ---------------------------------------------------- Change password
+/** Shown when an invited member logs in with the shared temp password. */
+export function ChangePasswordModal() {
+  const store = useStore()
+  if (store.mode !== 'api' || !store.apiMe?.mustChangePassword) return null
+  return (
+    <ModalShell onClose={() => {}} maxWidth={420}>
+      <form
+        onSubmit={(e) => {
+          e.preventDefault()
+          const input = (e.currentTarget.elements.namedItem('newpw') as HTMLInputElement)
+          if (input.value.length < 8) {
+            store.flash('Password must be 8+ characters')
+            return
+          }
+          void store.changePassword(input.value)
+        }}
+      >
+        <div style={sx('padding:18px 20px;border-bottom:1px solid var(--line)')}>
+          <div style={sx('font-family:Spectral,serif;font-size:17px;font-weight:600')}>Choose your own password</div>
+          <div style={sx('font-size:12.5px;color:var(--muted);margin-top:4px;line-height:1.5')}>
+            You signed in with a temporary password your admin shared. Set a private one to continue.
+          </div>
+        </div>
+        <div style={sx('padding:20px;display:flex;flex-direction:column;gap:7px')}>
+          <label style={fieldLabel}>New password <span style={sx('color:var(--muted);font-weight:400')}>(8+ characters)</span></label>
+          <input name="newpw" className="inp" type="password" placeholder="••••••••••" style={fieldInput} autoFocus />
+        </div>
+        <div style={sx('padding:15px 20px;border-top:1px solid var(--line);display:flex;justify-content:flex-end')}>
+          <button
+            type="submit"
+            className="hv-bright"
+            style={sx('border:none;background:var(--brand);color:#fff;font-size:13px;font-weight:600;padding:9px 18px;border-radius:9px;cursor:pointer')}
+          >
+            Save password
+          </button>
+        </div>
+      </form>
     </ModalShell>
   )
 }

@@ -1,18 +1,65 @@
-# Adams Infinite Legacy — Founder & Board Portal (production codebase)
+# Quorum Portal — multi-tenant SaaS (frontend + backend)
 
 Production recreation of the design handoff in [`../portal-handoff/`](../portal-handoff/) —
-see that folder's README for the full product spec. Built with **React 18 + TypeScript + Vite**.
+see that folder's README for the full product spec — extended into a **multi-tenant SaaS**:
+nonprofit organizations register, invite their board, and (once Stripe is configured)
+pay for a subscription. **React 18 + TypeScript + Vite** frontend, **Hono** API,
+**Postgres** via Drizzle.
 
 ```bash
 npm install
-npm run dev       # local dev server
-npm run build     # typecheck + production bundle in dist/
-npm run preview   # serve the production build
+npm run build       # typecheck (app + server) + production bundle in dist/
+npm run serve       # API + built SPA at http://localhost:3000 (embedded PGlite DB)
+npm run dev         # frontend-only dev server (demo mode)
+npm run test:server # 30 API tests on an embedded database — no setup needed
 ```
 
-**Demo login:** any board member's username (`alitalia`, `judy.adams`, `lee.taylor`, …) or
-personal email, with any password. Unknown identifiers are rejected. `alitalia` is the
-admin; everyone else is a vote-only board member.
+## Two modes, one build
+
+At boot the app probes `/api/health`:
+
+- **api mode** (backend present): real registration ("Create your foundation"),
+  real login, per-org server-persisted state, member invitations with temp
+  passwords (forced change on first login), Stripe billing.
+- **demo mode** (static hosting, e.g. the current quorum-board-os deploy): the
+  original single-org AIL demo with seeded accounts and localStorage.
+
+## Launch runbook (SaaS on Vercel)
+
+1. **Vercel Pro** — commercial use requires it ($20/mo).
+2. **Postgres** — create a database (Vercel Marketplace → Neon, or Supabase).
+   Copy the connection string.
+3. **New Vercel project** from this repo, Root Directory `portal` (vercel.json
+   supplies build command, output dir, and the /api rewrite).
+4. **Environment variables**:
+   - `DATABASE_URL` — the Postgres connection string
+   - `JWT_SECRET` — long random string (e.g. `openssl rand -hex 32`)
+   - `APP_URL` — e.g. `https://app.quorumboardos.com`
+   - Stripe (add later to enable billing): `STRIPE_SECRET_KEY`,
+     `STRIPE_WEBHOOK_SECRET`, `STRIPE_PRICE_GROWTH`, `STRIPE_PRICE_LAUNCH`
+5. **Stripe** — create products "Quorum Growth" (monthly) and "Quorum Launch
+   Partner" (one-time); add a webhook to `<APP_URL>/api/billing/webhook` for
+   `checkout.session.completed`, `customer.subscription.updated`,
+   `customer.subscription.deleted`. Until these vars exist, upgrade buttons
+   show a graceful "billing not configured" message — everything else works.
+6. **Domain** — point `app.<yourdomain>` at the project; keep the marketing
+   site at the apex.
+
+## Tenancy & security model
+
+- `orgs` / `users` / `org_state` tables; every request is scoped to the
+  session's org (JWT HttpOnly cookie, bcrypt passwords, 14-day sessions).
+- Usernames/emails are unique **per org**; the same username in two orgs is
+  disambiguated at login by password.
+- Admin-only: member management, motion create/delete, AI drafting, billing.
+  Members cast only their own vote — enforced server-side by role and
+  client-side in the store.
+- Board state syncs as a versioned JSONB document per org (optimistic
+  concurrency; on conflict the server copy wins). Normalize pieces out of it
+  when a feature needs cross-org queries.
+
+**Demo login (static hosting only):** any seeded username (`alitalia`,
+`judy.adams`, …) with any password; `alitalia` is the admin.
 
 ## What's implemented
 

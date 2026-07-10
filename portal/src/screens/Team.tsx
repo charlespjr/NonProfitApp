@@ -38,6 +38,53 @@ export function Team() {
         </button>
       </div>
 
+      {store.mode === 'api' && store.apiOrg && (
+        <div style={sx('display:flex;align-items:center;gap:14px;background:var(--panel);border:1px solid var(--line);border-radius:13px;padding:15px 18px;margin-bottom:14px;flex-wrap:wrap')}>
+          <div style={sx('flex:1;min-width:200px')}>
+            <div style={sx('font-size:14px;font-weight:600')}>
+              Subscription:{' '}
+              {store.apiOrg.plan === 'growth' ? 'Growth' : store.apiOrg.plan === 'launch_partner' ? 'Launch Partner' : 'Free preview'}
+              {store.apiOrg.plan !== 'none' && (
+                <span style={sx('margin-left:8px;font-size:11px;font-weight:600;color:var(--good);background:var(--good-soft);padding:2px 9px;border-radius:20px;vertical-align:middle')}>
+                  {store.apiOrg.planStatus}
+                </span>
+              )}
+            </div>
+            <div style={sx('font-size:12.5px;color:var(--muted);margin-top:2px')}>
+              {store.apiOrg.plan === 'none'
+                ? 'Upgrade to unlock the full portal for your board.'
+                : 'Manage your payment method, invoices, or cancellation any time.'}
+            </div>
+          </div>
+          {store.apiOrg.plan === 'none' ? (
+            <div style={sx('display:flex;gap:8px;flex-wrap:wrap')}>
+              <button
+                className="hv-bright"
+                onClick={() => void store.checkout('growth')}
+                style={sx('border:none;background:var(--brand);color:#fff;font-size:13px;font-weight:600;padding:10px 16px;border-radius:10px;cursor:pointer')}
+              >
+                Upgrade — Growth
+              </button>
+              <button
+                className="hv-border-accent"
+                onClick={() => void store.checkout('launch_partner')}
+                style={sx('border:1px solid var(--line);background:var(--panel);color:var(--brand);font-size:13px;font-weight:600;padding:10px 16px;border-radius:10px;cursor:pointer')}
+              >
+                Launch Partner
+              </button>
+            </div>
+          ) : (
+            <button
+              className="hv-border-accent"
+              onClick={() => void store.openBillingPortal()}
+              style={sx('border:1px solid var(--line);background:var(--panel);color:var(--brand);font-size:13px;font-weight:600;padding:10px 16px;border-radius:10px;cursor:pointer')}
+            >
+              Manage billing
+            </button>
+          )}
+        </div>
+      )}
+
       <div style={sx('display:flex;align-items:flex-start;gap:11px;background:var(--accent-soft);border-radius:12px;padding:13px 16px;margin-bottom:14px')}>
         <IconInfo style={{ flex: 'none', marginTop: 1 }} />
         <div style={sx('font-size:12.5px;color:var(--brand);line-height:1.55')}>
