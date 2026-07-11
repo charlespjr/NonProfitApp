@@ -238,6 +238,17 @@ async function main() {
   res = await app.request('/api/billing/plan', { headers: { cookie: admin } })
   const planAfter = (await j(res)) as { plan?: string; planStatus?: string }
   check('org plan active after payment (scale)', planAfter.plan === 'scale' && planAfter.planStatus === 'active', planAfter)
+  // Launch Partner is a buyable plan: paying its invoice unlocks the portal
+  res = await app.request('/api/billing/checkout', json({ tier: 'launch_partner' }, admin))
+  const coLp = await j(res)
+  check('launch partner checkout creates invoice', res.status === 200 && !!coLp.invoiceId, coLp)
+  invoices[coLp.invoiceId].Balance = 0
+  res = await app.request('/api/billing/sync', { headers: { 'x-admin-key': 'test-admin-key' } })
+  await j(res)
+  res = await app.request('/api/billing/plan', { headers: { cookie: admin } })
+  const planLp = (await j(res)) as { plan?: string; planStatus?: string }
+  check('paid launch partner activates the org', planLp.plan === 'launch_partner' && planLp.planStatus === 'active', planLp)
+
   res = await app.request('/api/billing/sync', {})
   check('sync without auth -> 403', res.status === 403)
   globalThis.fetch = realFetch

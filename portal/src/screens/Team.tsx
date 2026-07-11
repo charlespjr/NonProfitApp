@@ -292,6 +292,7 @@ export function Team() {
                     ['starter', 'Starter', '$49/mo', '$490/yr'],
                     ['growth', 'Growth', '$149/mo', '$1,490/yr'],
                     ['scale', 'Scale', '$299/mo', '$2,990/yr'],
+                    ['launch_partner', 'Launch Partner', '$599 once', '$599 once'],
                   ] as const
                 ).map(([tier, label, mPrice, yPrice]) => (
                   <button
@@ -308,12 +309,15 @@ export function Team() {
                   </button>
                 ))}
               </div>
-              <a
-                href="mailto:support@quorumsuite.com?subject=Quorum%20Launch%20Partner%20%E2%80%94%20request%20a%20quote"
-                style={sx('font-size:12px;color:var(--accent);font-weight:600;text-decoration:none')}
-              >
-                Want white-glove setup? Request a Launch Partner quote →
-              </a>
+              <div style={sx('font-size:12px;color:var(--muted)')}>
+                Launch Partner: white-glove setup + everything in Growth, one-time.{' '}
+                <a
+                  href="mailto:support@quorumsuite.com?subject=Quorum%20Launch%20Partner"
+                  style={sx('color:var(--accent);font-weight:600;text-decoration:none')}
+                >
+                  Questions? Talk to us →
+                </a>
+              </div>
             </div>
           ) : (
             <button

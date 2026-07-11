@@ -535,6 +535,7 @@ export function UpgradeModal() {
                   ['starter', 'Starter', '$49/mo', '$490/yr', 'Up to 7 board members'],
                   ['growth', 'Growth', '$149/mo', '$1,490/yr', 'Unlimited board · most popular'],
                   ['scale', 'Scale', '$299/mo', '$2,990/yr', 'Unlimited board · priority support'],
+                  ['launch_partner', 'Launch Partner', '$599 one-time', '$599 one-time', 'White-glove setup · everything in Growth'],
                 ] as const
               ).map(([tier, label, mPrice, yPrice, blurb]) => (
                 <button
@@ -557,13 +558,7 @@ export function UpgradeModal() {
               ))}
             </div>
             <div style={sx('font-size:11.5px;color:var(--muted);text-align:center;line-height:1.5')}>
-              Secure card / bank payment via QuickBooks. Your portal unlocks automatically once payment posts.{' '}
-              <a
-                href="mailto:support@quorumsuite.com?subject=Quorum%20Launch%20Partner%20%E2%80%94%20request%20a%20quote"
-                style={sx('color:var(--accent);font-weight:600;text-decoration:none')}
-              >
-                Want white-glove setup? Request a Launch Partner quote →
-              </a>
+              Secure card / bank payment via QuickBooks. Your portal unlocks automatically once payment posts.
             </div>
           </>
         ) : (
