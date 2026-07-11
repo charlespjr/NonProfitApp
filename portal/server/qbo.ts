@@ -197,9 +197,14 @@ export async function createCheckoutInvoice(input: {
   tier: string
   period: string
 }): Promise<CheckoutInvoice> {
-  const planKey = input.tier === 'launch_partner' ? 'launch_partner:once' : `${input.tier}:${input.period}`
-  const plan = QBO_PLANS[planKey]
-  if (!plan) throw new Error(`unknown plan ${planKey}`)
+  // Launch Partner = one-time setup fee + the Growth subscription on one
+  // invoice, so white-glove customers still create recurring revenue.
+  const lineItems: QboPlan[] =
+    input.tier === 'launch_partner'
+      ? [QBO_PLANS['launch_partner:once'], QBO_PLANS[`growth:${input.period}`]]
+      : [QBO_PLANS[`${input.tier}:${input.period}`]]
+  if (lineItems.some((p) => !p)) throw new Error(`unknown plan ${input.tier}:${input.period}`)
+  const totalAmount = lineItems.reduce((sum, p) => sum + Number(p.amount), 0).toFixed(2)
   const db0 = await getDb()
   // One open invoice per org: reuse an identical open invoice (double-click,
   // back-button, changed their mind and came back), void any other open
@@ -215,7 +220,7 @@ export async function createCheckoutInvoice(input: {
       continue
     }
     if (Number(existing.Balance) === 0) continue // paid — the sync will activate it
-    const samePlan = row.tier === input.tier && row.period === input.period
+    const samePlan = row.tier === input.tier && row.period === input.period && row.amount === totalAmount
     if (samePlan && existing.InvoiceLink) {
       return { invoiceId: row.invoiceId, payUrl: existing.InvoiceLink, amount: row.amount }
     }
@@ -230,8 +235,16 @@ export async function createCheckoutInvoice(input: {
     await db0.update(qboInvoices).set({ status: 'void' }).where(eq(qboInvoices.invoiceId, row.invoiceId))
   }
   const customerId = await ensureCustomer(input.orgId, input.orgName, input.adminEmail)
-  const itemId = await itemIdByName(plan.itemName)
   const deptId = await departmentId()
+  const lines = []
+  for (const p of lineItems) {
+    lines.push({
+      DetailType: 'SalesItemLineDetail',
+      Amount: Number(p.amount),
+      Description: `${p.itemName} — ${input.orgName}`,
+      SalesItemLineDetail: { ItemRef: { value: await itemIdByName(p.itemName) }, Qty: 1 },
+    })
+  }
   const created = await qboFetch('/invoice?minorversion=75&include=invoiceLink', {
     method: 'POST',
     body: JSON.stringify({
@@ -240,14 +253,7 @@ export async function createCheckoutInvoice(input: {
       BillEmail: { Address: input.adminEmail },
       AllowOnlineCreditCardPayment: true,
       AllowOnlineACHPayment: true,
-      Line: [
-        {
-          DetailType: 'SalesItemLineDetail',
-          Amount: Number(plan.amount),
-          Description: `${plan.itemName} — ${input.orgName}`,
-          SalesItemLineDetail: { ItemRef: { value: itemId }, Qty: 1 },
-        },
-      ],
+      Line: lines,
       CustomerMemo: { value: `Quorum subscription for ${input.orgName}. Plan activates automatically once payment posts.` },
     }),
   })
@@ -260,9 +266,9 @@ export async function createCheckoutInvoice(input: {
     orgId: input.orgId,
     tier: input.tier,
     period: input.period,
-    amount: plan.amount,
+    amount: totalAmount,
   })
-  return { invoiceId: String(inv.Id), payUrl, amount: plan.amount }
+  return { invoiceId: String(inv.Id), payUrl, amount: totalAmount }
 }
 
 /** Check our open invoices against QuickBooks; activate paid orgs.
@@ -280,11 +286,12 @@ export async function syncPaidInvoices(): Promise<{ checked: number; activated: 
         .update(qboInvoices)
         .set({ status: 'paid', paidAt: new Date() })
         .where(eq(qboInvoices.invoiceId, row.invoiceId))
-      // Launch Partner includes the product (unlimited board) — paying its
-      // invoice unlocks the portal just like a subscription plan.
+      // Launch Partner's invoice bundles the Growth subscription — the org
+      // lands on Growth so the recurring plan (and its limits) apply.
+      const newPlan = row.tier === 'launch_partner' ? 'growth' : row.tier
       await db
         .update(orgs)
-        .set({ plan: row.tier, planStatus: 'active' })
+        .set({ plan: newPlan, planStatus: 'active' })
         .where(eq(orgs.id, row.orgId))
       activated.push(row.orgId)
     }
