@@ -4,7 +4,8 @@
 # buildCommand ("bash build.sh") and outputDirectory ("dist") settings.
 set -euo pipefail
 mkdir -p dist/shots
-cp index.html dist/
+cp *.html dist/
+rm -f dist/preview.html
 cp shots/*.png dist/shots/ 2>/dev/null || true
 cp shots/*.jpg dist/shots/ 2>/dev/null || true
 echo "Site staged:" && ls -laR dist

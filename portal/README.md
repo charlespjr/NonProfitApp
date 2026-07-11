@@ -35,7 +35,15 @@ At boot the app probes `/api/health`:
    - `DATABASE_URL` — the Postgres connection string
    - `JWT_SECRET` — long random string (e.g. `openssl rand -hex 32`)
    - `APP_URL` — e.g. `https://app.quorumboardos.com`
-   - Stripe (add later to enable billing): `STRIPE_SECRET_KEY`,
+   - Payments via QuickBooks payment links (current mode): `PAYLINK_STARTER_M`,
+     `PAYLINK_STARTER_Y`, `PAYLINK_GROWTH_M`, `PAYLINK_GROWTH_Y`,
+     `PAYLINK_SCALE_M`, `PAYLINK_SCALE_Y` — each a QuickBooks Payments
+     multi-use share link — plus `ADMIN_KEY` (long random string) for the
+     manual plan-activation endpoint. Payment links have no webhook, so after
+     a payment lands in QuickBooks, activate the org's plan with:
+     `curl -X POST <APP_URL>/api/billing/activate -H "x-admin-key: $ADMIN_KEY" \
+        -H "content-type: application/json" -d '{"orgId":"org_…","plan":"growth"}'`
+   - Stripe (optional, takes precedence when set): `STRIPE_SECRET_KEY`,
      `STRIPE_WEBHOOK_SECRET`, `STRIPE_PRICE_GROWTH`, `STRIPE_PRICE_LAUNCH`
 5. **Stripe** — create products "Quorum Growth" (monthly) and "Quorum Launch
    Partner" (one-time); add a webhook to `<APP_URL>/api/billing/webhook` for
