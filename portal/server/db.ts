@@ -15,8 +15,21 @@ export type Db = NodePgDatabase | PgliteDatabase
 
 let dbPromise: Promise<Db> | null = null
 
+/** Marketplace integrations name the connection string differently
+ *  (Neon: DATABASE_URL; Vercel Postgres: POSTGRES_URL; …) — accept them all. */
+export function databaseUrl(): string | undefined {
+  return (
+    process.env.DATABASE_URL ||
+    process.env.POSTGRES_URL ||
+    process.env.POSTGRES_PRISMA_URL ||
+    process.env.DATABASE_URL_UNPOOLED ||
+    process.env.POSTGRES_URL_NON_POOLING ||
+    process.env.NEON_DATABASE_URL
+  )
+}
+
 async function create(): Promise<Db> {
-  const url = process.env.DATABASE_URL
+  const url = databaseUrl()
   if (url) {
     const [{ drizzle }, pg] = await Promise.all([
       import('drizzle-orm/node-postgres'),
