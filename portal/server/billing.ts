@@ -42,11 +42,10 @@ async function requireAdminLite(c: Context<Env>, next: Next) {
   await next()
 }
 
-function stripeClient() {
+async function stripeClient() {
   const key = process.env.STRIPE_SECRET_KEY
   if (!key) return null
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const Stripe = require('stripe') as typeof import('stripe').default
+  const { default: Stripe } = await import('stripe')
   return new Stripe(key)
 }
 
@@ -67,7 +66,7 @@ billing.get('/plan', requireAdminLite, async (c) => {
 })
 
 billing.post('/checkout', requireAdminLite, async (c) => {
-  const stripe = stripeClient()
+  const stripe = await stripeClient()
   if (!stripe) return c.json(NOT_CONFIGURED, 503)
   const body = await c.req.json().catch(() => ({}))
   const tier: string = body?.tier === 'launch_partner' ? 'launch_partner' : 'growth'
@@ -110,7 +109,7 @@ billing.post('/checkout', requireAdminLite, async (c) => {
 })
 
 billing.post('/portal', requireAdminLite, async (c) => {
-  const stripe = stripeClient()
+  const stripe = await stripeClient()
   if (!stripe) return c.json(NOT_CONFIGURED, 503)
   const db = await getDb()
   const [org] = await db.select().from(orgs).where(eq(orgs.id, c.get('orgId')))
@@ -124,7 +123,7 @@ billing.post('/portal', requireAdminLite, async (c) => {
 })
 
 billing.post('/webhook', async (c) => {
-  const stripe = stripeClient()
+  const stripe = await stripeClient()
   const whSecret = process.env.STRIPE_WEBHOOK_SECRET
   if (!stripe || !whSecret) return c.json(NOT_CONFIGURED, 503)
   const sig = c.req.header('stripe-signature')
