@@ -11,11 +11,9 @@ screenshots (warm-theme, captured at 1920px from the portal prototype in
 `preview.html` is kept byte-identical to `index.html`.
 
 **Live:** https://quorum-board-os.vercel.app (Vercel project `quorum-board-os`,
-team *pleasantc-gmailcom's projects*). The deployment's build step pulls
-`index.html` + `shots/` from this repo's `main` branch, so redeploying the
-project from the Vercel dashboard picks up whatever is on `main`. An older
-deploy with pre-refresh content is also public at quorum-site.vercel.app — the
-`quorum-site` and `quorum` Vercel projects are superseded and safe to delete.
+Git-connected to this repo with Root Directory `quorum`; `build.sh` stages the
+site into `dist/`). Every merge to `main` deploys both this site and the app
+(project `non-profit-app`, Root Directory `portal`) automatically.
 
 ## Editing
 
