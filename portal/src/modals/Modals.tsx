@@ -28,7 +28,8 @@ export function DocuSealModal() {
   const doc = store.allDocs().find((d) => d.id === docId)
   if (!doc) return null
 
-  const info = DOC_INFO[doc.id] || { desc: doc.desc || '', todo: doc.todo || '' }
+  const rawInfo = DOC_INFO[doc.id] || { desc: doc.desc || '', todo: doc.todo || '' }
+  const info = { desc: store.brand(rawInfo.desc), todo: store.brand(rawInfo.todo) }
   const roster = store.roster()
   const sig = store.sigFor(doc.id)
   const signedCount = roster.filter((m) => sig[m.id]).length
@@ -49,7 +50,7 @@ export function DocuSealModal() {
 
       <div style={sx('padding:20px 22px;overflow:auto;background:var(--bg)')}>
         <div style={sx('background:#fff;border:1px solid var(--line);border-radius:8px;padding:22px 26px;box-shadow:0 2px 14px rgba(0,0,0,.06);color:#222;margin-bottom:16px')}>
-          <div style={sx('text-align:center;font-family:Spectral,serif;font-size:12px;letter-spacing:.06em;color:#666;text-transform:uppercase')}>Adams Infinite Legacy</div>
+          <div style={sx('text-align:center;font-family:Spectral,serif;font-size:12px;letter-spacing:.06em;color:#666;text-transform:uppercase')}>{store.orgName}</div>
           <div style={sx('text-align:center;font-family:Spectral,serif;font-size:18px;font-weight:600;margin-top:5px')}>{doc.name}</div>
           <div style={sx('height:1px;background:#eee;margin:14px 0')} />
           <div style={sx('font-size:12.5px;line-height:1.7;color:#444')}>
@@ -267,7 +268,7 @@ export function NewMotionModal() {
             className="inp"
             value={d.title}
             onChange={(e) => store.set({ draft: { ...d, title: e.target.value } })}
-            placeholder="e.g. Adopt the Bylaws of Adams Infinite Legacy"
+            placeholder={'e.g. Adopt the Bylaws of ' + store.orgName}
             style={fieldInput}
           />
         </div>
@@ -587,6 +588,9 @@ export function EmailPreviewModal() {
   if (!motion) return null
   const close = () => store.set({ emailPreview: null })
   const recips = store.notifiableVoters()
+  const fromName = store.currentUser?.member.name || 'Your administrator'
+  const fromEmail =
+    state.emailAddress || 'board@' + store.orgName.toLowerCase().replace(/[^a-z0-9]/g, '') + '.org'
 
   return (
     <ModalShell onClose={close} maxWidth={560} scrollBody>
@@ -607,7 +611,7 @@ export function EmailPreviewModal() {
           <div style={sx('padding:13px 16px;border-bottom:1px solid var(--line);background:var(--bg)')}>
             <div style={sx('display:flex;gap:8px;font-size:12px;margin-bottom:4px')}>
               <span style={sx('color:var(--muted);width:52px;flex:none')}>From</span>
-              <span style={sx('color:var(--ink)')}>Alitalia Adams · Adams Infinite Legacy &lt;board@adamsinfinitelegacy.org&gt;</span>
+              <span style={sx('color:var(--ink)')}>{fromName} · {store.orgName} &lt;{fromEmail}&gt;</span>
             </div>
             <div style={sx('display:flex;gap:8px;font-size:12px;margin-bottom:4px')}>
               <span style={sx('color:var(--muted);width:52px;flex:none')}>To</span>
@@ -621,7 +625,7 @@ export function EmailPreviewModal() {
             </div>
           </div>
           <div style={sx('padding:20px 18px')}>
-            <div style={sx('font-family:Spectral,serif;font-size:18px;font-weight:600;color:var(--ink);margin-bottom:4px')}>Adams Infinite Legacy</div>
+            <div style={sx('font-family:Spectral,serif;font-size:18px;font-weight:600;color:var(--ink);margin-bottom:4px')}>{store.orgName}</div>
             <div style={sx('font-size:13.5px;color:var(--ink);line-height:1.6;margin-bottom:16px')}>
               Hello, the board is asked to vote on the motion below. Please review the details and cast your vote in the portal.
             </div>

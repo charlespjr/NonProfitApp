@@ -51,6 +51,10 @@ export interface DraftService {
     motionTitle: string
     motionDesc: string
     meetingTitle?: string
+    /** The signed-in organization — drafted documents carry its name. */
+    orgName?: string
+    /** Current board roster; the signature block is generated from it. */
+    signers?: Array<{ name: string; role: string }>
   }): Promise<string>
 }
 
@@ -109,17 +113,31 @@ export const mockMail: MailService = {
   },
 }
 
+const DEMO_SIGNERS = [
+  { name: 'Alitalia Adams', role: 'President & Founder' },
+  { name: 'Judy Adams', role: 'Vice Chair' },
+  { name: 'Lee Taylor II', role: 'Treasurer' },
+  { name: 'Courtney Woo', role: 'Secretary' },
+  { name: 'Charles Pleasant', role: 'Chief Information Officer' },
+  { name: 'Joe Grumbine', role: 'Community Health Education Chair' },
+  { name: 'Nancy Hughes', role: 'Philanthropy Chair' },
+]
+
 export const mockDraft: DraftService = {
-  async draftMotionDocument({ motionTitle, motionDesc, meetingTitle }) {
+  async draftMotionDocument({ motionTitle, motionDesc, meetingTitle, orgName, signers }) {
     await delay(1400)
+    const org = orgName || 'Adams Infinite Legacy'
+    const board = signers?.length ? signers : DEMO_SIGNERS
     const effective = 'July 1, 2026'
+    const width = Math.max(...board.map((s) => (s.name + ', ' + s.role).length)) + 4
+    const sigLines = board.map((s) => (s.name + ', ' + s.role).padEnd(width) + 'Date: [____]')
     return [
-      'BOARD RESOLUTION OF ADAMS INFINITE LEGACY',
-      'A California Nonprofit Public Benefit Corporation',
+      `BOARD RESOLUTION OF ${org.toUpperCase()}`,
+      'A Nonprofit Public Benefit Corporation',
       '',
       'RECITALS',
       '',
-      `WHEREAS, the Board of Directors of Adams Infinite Legacy (the "Corporation") has considered the following motion: ${motionTitle};`,
+      `WHEREAS, the Board of Directors of ${org} (the "Corporation") has considered the following motion: ${motionTitle};`,
       motionDesc ? `WHEREAS, the Board received the following details in support of the motion: ${motionDesc};` : 'WHEREAS, the Board discussed the motion and its effect on the Corporation;',
       meetingTitle ? `WHEREAS, the motion was discussed at the meeting titled "${meetingTitle}";` : 'WHEREAS, the motion was posted to the Board for a vote through the Corporation’s board portal;',
       '',
@@ -132,13 +150,7 @@ export const mockDraft: DraftService = {
       '',
       'SIGNATURES OF THE DIRECTORS',
       '',
-      'Alitalia Adams, President & Founder            Date: [____]',
-      'Judy Adams, Vice Chair                         Date: [____]',
-      'Lee Taylor II, Treasurer                       Date: [____]',
-      'Courtney Woo, Secretary                        Date: [____]',
-      'Charles Pleasant, Chief Information Officer    Date: [____]',
-      'Joe Grumbine, Community Health Education Chair Date: [____]',
-      'Nancy Hughes, Philanthropy Chair               Date: [____]',
+      ...sigLines,
     ].join('\n')
   },
 }

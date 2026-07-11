@@ -21,7 +21,7 @@ export function CalendarScreen() {
           </div>
           <div style={sx('font-family:Spectral,serif;font-size:20px;font-weight:600')}>Connect your calendar</div>
           <div style={sx('font-size:13.5px;color:var(--muted);margin-top:8px;line-height:1.55')}>
-            Sync board meetings, committee sessions, and festival planning with Google Calendar to see everything in one place.
+            Sync board meetings, committee sessions, and event planning with Google Calendar to see everything in one place.
           </div>
           <button
             className="hv-border-accent-shadow"
@@ -68,7 +68,9 @@ export function CalendarScreen() {
               Disconnect Zoom
             </button>
           )}
-          <div style={sx('font-size:12.5px;color:var(--muted)')}>alitalia@adamsinfinitelegacy.org</div>
+          <div style={sx('font-size:12.5px;color:var(--muted)')}>
+            {store.mode === 'api' ? store.apiMe?.email || '' : 'alitalia@adamsinfinitelegacy.org'}
+          </div>
         </div>
       </div>
 
