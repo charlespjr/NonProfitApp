@@ -4,7 +4,7 @@ import { deleteCookie, getCookie, setCookie } from 'hono/cookie'
 import { sign, verify } from 'hono/jwt'
 import { and, eq } from 'drizzle-orm'
 import bcrypt from 'bcryptjs'
-import { getDb } from './db.js'
+import { databaseUrl, getDb } from './db.js'
 import { orgs, orgState, users } from './schema.js'
 import { billing } from './billing.js'
 
@@ -82,7 +82,19 @@ function publicUser(u: typeof users.$inferSelect) {
 
 export const app = new Hono<Env>().basePath('/api')
 
-app.get('/health', (c) => c.json({ ok: true, build: 3 }))
+app.get('/health', (c) =>
+  c.json({
+    ok: true,
+    build: 4,
+    // Diagnostics: is a real database wired in, and which db-ish env var
+    // NAMES exist (never values). Safe to expose; invaluable when a
+    // marketplace integration injects credentials under a surprise name.
+    dbConfigured: !!databaseUrl(),
+    dbEnvKeys: Object.keys(process.env)
+      .filter((k) => /DATABASE|POSTGRES|PGHOST|PGUSER|NEON|STORAGE/i.test(k))
+      .sort(),
+  }),
+)
 
 // ----------------------------------------------------------------- auth
 app.post('/auth/register', async (c) => {
