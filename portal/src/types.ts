@@ -147,6 +147,8 @@ export interface PersistedState {
   customDocs: PortalDoc[]
   theme: ThemeName
   dashboardLayout: DashboardLayout
+  /** Admin hid the "Get set up" guide on the dashboard. */
+  setupDismissed: boolean
 }
 
 export interface UiState {

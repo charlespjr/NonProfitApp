@@ -69,6 +69,7 @@ const defaultPersisted: PersistedState = {
   customDocs: [],
   theme: 'warm',
   dashboardLayout: 'Overview grid',
+  setupDismissed: false,
 }
 
 const defaultUi = {
@@ -112,6 +113,11 @@ export interface Store {
   mode: 'checking' | 'api' | 'demo'
   apiOrg: ApiOrg | null
   apiMe: ApiMember | null
+  /** The signed-in organization's name (demo org in demo mode). */
+  orgName: string
+  /** Re-brands demo-org text (org name, sample program, sample roster
+   *  references) for the registered organization. Identity in demo mode. */
+  brand(s: string): string
   /** True in api mode while the org has no active plan: read-only preview. */
   locked: boolean
   /** Re-reads the org's plan (admins only) so paying in another tab unlocks. */
@@ -208,6 +214,7 @@ const BOARD_KEYS = [
   'customDocs',
   'theme',
   'dashboardLayout',
+  'setupDismissed',
 ] as const
 
 type BoardSlice = Pick<AppState, (typeof BOARD_KEYS)[number]>
@@ -230,6 +237,41 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const versionRef = useRef(0)
   const hydratingRef = useRef(false)
   const planCheckRef = useRef(0)
+
+  // ---- branding: the seed content was written for the demo org (Adams
+  // Infinite Legacy and its sample festival). Registered organizations see
+  // their own name and generic program wording everywhere instead.
+  const apiOrgName = mode === 'api' && apiOrg ? apiOrg.name : null
+  const orgName = apiOrgName || 'Adams Infinite Legacy'
+  const brand = useCallback(
+    (s: string): string => {
+      if (!apiOrgName) return s
+      return s
+        .split('Adams Infinite Legacy').join(apiOrgName)
+        .split('the “Get Well Soon” Wellness Festival').join('your first fundraising event')
+        .split('“Get Well Soon” Wellness Festival').join('your first fundraising event')
+        .split('the Get Well Soon Wellness Festival').join('your fundraising event')
+        .split('Get Well Soon Wellness Festival').join('fundraising event')
+        .split('Get Well Soon Festival').join('Fundraising Event')
+        .split('Festival & Sponsorship').join('Fundraising Event & Sponsorship')
+        .split('Festival Planning Kickoff').join('Fundraising event planning kickoff')
+        .split('Gather all seven directors').join('Gather all of your directors')
+    },
+    [apiOrgName],
+  )
+
+  /** Seed meetings name the demo board; real orgs see roles instead. */
+  const API_MEETING_WHO: Record<string, string> = {
+    m1: 'Founder & nonprofit counsel',
+    m2: 'Founder & Treasurer',
+    m5: 'Secretary & policy drafting',
+    m6: 'Founder, Secretary & counsel',
+    m7: 'Treasurer & Founder',
+    m8: 'Treasurer & Founder',
+    m9: 'Program chair & Founder',
+    m10: 'Fundraising chair',
+    m11: 'Fundraising & program chairs',
+  }
 
   // Free preview = read-only. Signing in and looking around is always fine;
   // every change goes through guard() below until the org has an active plan.
@@ -277,6 +319,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       zoomConnected: false,
       motions: [],
       customDocs: [],
+      setupDismissed: false,
       ...(data as Partial<BoardSlice>),
       accounts: accountsFrom(members),
       extraMembers: [],
@@ -334,6 +377,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         customDocs: state.customDocs,
         theme: state.theme,
         dashboardLayout: state.dashboardLayout,
+        setupDismissed: state.setupDismissed,
       }
       try {
         localStorage.setItem(STORAGE_KEY, JSON.stringify(p))
@@ -442,8 +486,12 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         zoomUrl: mo.zoomUrl,
         isVote: true,
       }))
-    return MEETINGS.concat(motionMeetings).sort((a, b) => a.day - b.day)
-  }, [state.motions])
+    const seeded = apiOrgName
+      ? MEETINGS.map((m) => ({ ...m, title: brand(m.title), who: API_MEETING_WHO[m.id] || m.who }))
+      : MEETINGS
+    return seeded.concat(motionMeetings).sort((a, b) => a.day - b.day)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state.motions, apiOrgName, brand])
 
   const meetingsView = useCallback(
     (): Meeting[] =>
@@ -455,8 +503,11 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   )
 
   const allDocs = useCallback(
-    (): PortalDoc[] => BASE_DOCS.concat(state.customDocs),
-    [state.customDocs],
+    (): PortalDoc[] => {
+      const base = apiOrgName ? BASE_DOCS.map((d) => ({ ...d, name: brand(d.name) })) : BASE_DOCS
+      return base.concat(state.customDocs)
+    },
+    [state.customDocs, apiOrgName, brand],
   )
 
   const sigFor = useCallback(
@@ -766,6 +817,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
           motionTitle: mo.title,
           motionDesc: mo.desc,
           meetingTitle: meeting?.title,
+          orgName,
+          signers: roster().map((m) => ({ name: m.name, role: m.role })),
         })
         const title = mo.title.replace(/^Adopt (the )?/i, '').replace(/^Approve (the )?/i, '')
         setState((s) =>
@@ -795,7 +848,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         }))
       }
     },
-    [state.motions, set, guard],
+    [state.motions, set, guard, orgName, roster],
   )
 
   const sendDraftToDocuSeal = useCallback(() => {
@@ -1006,6 +1059,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     mode,
     apiOrg,
     apiMe,
+    orgName,
+    brand,
     locked,
     refreshPlan,
     register,

@@ -43,7 +43,7 @@ export function Checklist() {
                   <div key={t.id} className="hv-row" style={sx('display:flex;align-items:flex-start;gap:13px;padding:14px 18px;border-bottom:1px solid var(--line)')}>
                     <button
                       className={on ? undefined : 'hv-border-accent'}
-                      aria-label={(on ? 'Mark incomplete: ' : 'Mark complete: ') + t.label}
+                      aria-label={(on ? 'Mark incomplete: ' : 'Mark complete: ') + store.brand(t.label)}
                       onClick={() => store.toggleTask(t.id)}
                       style={sx(
                         on
@@ -54,10 +54,10 @@ export function Checklist() {
                       {on && <IconCheck />}
                     </button>
                     <div style={sx('flex:1;min-width:0')}>
-                      <div style={{ ...sx('font-size:14px;font-weight:600;color:var(--ink)'), ...(on ? sx('text-decoration:line-through;opacity:.5') : {}) }}>{t.label}</div>
-                      <div style={{ ...sx('font-size:12.5px;line-height:1.5;color:var(--muted);margin-top:3px'), ...(on ? { opacity: 0.5 } : {}) }}>{TASK_HELP[t.id] || ''}</div>
+                      <div style={{ ...sx('font-size:14px;font-weight:600;color:var(--ink)'), ...(on ? sx('text-decoration:line-through;opacity:.5') : {}) }}>{store.brand(t.label)}</div>
+                      <div style={{ ...sx('font-size:12.5px;line-height:1.5;color:var(--muted);margin-top:3px'), ...(on ? { opacity: 0.5 } : {}) }}>{store.brand(TASK_HELP[t.id] || '')}</div>
                       {doc && (
-                        <div style={sx('font-size:11.5px;color:var(--accent);font-weight:600;margin-top:4px')}>Linked document · {doc.name}</div>
+                        <div style={sx('font-size:11.5px;color:var(--accent);font-weight:600;margin-top:4px')}>Linked document · {store.brand(doc.name)}</div>
                       )}
                     </div>
                     {doc && (

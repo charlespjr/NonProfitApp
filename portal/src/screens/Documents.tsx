@@ -51,7 +51,8 @@ export function Documents() {
           const st = store.docStatusOf(d)
           const isSigned = st === 'signed'
           const nSig = store.signedCountFor(d.id)
-          const info = DOC_INFO[d.id] || { desc: d.desc || '', todo: d.todo || '' }
+          const rawInfo = DOC_INFO[d.id] || { desc: d.desc || '', todo: d.todo || '' }
+          const info = { desc: store.brand(rawInfo.desc), todo: store.brand(rawInfo.todo) }
           const signText = isSigned
             ? `Signed by all ${rosterN} board members`
             : st === 'draft'

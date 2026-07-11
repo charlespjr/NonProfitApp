@@ -3,6 +3,7 @@ import { useStore } from '../state/store'
 import { PHASES } from '../data/seed'
 import { IconDocuments, IconZoom } from '../components/icons'
 import { ProgressRing, STATUS_META } from '../components/shared'
+import { SetupGuide } from '../components/SetupGuide'
 
 const kpiCard = sx('background:var(--panel);border:1px solid var(--line);border-radius:13px;padding:16px 17px')
 const card = sx('background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:20px')
@@ -41,6 +42,7 @@ export function Dashboard() {
 
   return (
     <div style={sx('max-width:1180px;margin:0 auto')}>
+      <SetupGuide />
       <div style={sx('display:flex;align-items:flex-end;justify-content:space-between;gap:20px;flex-wrap:wrap;margin-bottom:22px')}>
         <div>
           <div style={sx('font-family:Spectral,serif;font-size:28px;font-weight:500;letter-spacing:-.01em')}>
@@ -104,12 +106,12 @@ export function Dashboard() {
                 <button
                   key={t.id}
                   className="hv-bg"
-                  aria-label={'Mark complete: ' + t.label}
+                  aria-label={'Mark complete: ' + store.brand(t.label)}
                   onClick={() => store.toggleTask(t.id)}
                   style={sx('display:flex;align-items:center;gap:12px;text-align:left;border:none;background:transparent;cursor:pointer;padding:9px 8px;border-radius:9px;width:100%')}
                 >
                   <span style={sx('width:22px;height:22px;border-radius:7px;border:1.8px solid var(--line);background:var(--panel);cursor:pointer;flex:none')} />
-                  <span style={sx('flex:1;font-size:13.5px;color:var(--ink)')}>{t.label}</span>
+                  <span style={sx('flex:1;font-size:13.5px;color:var(--ink)')}>{store.brand(t.label)}</span>
                   <span style={sx('font-size:11px;color:var(--muted)')}>{t.phase}</span>
                 </button>
               ))}
