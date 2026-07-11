@@ -43,6 +43,14 @@ export function SetupGuide() {
       go: () => store.go('team'),
     },
     {
+      key: 'ai',
+      title: 'Add your AI key',
+      desc: 'A free Anthropic account key lets passed motions draft their own formal resolutions. Optional — the built-in template works without it.',
+      done: !!store.apiOrg?.aiConfigured,
+      cta: 'Set up AI',
+      go: () => store.go('team'),
+    },
+    {
       key: 'board',
       title: 'Invite your board',
       desc: 'Give each director a login with Vote and Sign permissions — they only need a personal email.',
@@ -100,7 +108,7 @@ export function SetupGuide() {
           <div style={sx('font-size:12.5px;color:var(--muted);margin-top:2px')}>
             {allDone
               ? 'Every connection is live — your board portal is ready to run.'
-              : 'A few connections make the portal whole. Do them in any order.'}
+              : 'A few connections make the portal whole — do them in any order. Every outside service here has a free tier that’s more than enough to get started.'}
           </div>
         </div>
         <div style={sx('display:flex;align-items:center;gap:12px')}>

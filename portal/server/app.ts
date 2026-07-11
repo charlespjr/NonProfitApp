@@ -107,6 +107,12 @@ function publicUser(u: typeof users.$inferSelect) {
   return rest
 }
 
+/** Orgs go to the client without the Anthropic key — only a boolean. */
+function publicOrg(o: typeof orgs.$inferSelect) {
+  const { anthropicKey: _drop, ...rest } = o
+  return { ...rest, aiConfigured: !!o.anthropicKey }
+}
+
 export const app = new Hono<Env>().basePath('/api')
 
 app.get('/health', (c) =>
@@ -156,7 +162,7 @@ app.post('/auth/register', async (c) => {
   await createSession(c, { userId, orgId })
   const [org] = await db.select().from(orgs).where(eq(orgs.id, orgId))
   const [me] = await db.select().from(users).where(eq(users.id, userId))
-  return c.json({ org, me: publicUser(me) }, 201)
+  return c.json({ org: publicOrg(org), me: publicUser(me) }, 201)
 })
 
 app.post('/auth/login', async (c) => {
@@ -179,7 +185,7 @@ app.post('/auth/login', async (c) => {
       }
       await createSession(c, { userId: u.id, orgId: u.orgId })
       const [org] = await db.select().from(orgs).where(eq(orgs.id, u.orgId))
-      return c.json({ org, me: publicUser({ ...u, status: 'active' }) })
+      return c.json({ org: publicOrg(org), me: publicUser({ ...u, status: 'active' }) })
     }
   }
   return c.json({ error: 'No account matches those credentials.' }, 401)
@@ -193,7 +199,7 @@ app.post('/auth/logout', (c) => {
 app.get('/auth/me', requireAuth, async (c) => {
   const db = await getDb()
   const [org] = await db.select().from(orgs).where(eq(orgs.id, c.get('session').orgId))
-  return c.json({ org, me: publicUser(c.get('me')) })
+  return c.json({ org: publicOrg(org), me: publicUser(c.get('me')) })
 })
 
 app.post('/auth/change-password', requireAuth, async (c) => {
@@ -328,6 +334,92 @@ app.delete('/members/:id', requireAuth, requireAdmin, requireActivePlan, async (
   if (!target) return c.json({ error: 'not found' }, 404)
   await db.delete(users).where(eq(users.id, targetId))
   return c.json({ ok: true })
+})
+
+// ------------------------------------------------------------ AI drafting
+/** Save (or clear, with an empty key) the org's Anthropic API key. */
+app.post('/org/ai-key', requireAuth, requireAdmin, async (c) => {
+  const body = await c.req.json().catch(() => ({}))
+  const key = typeof body?.key === 'string' ? body.key.trim() : ''
+  if (key && !key.startsWith('sk-ant-')) {
+    return c.json({ error: 'That doesn’t look like an Anthropic API key — they start with sk-ant-.' }, 400)
+  }
+  const db = await getDb()
+  await db.update(orgs).set({ anthropicKey: key || null }).where(eq(orgs.id, c.get('session').orgId))
+  return c.json({ ok: true, aiConfigured: !!key })
+})
+
+/** Draft a formal board document with the org's own Anthropic key.
+ *  The key never leaves the server; the client falls back to the built-in
+ *  template when no key is configured. */
+app.post('/ai/draft', requireAuth, requireActivePlan, async (c) => {
+  const org = c.get('org')
+  if (!org.anthropicKey) {
+    return c.json(
+      { error: 'Add your organization’s Anthropic API key in Team & Access to enable AI drafting.', code: 'no_ai_key' },
+      400,
+    )
+  }
+  const body = await c.req.json().catch(() => ({}))
+  const motionTitle = String(body?.motionTitle || '').slice(0, 300)
+  if (!motionTitle) return c.json({ error: 'motionTitle required' }, 400)
+  const motionDesc = String(body?.motionDesc || '').slice(0, 2000)
+  const meetingTitle = String(body?.meetingTitle || '').slice(0, 200)
+  const db = await getDb()
+  const roster = await db.select().from(users).where(eq(users.orgId, org.id))
+  const signers = roster.map((u) => `- ${u.name}, ${u.roleTitle}`).join('\n')
+  const prompt = [
+    `Write a formal board resolution for ${org.name}, a nonprofit corporation, enacting this board motion:`,
+    `Motion: ${motionTitle}`,
+    motionDesc ? `Details: ${motionDesc}` : '',
+    meetingTitle ? `Discussed at the meeting: "${meetingTitle}".` : '',
+    '',
+    'Structure: a centered-style heading with the organization name, a RECITALS section (WHEREAS clauses),',
+    'a RESOLUTIONS section (RESOLVED clauses), an effective-date line with a blank to fill in, and a',
+    'SIGNATURES OF THE DIRECTORS section listing each of these signers with a date blank:',
+    signers,
+    '',
+    'Plain text only (no markdown). Do not invent facts not implied by the motion. Keep it under 500 words.',
+    'Return ONLY the document text.',
+  ].filter(Boolean).join('\n')
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'x-api-key': org.anthropicKey,
+        'anthropic-version': '2023-06-01',
+        'content-type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-5',
+        max_tokens: 1600,
+        messages: [{ role: 'user', content: prompt }],
+      }),
+    })
+    if (!res.ok) {
+      console.error('anthropic draft failed:', res.status, (await res.text()).slice(0, 300))
+      return c.json(
+        {
+          error:
+            res.status === 401
+              ? 'Your Anthropic API key was rejected — check it in Team & Access.'
+              : 'The AI service had a problem — try again in a moment.',
+        },
+        502,
+      )
+    }
+    const data = (await res.json()) as { content?: Array<{ type: string; text?: string }> }
+    const text = (data.content || [])
+      .filter((b) => b.type === 'text')
+      .map((b) => b.text || '')
+      .join('\n')
+      .trim()
+    if (!text) return c.json({ error: 'The AI returned an empty draft — try again.' }, 502)
+    return c.json({ text })
+  } catch (e) {
+    console.error('anthropic draft unreachable:', e)
+    return c.json({ error: 'Could not reach the AI service — try again.' }, 502)
+  }
 })
 
 // -------------------------------------------------------------- billing

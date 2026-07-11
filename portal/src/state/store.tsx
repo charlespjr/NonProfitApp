@@ -174,6 +174,9 @@ export interface Store {
   uploadLogo(file: File): Promise<void>
   removeLogo(): void
 
+  // AI drafting key (api mode; stored server-side, never echoed back)
+  setAiKey(key: string): Promise<void>
+
   // notes
   newNote(): void
   updateNote(field: 'title' | 'body', value: string): void
@@ -259,16 +262,44 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const brand = useCallback(
     (s: string): string => {
       if (!apiOrgName) return s
-      return s
-        .split('Adams Infinite Legacy').join(apiOrgName)
-        .split('the “Get Well Soon” Wellness Festival').join('your first fundraising event')
-        .split('“Get Well Soon” Wellness Festival').join('your first fundraising event')
-        .split('the Get Well Soon Wellness Festival').join('your fundraising event')
-        .split('Get Well Soon Wellness Festival').join('fundraising event')
-        .split('Get Well Soon Festival').join('Fundraising Event')
-        .split('Festival & Sponsorship').join('Fundraising Event & Sponsorship')
-        .split('Festival Planning Kickoff').join('Fundraising event planning kickoff')
-        .split('Gather all seven directors').join('Gather all of your directors')
+      return (
+        s
+          .split('Adams Infinite Legacy').join(apiOrgName)
+          .split('ADAMS INFINITE LEGACY').join(apiOrgName.toUpperCase())
+          // Mission-specific wording from the real AIL documents → neutral
+          // template language (longest phrases first).
+          .split('to provide direct financial assistance by funding medical, treatment, and related expenses for individuals who are experiencing, or surviving, chronic illness, and to engage in charitable, educational, and community health activities that further that mission, including public wellness programming and community health education')
+          .join('[STATE YOUR SPECIFIC CHARITABLE PURPOSE]')
+          .split('including providing direct financial assistance for medical and related expenses to eligible individuals experiencing or surviving chronic illness, and conducting community health education and wellness programming')
+          .join('including [DESCRIBE YOUR PROGRAMS]')
+          .split('establish its charitable financial-assistance program serving individuals experiencing or surviving chronic illness; that the Financial Assistance Eligibility and Selection Criteria presented to this meeting are adopted; and that the “Get Well Soon” Wellness Festival is approved as a program of the Corporation')
+          .join('establish its charitable programs; that the program eligibility and selection criteria presented to this meeting are adopted; and that its first fundraising event is approved as a program of the Corporation')
+          .split('Each year we host the “Get Well Soon” Wellness Festival to celebrate our community and announce grant recipients')
+          .join('Each year we host a signature community event to celebrate our supporters and our mission')
+          .split('Your sponsorship directly helps neighbors facing serious illness — and puts your name')
+          .join('Your sponsorship directly advances our mission — and puts your name')
+          .split('funds medical expenses for individuals experiencing or surviving chronic illness')
+          .join('serves its charitable mission')
+          .split('fund medical expenses for individuals experiencing or surviving chronic illness')
+          .join('advance our charitable mission')
+          // Demo board members → role placeholders in template documents.
+          .split('Alitalia Adams').join('[PRESIDENT NAME]')
+          .split('Judy Adams').join('[VICE CHAIR NAME]')
+          .split('Lee Taylor II').join('[TREASURER NAME]')
+          .split('Courtney Woo').join('[SECRETARY NAME]')
+          .split('Charles Pleasant').join('[DIRECTOR NAME]')
+          .split('Joe Grumbine').join('[DIRECTOR NAME]')
+          .split('Nancy Hughes').join('[OFFICER NAME]')
+          .split('the “Get Well Soon” Wellness Festival').join('your first fundraising event')
+          .split('“Get Well Soon” Wellness Festival').join('your first fundraising event')
+          .split('the Get Well Soon Wellness Festival').join('your fundraising event')
+          .split('Get Well Soon Wellness Festival').join('fundraising event')
+          .split('“Get Well Soon” Festival').join('fundraising event')
+          .split('Get Well Soon Festival').join('Fundraising Event')
+          .split('Festival & Sponsorship').join('Fundraising Event & Sponsorship')
+          .split('Festival Planning Kickoff').join('Fundraising event planning kickoff')
+          .split('Gather all seven directors').join('Gather all of your directors')
+      )
     },
     [apiOrgName],
   )
@@ -756,6 +787,20 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     flash('Logo removed')
   }, [guard, set, flash])
 
+  const setAiKey = useCallback(
+    async (key: string) => {
+      if (mode !== 'api') return
+      try {
+        const { aiConfigured } = await api.setAiKey(key)
+        setApiOrg((o) => (o ? { ...o, aiConfigured } : o))
+        flash(aiConfigured ? 'AI drafting connected' : 'AI key removed')
+      } catch (e) {
+        flash(e instanceof ApiError ? e.message : 'Could not save the key — try again.')
+      }
+    },
+    [mode, flash],
+  )
+
   // ----------------------------------------------------------------- notes
   const newNote = useCallback(() => {
     if (!guard()) return
@@ -897,13 +942,31 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       set({ drafting: { motionId, motionTitle: mo.title, status: 'loading', title: '', body: '' } })
       const meeting = mo.meeting ? MEETINGS.find((x) => x.id === mo.meeting) : undefined
       try {
-        const text = await services.draft.draftMotionDocument({
-          motionTitle: mo.title,
-          motionDesc: mo.desc,
-          meetingTitle: meeting?.title,
-          orgName,
-          signers: roster().map((m) => ({ name: m.name, role: m.role })),
-        })
+        let text: string
+        if (mode === 'api' && apiOrg?.aiConfigured) {
+          // Real AI via the org's own Anthropic key (server-side). Fall back
+          // to the built-in template if the AI call has a bad day.
+          try {
+            text = (await api.aiDraft({ motionTitle: mo.title, motionDesc: mo.desc, meetingTitle: meeting?.title })).text
+          } catch (e) {
+            flash(e instanceof ApiError ? e.message + ' Using the built-in template.' : 'AI unavailable — using the built-in template.')
+            text = await services.draft.draftMotionDocument({
+              motionTitle: mo.title,
+              motionDesc: mo.desc,
+              meetingTitle: meeting?.title,
+              orgName,
+              signers: roster().map((m) => ({ name: m.name, role: m.role })),
+            })
+          }
+        } else {
+          text = await services.draft.draftMotionDocument({
+            motionTitle: mo.title,
+            motionDesc: mo.desc,
+            meetingTitle: meeting?.title,
+            orgName,
+            signers: roster().map((m) => ({ name: m.name, role: m.role })),
+          })
+        }
         const title = mo.title.replace(/^Adopt (the )?/i, '').replace(/^Approve (the )?/i, '')
         setState((s) =>
           s.drafting && s.drafting.motionId === motionId
@@ -932,7 +995,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         }))
       }
     },
-    [state.motions, set, guard, orgName, roster],
+    [state.motions, set, guard, orgName, roster, mode, apiOrg, flash],
   )
 
   const sendDraftToDocuSeal = useCallback(() => {
@@ -1179,6 +1242,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     removeCustomDoc,
     uploadLogo,
     removeLogo,
+    setAiKey,
     newNote,
     updateNote,
     deleteNote,

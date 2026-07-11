@@ -13,6 +13,9 @@ export interface ApiOrg {
   name: string
   plan: 'none' | 'starter' | 'growth' | 'scale' | 'launch_partner'
   planStatus: string
+  /** Whether the org has an Anthropic API key on file (the key itself
+   *  never reaches the client). */
+  aiConfigured?: boolean
 }
 
 export interface ApiMember {
@@ -85,6 +88,11 @@ export const api = {
   updateMember: (id: string, patch: Partial<ApiMember> & { password?: string }) =>
     req<{ member: ApiMember }>(`/members/${id}`, { method: 'PATCH', body: JSON.stringify(patch) }),
   deleteMember: (id: string) => req<{ ok: true }>(`/members/${id}`, { method: 'DELETE' }),
+
+  setAiKey: (key: string) =>
+    req<{ ok: true; aiConfigured: boolean }>('/org/ai-key', { method: 'POST', body: JSON.stringify({ key }) }),
+  aiDraft: (input: { motionTitle: string; motionDesc: string; meetingTitle?: string }) =>
+    req<{ text: string }>('/ai/draft', { method: 'POST', body: JSON.stringify(input) }),
 
   billingPlan: () =>
     req<{ plan: string; planStatus: string; configured: boolean; mode: 'stripe' | 'links' | 'none' }>('/billing/plan'),
