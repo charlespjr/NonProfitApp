@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { sx } from '../lib/sx'
 import { useStore } from '../state/store'
 import { DOC_INFO, MEETINGS } from '../data/seed'
@@ -485,6 +486,95 @@ export function ChangePasswordModal() {
           </button>
         </div>
       </form>
+    </ModalShell>
+  )
+}
+
+// ------------------------------------------------------ Upgrade prompt
+/** Shown when a free-preview org tries to make a change. */
+export function UpgradeModal() {
+  const store = useStore()
+  const [period, setPeriod] = useState<'monthly' | 'yearly'>('monthly')
+  if (!store.state.upgradeOpen) return null
+  const close = () => store.set({ upgradeOpen: false })
+  const isAdmin = !!store.currentUser?.isAdmin
+
+  return (
+    <ModalShell onClose={close} maxWidth={520}>
+      <div style={sx('display:flex;align-items:center;gap:12px;padding:16px 20px;border-bottom:1px solid var(--line)')}>
+        <div style={sx('font-family:Spectral,serif;font-size:17px;font-weight:600;flex:1')}>Unlock your board portal</div>
+        <button className="hv-bg" onClick={close} style={closeBtnStyle}><IconClose /></button>
+      </div>
+      <div style={sx('padding:20px;display:flex;flex-direction:column;gap:16px')}>
+        <div style={sx('font-size:13.5px;color:var(--ink);line-height:1.6')}>
+          You're on the <strong>free preview</strong> — you can explore every screen, but checklist steps, documents,
+          votes, notes, and board member logins stay locked until your organization picks a plan.
+        </div>
+        {isAdmin ? (
+          <>
+            <div style={sx('display:flex;gap:6px;justify-content:center')}>
+              {(['monthly', 'yearly'] as const).map((p) => (
+                <button
+                  key={p}
+                  onClick={() => setPeriod(p)}
+                  style={{
+                    ...sx('font-size:11.5px;font-weight:600;padding:5px 13px;border-radius:20px;cursor:pointer'),
+                    border: '1px solid ' + (period === p ? 'var(--accent)' : 'var(--line)'),
+                    background: period === p ? 'var(--accent-soft)' : 'var(--panel)',
+                    color: period === p ? 'var(--brand)' : 'var(--muted)',
+                  }}
+                >
+                  {p === 'monthly' ? 'Monthly' : 'Yearly — 2 months free'}
+                </button>
+              ))}
+            </div>
+            <div style={sx('display:flex;flex-direction:column;gap:8px')}>
+              {(
+                [
+                  ['starter', 'Starter', '$29/mo', '$290/yr', 'Up to 7 board members'],
+                  ['growth', 'Growth', '$59/mo', '$590/yr', 'Unlimited board · most popular'],
+                  ['scale', 'Scale', '$99/mo', '$990/yr', 'Unlimited board · priority support'],
+                ] as const
+              ).map(([tier, label, mPrice, yPrice, blurb]) => (
+                <button
+                  key={tier}
+                  className={tier === 'growth' ? 'hv-bright' : 'hv-border-accent'}
+                  onClick={() => void store.checkout(tier, period)}
+                  style={sx(
+                    (tier === 'growth'
+                      ? 'border:none;background:var(--brand);color:#fff;'
+                      : 'border:1px solid var(--line);background:var(--panel);color:var(--brand);') +
+                      'display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:13.5px;font-weight:600;padding:12px 16px;border-radius:11px;cursor:pointer;text-align:left',
+                  )}
+                >
+                  <span>
+                    {label} · {period === 'monthly' ? mPrice : yPrice}
+                    <span style={{ ...sx('display:block;font-size:11.5px;font-weight:500;margin-top:2px'), opacity: 0.75 }}>{blurb}</span>
+                  </span>
+                  <span aria-hidden>→</span>
+                </button>
+              ))}
+            </div>
+            <div style={sx('font-size:11.5px;color:var(--muted);text-align:center;line-height:1.5')}>
+              Secure card / bank payment via QuickBooks. Your portal unlocks automatically once payment posts.{' '}
+              <a
+                href="mailto:support@quorumsuite.com?subject=Quorum%20Launch%20Partner%20%E2%80%94%20request%20a%20quote"
+                style={sx('color:var(--accent);font-weight:600;text-decoration:none')}
+              >
+                Want white-glove setup? Request a Launch Partner quote →
+              </a>
+            </div>
+          </>
+        ) : (
+          <div style={sx('background:var(--accent-soft);border-radius:11px;padding:13px 16px;font-size:13px;color:var(--brand);line-height:1.55')}>
+            Ask your organization's administrator to choose a plan on the <strong>Team &amp; Access</strong> page —
+            the whole board unlocks the moment payment posts.
+          </div>
+        )}
+      </div>
+      <div style={sx('padding:14px 20px;border-top:1px solid var(--line);display:flex;justify-content:flex-end')}>
+        <button className="hv-bg" onClick={close} style={cancelBtnStyle}>Keep looking around</button>
+      </div>
     </ModalShell>
   )
 }

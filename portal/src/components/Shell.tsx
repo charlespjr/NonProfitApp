@@ -171,6 +171,23 @@ export function Shell({ children }: { children: ReactNode }) {
           </div>
         </header>
 
+        {store.locked && (
+          <div data-m="lockbar" style={sx('display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:10px 30px;background:var(--warn-soft);border-bottom:1px solid var(--line)')}>
+            <div style={sx('flex:1;min-width:220px;font-size:12.5px;color:var(--ink);line-height:1.5')}>
+              <strong>Free preview</strong> — look around all you like; checklist, documents, votes, notes, and member
+              logins unlock when your organization {user.isAdmin ? 'picks a plan' : "picks a plan (ask your admin)"}.
+            </div>
+            {user.isAdmin && (
+              <button
+                className="hv-bright"
+                onClick={() => store.set({ upgradeOpen: true })}
+                style={sx('border:none;background:var(--brand);color:#fff;font-size:12.5px;font-weight:600;padding:8px 15px;border-radius:9px;cursor:pointer;flex:none')}
+              >
+                Choose a plan
+              </button>
+            )}
+          </div>
+        )}
         <main data-m="main" style={sx('flex:1;padding:28px 30px 60px;overflow:auto')}>{children}</main>
       </div>
     </div>

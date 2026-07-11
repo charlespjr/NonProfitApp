@@ -136,6 +136,10 @@ export interface PersistedState {
   activeNoteId: string | null
   calConnected: boolean
   emailConnected: boolean
+  /** Which provider the foundation mailbox lives with (google, microsoft, …). */
+  emailProvider: string
+  /** The address DocuSeal invitations are sent from. */
+  emailAddress: string
   zoomConnected: boolean
   motions: Motion[]
   accounts: Record<string, Account>
@@ -157,6 +161,8 @@ export interface UiState {
   navOpen: boolean
   noteSaved: 'Saved' | 'Saving…'
   loginError: string
+  /** Upgrade prompt shown when a free-preview org tries to make changes. */
+  upgradeOpen: boolean
 }
 
 export type AppState = PersistedState & UiState

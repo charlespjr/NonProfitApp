@@ -60,6 +60,8 @@ const defaultPersisted: PersistedState = {
   activeNoteId: null,
   calConnected: false,
   emailConnected: false,
+  emailProvider: '',
+  emailAddress: '',
   zoomConnected: false,
   motions: [],
   accounts: SEED_ACCOUNTS,
@@ -81,6 +83,7 @@ const defaultUi = {
   navOpen: false,
   noteSaved: 'Saved' as const,
   loginError: '',
+  upgradeOpen: false,
 }
 
 function loadPersisted(): PersistedState {
@@ -109,6 +112,10 @@ export interface Store {
   mode: 'checking' | 'api' | 'demo'
   apiOrg: ApiOrg | null
   apiMe: ApiMember | null
+  /** True in api mode while the org has no active plan: read-only preview. */
+  locked: boolean
+  /** Re-reads the org's plan (admins only) so paying in another tab unlocks. */
+  refreshPlan(): Promise<void>
 
   // auth (api mode)
   register(input: { orgName: string; name: string; email: string; username: string; password: string }): Promise<void>
@@ -157,6 +164,7 @@ export interface Store {
 
   // motions
   castVote(motionId: string, memberId: string, choice: VoteChoice): void
+  openNewMotion(): void
   createMotion(): Promise<void>
   removeMotion(id: string): void
   notifyBoard(motionId: string): void
@@ -178,7 +186,7 @@ export interface Store {
   disconnectCal(): void
   connectZoom(): void
   disconnectZoom(): void
-  connectEmail(): void
+  connectEmail(providerId: string, providerName: string, address: string): void
   disconnectEmail(): void
 }
 
@@ -193,6 +201,8 @@ const BOARD_KEYS = [
   'activeNoteId',
   'calConnected',
   'emailConnected',
+  'emailProvider',
+  'emailAddress',
   'zoomConnected',
   'motions',
   'customDocs',
@@ -219,6 +229,15 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const syncTimer = useRef<ReturnType<typeof setTimeout>>()
   const versionRef = useRef(0)
   const hydratingRef = useRef(false)
+  const planCheckRef = useRef(0)
+
+  // Free preview = read-only. Signing in and looking around is always fine;
+  // every change goes through guard() below until the org has an active plan.
+  const locked =
+    mode === 'api' &&
+    !!state.sessionUserId &&
+    !!apiOrg &&
+    !(apiOrg.plan !== 'none' && apiOrg.planStatus === 'active')
 
   const accountsFrom = (list: ApiMember[]): Record<string, Account> => {
     const accounts: Record<string, Account> = {}
@@ -253,6 +272,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       activeNoteId: null,
       calConnected: false,
       emailConnected: false,
+      emailProvider: '',
+      emailAddress: '',
       zoomConnected: false,
       motions: [],
       customDocs: [],
@@ -304,6 +325,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         activeNoteId: state.activeNoteId,
         calConnected: state.calConnected,
         emailConnected: state.emailConnected,
+        emailProvider: state.emailProvider,
+        emailAddress: state.emailAddress,
         zoomConnected: state.zoomConnected,
         motions: state.motions,
         accounts: state.accounts,
@@ -319,7 +342,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       }
       return
     }
-    if (mode !== 'api' || !state.sessionUserId || hydratingRef.current) return
+    // Locked orgs never sync — the server would answer 402 anyway.
+    if (mode !== 'api' || locked || !state.sessionUserId || hydratingRef.current) return
     const snapshot = boardSlice(state)
     clearTimeout(syncTimer.current)
     syncTimer.current = setTimeout(async () => {
@@ -342,7 +366,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         }
       }
     }, 700)
-  }, [state, mode])
+  }, [state, mode, locked])
 
   const set = useCallback((patch: Partial<AppState>) => {
     setState((s) => ({ ...s, ...patch }))
@@ -353,6 +377,42 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     clearTimeout(toastTimer.current)
     toastTimer.current = setTimeout(() => setState((s) => ({ ...s, toast: '' })), 2200)
   }, [])
+
+  /** Every mutating action funnels through here: locked orgs get the
+   *  upgrade prompt instead of the change. Returns true when allowed. */
+  const guard = useCallback((): boolean => {
+    if (!locked) return true
+    setState((s) => ({ ...s, upgradeOpen: true }))
+    return false
+  }, [locked])
+
+  const refreshPlan = useCallback(async () => {
+    if (mode !== 'api' || !apiMe?.isAdmin) return
+    try {
+      const p = await api.billingPlan()
+      setApiOrg((o) => (o ? { ...o, plan: p.plan as ApiOrg['plan'], planStatus: p.planStatus } : o))
+    } catch {
+      /* not signed in or offline — nothing to update */
+    }
+  }, [mode, apiMe])
+
+  // Paying happens in another tab (QuickBooks). When the user comes back,
+  // re-check the plan so the portal unlocks without a manual reload.
+  useEffect(() => {
+    if (!locked || mode !== 'api' || !apiMe?.isAdmin) return
+    const onVisible = () => {
+      if (document.visibilityState !== 'visible') return
+      if (Date.now() - planCheckRef.current < 10_000) return
+      planCheckRef.current = Date.now()
+      void refreshPlan()
+    }
+    document.addEventListener('visibilitychange', onVisible)
+    window.addEventListener('focus', onVisible)
+    return () => {
+      document.removeEventListener('visibilitychange', onVisible)
+      window.removeEventListener('focus', onVisible)
+    }
+  }, [locked, mode, apiMe, refreshPlan])
 
   const roster = useCallback((): Member[] => {
     if (mode === 'api') {
@@ -506,9 +566,10 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   // ------------------------------------------------------------- checklist
   const toggleTask = useCallback(
     (id: string) => {
+      if (!guard()) return
       setState((s) => ({ ...s, tasks: { ...s.tasks, [id]: !s.tasks[id] } }))
     },
-    [],
+    [guard],
   )
 
   // ------------------------------------------------- documents / signatures
@@ -518,7 +579,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const signMember = useCallback(
     (memberId: string) => {
       const docId = state.modal
-      if (!docId) return
+      if (!docId || !guard()) return
       void services.signatures.sign(docId, memberId)
       const cur = { ...sigFor(docId), [memberId]: true }
       setState((s) => ({ ...s, sig: { ...s.sig, [docId]: cur } }))
@@ -526,23 +587,24 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       if (nowAll) flash('All signatures collected — board notified by email')
       else flash(memberId === state.sessionUserId ? 'You signed via DocuSeal' : 'Signature recorded')
     },
-    [state.modal, state.sessionUserId, sigFor, roster, flash],
+    [state.modal, state.sessionUserId, sigFor, roster, flash, guard],
   )
 
   const signAll = useCallback(() => {
     const docId = state.modal
-    if (!docId) return
+    if (!docId || !guard()) return
     const cur: Record<string, boolean> = {}
     roster().forEach((m) => (cur[m.id] = true))
     setState((s) => ({ ...s, sig: { ...s.sig, [docId]: cur } }))
     flash('All signatures collected — board notified by email')
     setTimeout(() => setState((s) => ({ ...s, modal: null })), 900)
-  }, [state.modal, roster, flash])
+  }, [state.modal, roster, flash, guard])
 
   const notifyDocSigners = useCallback(
     (docId: string) => {
+      if (!guard()) return
       if (!state.emailConnected) {
-        flash("Email isn't connected yet — ask IT to connect Hostinger in Team & Access")
+        flash("Email isn't connected yet — connect your foundation email in Team & Access")
         return
       }
       const sig = sigFor(docId)
@@ -556,11 +618,12 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       }))
       flash('Emailed ' + pending.length + ' board members to sign via DocuSeal')
     },
-    [state.emailConnected, state.accounts, state.sessionUserId, sigFor, roster, flash],
+    [state.emailConnected, state.accounts, state.sessionUserId, sigFor, roster, flash, guard],
   )
 
   // ----------------------------------------------------------------- notes
   const newNote = useCallback(() => {
+    if (!guard()) return
     const id = 'n' + Date.now()
     setState((s) => ({
       ...s,
@@ -571,6 +634,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const updateNote = useCallback((field: 'title' | 'body', value: string) => {
+    if (!guard()) return
     setState((s) => ({
       ...s,
       notes: s.notes.map((n) =>
@@ -583,20 +647,22 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       () => setState((s) => ({ ...s, noteSaved: 'Saved' })),
       600,
     )
-  }, [])
+  }, [guard])
 
   const deleteNote = useCallback(() => {
+    if (!guard()) return
     setState((s) => {
       const notes = s.notes.filter((n) => n.id !== s.activeNoteId)
       return { ...s, notes, activeNoteId: notes[0] ? notes[0].id : null }
     })
-  }, [])
+  }, [guard])
 
   // --------------------------------------------------------------- motions
   const castVote = useCallback(
     (motionId: string, memberId: string, choice: VoteChoice) => {
       // Only the signed-in member with vote permission may cast their own vote.
       if (memberId !== state.sessionUserId || !currentUser?.account.vote) return
+      if (!guard()) return
       setState((s) => ({
         ...s,
         motions: s.motions.map((m) => {
@@ -609,12 +675,17 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       }))
       flash('Your vote was recorded')
     },
-    [state.sessionUserId, currentUser, flash],
+    [state.sessionUserId, currentUser, flash, guard],
   )
+
+  const openNewMotion = useCallback(() => {
+    if (!guard()) return
+    set({ draft: { title: '', desc: '', meeting: '' } })
+  }, [guard, set])
 
   const createMotion = useCallback(async () => {
     const d = state.draft
-    if (!d || !d.title.trim()) return
+    if (!d || !d.title.trim() || !guard()) return
     const id = 'mo' + Date.now()
     let zoomUrl = ''
     if (state.zoomConnected) {
@@ -655,16 +726,18 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     if (notifiedAt) msg += ' · ' + recipients.length + ' board members emailed'
     else msg += ' · connect email to notify the board'
     flash(msg)
-  }, [state.draft, state.zoomConnected, state.emailConnected, notifiableVoters, allMeetings, flash])
+  }, [state.draft, state.zoomConnected, state.emailConnected, notifiableVoters, allMeetings, flash, guard])
 
   const removeMotion = useCallback((id: string) => {
+    if (!guard()) return
     setState((s) => ({ ...s, motions: s.motions.filter((m) => m.id !== id) }))
-  }, [])
+  }, [guard])
 
   const notifyBoard = useCallback(
     (motionId: string) => {
+      if (!guard()) return
       if (!state.emailConnected) {
-        flash("Email isn't connected yet — ask IT to connect Hostinger in Team & Access")
+        flash("Email isn't connected yet — connect your foundation email in Team & Access")
         return
       }
       const recipients = notifiableVoters()
@@ -678,14 +751,14 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       }))
       flash('Emailed ' + recipients.length + ' board members to review & vote')
     },
-    [state.emailConnected, state.motions, notifiableVoters, flash],
+    [state.emailConnected, state.motions, notifiableVoters, flash, guard],
   )
 
   // ------------------------------------------------------------ AI drafting
   const startDraft = useCallback(
     async (motionId: string, _regen?: boolean) => {
       const mo = state.motions.find((m) => m.id === motionId)
-      if (!mo) return
+      if (!mo || !guard()) return
       set({ drafting: { motionId, motionTitle: mo.title, status: 'loading', title: '', body: '' } })
       const meeting = mo.meeting ? MEETINGS.find((x) => x.id === mo.meeting) : undefined
       try {
@@ -722,12 +795,12 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         }))
       }
     },
-    [state.motions, set],
+    [state.motions, set, guard],
   )
 
   const sendDraftToDocuSeal = useCallback(() => {
     const dr = state.drafting
-    if (!dr) return
+    if (!dr || !guard()) return
     const docId = 'aidoc' + Date.now()
     const doc: PortalDoc = {
       id: docId,
@@ -748,7 +821,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       modal: docId,
     }))
     flash('Document sent to DocuSeal for all board members to sign')
-  }, [state.drafting, roster, flash])
+  }, [state.drafting, roster, flash, guard])
 
   // ---------------------------------------------------------- team & access
   const manageMember = useCallback(
@@ -770,6 +843,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   )
 
   const addMember = useCallback(() => {
+    if (!guard()) return
     if (mode === 'api') {
       set({ acct: { id: '', name: '', email: '', username: '', pw: '', status: 'none', vote: true, sign: false, isNew: true } })
       return
@@ -780,7 +854,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       extraMembers: [...s.extraMembers, { id, name: 'New board member', role: 'Director', initials: 'NM' }],
       acct: { id, email: '', username: '', pw: '', status: 'none', vote: true, sign: true, isNew: true },
     }))
-  }, [mode, set])
+  }, [mode, set, guard])
 
   const genPw = useCallback(() => {
     const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789'
@@ -797,7 +871,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 
   const saveAcct = useCallback(async () => {
     const ac = state.acct
-    if (!ac) return
+    if (!ac || !guard()) return
     if (mode === 'api') {
       try {
         if (ac.isNew) {
@@ -842,11 +916,11 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     }
     setState((s) => ({ ...s, accounts: { ...s.accounts, [ac.id]: entry }, acct: null }))
     flash(wasNew ? 'Invite sent — login details ready to share' : 'Access updated')
-  }, [mode, state.acct, state.accounts, flash, set, refreshMembers])
+  }, [mode, state.acct, state.accounts, flash, set, refreshMembers, guard])
 
   const revokeAcct = useCallback(async () => {
     const ac = state.acct
-    if (!ac) return
+    if (!ac || !guard()) return
     if (mode === 'api') {
       try {
         await api.deleteMember(ac.id)
@@ -864,7 +938,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       return { ...s, accounts, acct: null }
     })
     flash('Access revoked')
-  }, [mode, state.acct, flash, set, refreshMembers])
+  }, [mode, state.acct, flash, set, refreshMembers, guard])
 
   // -------------------------------------------------------------- billing
   const checkout = useCallback(
@@ -892,23 +966,33 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 
   // ------------------------------------------------------------ integrations
   const connectCal = useCallback(() => {
+    if (!guard()) return
     void services.calendar.connect()
     set({ calConnected: true })
     flash('Google Calendar connected')
-  }, [set, flash])
+  }, [set, flash, guard])
   const disconnectCal = useCallback(() => set({ calConnected: false }), [set])
   const connectZoom = useCallback(() => {
+    if (!guard()) return
     void services.zoom.connect()
     set({ zoomConnected: true })
     flash('Zoom connected')
-  }, [set, flash])
+  }, [set, flash, guard])
   const disconnectZoom = useCallback(() => set({ zoomConnected: false }), [set])
-  const connectEmail = useCallback(() => {
-    void services.mail.connect()
-    set({ emailConnected: true })
-    flash('Hostinger email connected')
+  const connectEmail = useCallback(
+    (providerId: string, providerName: string, address: string) => {
+      if (!guard()) return
+      void services.mail.connect()
+      set({ emailConnected: true, emailProvider: providerId, emailAddress: address })
+      flash(`${providerName} connected — sending as ${address}`)
+    },
+    [set, flash, guard],
+  )
+  const disconnectEmail = useCallback(() => {
+    void services.mail.disconnect()
+    set({ emailConnected: false, emailProvider: '', emailAddress: '' })
+    flash('Foundation email disconnected')
   }, [set, flash])
-  const disconnectEmail = useCallback(() => set({ emailConnected: false }), [set])
 
   const setTheme = useCallback((theme: ThemeName) => set({ theme }), [set])
   const setDashboardLayout = useCallback(
@@ -922,6 +1006,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     mode,
     apiOrg,
     apiMe,
+    locked,
+    refreshPlan,
     register,
     changePassword,
     checkout,
@@ -950,6 +1036,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     updateNote,
     deleteNote,
     castVote,
+    openNewMotion,
     createMotion,
     removeMotion,
     notifyBoard,

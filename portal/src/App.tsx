@@ -18,6 +18,7 @@ import {
   EmailPreviewModal,
   ManageAccessModal,
   NewMotionModal,
+  UpgradeModal,
 } from './modals/Modals'
 
 export default function App() {
@@ -62,6 +63,7 @@ export default function App() {
           <ManageAccessModal />
           <EmailPreviewModal />
           <ChangePasswordModal />
+          <UpgradeModal />
         </>
       )}
       <Toast message={state.toast} />

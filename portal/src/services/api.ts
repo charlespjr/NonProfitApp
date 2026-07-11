@@ -11,7 +11,7 @@
 export interface ApiOrg {
   id: string
   name: string
-  plan: 'none' | 'growth' | 'launch_partner'
+  plan: 'none' | 'starter' | 'growth' | 'scale' | 'launch_partner'
   planStatus: string
 }
 

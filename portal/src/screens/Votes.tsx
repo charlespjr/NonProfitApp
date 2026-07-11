@@ -219,7 +219,7 @@ export function Votes() {
         {user.isAdmin && (
           <button
             className="hv-bright"
-            onClick={() => store.set({ draft: { title: '', desc: '', meeting: '' } })}
+            onClick={store.openNewMotion}
             style={sx('display:flex;align-items:center;gap:8px;border:none;background:var(--brand);color:#fff;font-size:13.5px;font-weight:600;padding:11px 16px;border-radius:10px;cursor:pointer')}
           >
             <IconPlus /> New motion
