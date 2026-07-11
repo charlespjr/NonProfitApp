@@ -59,6 +59,32 @@ export const users = pgTable(
   ],
 )
 
+/** OAuth token storage for the QuickBooks integration. Intuit rotates the
+ *  refresh token on every use, so the env var only seeds the first row —
+ *  after that this table is the source of truth. */
+export const qboTokens = pgTable('qbo_tokens', {
+  realmId: text('realm_id').primaryKey(),
+  refreshToken: text('refresh_token').notNull(),
+  accessToken: text('access_token'),
+  accessExpiresAt: timestamp('access_expires_at', { withTimezone: true }),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+})
+
+/** One row per checkout invoice we created in QuickBooks; the sync job
+ *  activates the org's plan when QuickBooks reports the invoice paid. */
+export const qboInvoices = pgTable('qbo_invoices', {
+  invoiceId: text('invoice_id').primaryKey(),
+  orgId: text('org_id')
+    .notNull()
+    .references(() => orgs.id, { onDelete: 'cascade' }),
+  tier: text('tier').notNull(),
+  period: text('period').notNull(),
+  amount: text('amount').notNull(),
+  status: text('status').notNull().default('open'),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  paidAt: timestamp('paid_at', { withTimezone: true }),
+})
+
 export const orgState = pgTable('org_state', {
   orgId: text('org_id')
     .primaryKey()
@@ -100,5 +126,22 @@ CREATE TABLE IF NOT EXISTS org_state (
   data jsonb NOT NULL,
   version integer NOT NULL DEFAULT 0,
   updated_at timestamptz NOT NULL DEFAULT now()
+);
+CREATE TABLE IF NOT EXISTS qbo_tokens (
+  realm_id text PRIMARY KEY,
+  refresh_token text NOT NULL,
+  access_token text,
+  access_expires_at timestamptz,
+  updated_at timestamptz NOT NULL DEFAULT now()
+);
+CREATE TABLE IF NOT EXISTS qbo_invoices (
+  invoice_id text PRIMARY KEY,
+  org_id text NOT NULL REFERENCES orgs(id) ON DELETE CASCADE,
+  tier text NOT NULL,
+  period text NOT NULL,
+  amount text NOT NULL,
+  status text NOT NULL DEFAULT 'open',
+  created_at timestamptz NOT NULL DEFAULT now(),
+  paid_at timestamptz
 );
 `

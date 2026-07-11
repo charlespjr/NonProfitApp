@@ -35,7 +35,16 @@ At boot the app probes `/api/health`:
    - `DATABASE_URL` — the Postgres connection string
    - `JWT_SECRET` — long random string (e.g. `openssl rand -hex 32`)
    - `APP_URL` — e.g. `https://app.quorumboardos.com`
-   - Payments via QuickBooks payment links (current mode): `PAYLINK_STARTER_M`,
+   - **QuickBooks API billing (preferred):** `QBO_CLIENT_ID`, `QBO_CLIENT_SECRET`,
+     `QBO_REALM_ID`, `QBO_REFRESH_TOKEN` (seed — rotated tokens persist in the
+     `qbo_tokens` table), `QBO_ENV` (`production`|`sandbox`), plus `CRON_SECRET`
+     for the daily paid-invoice sync (vercel.json cron → `/api/billing/sync`).
+     Checkout creates a QBO customer + invoice (card/ACH enabled) and returns
+     its hosted pay link; the sync (cron + opportunistic on billing reads)
+     activates plans automatically when invoices are paid. Get the refresh
+     token + realm id from the Intuit developer portal's OAuth 2.0 Playground
+     with the `com.intuit.quickbooks.accounting` scope.
+   - Payments via static QuickBooks payment links (fallback mode): `PAYLINK_STARTER_M`,
      `PAYLINK_STARTER_Y`, `PAYLINK_GROWTH_M`, `PAYLINK_GROWTH_Y`,
      `PAYLINK_SCALE_M`, `PAYLINK_SCALE_Y` — each a QuickBooks Payments
      multi-use share link — plus `ADMIN_KEY` (long random string) for the
