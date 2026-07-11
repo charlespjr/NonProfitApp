@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react'
 import { sx } from '../lib/sx'
 import { useStore } from '../state/store'
+import { InstallApp } from '../components/InstallApp'
 
 const inputStyle = sx('width:100%;padding:12px 14px;border:1px solid var(--line);border-radius:10px;background:var(--panel);font-size:14px;color:var(--ink);outline:none')
 const labelStyle = sx('font-size:12.5px;font-weight:600;color:var(--ink)')
@@ -138,6 +139,8 @@ export function Login() {
               <strong>Demo:</strong> sign in with any board member's username (e.g. <code>alitalia</code> or <code>judy.adams</code>) and any password. The full product adds real accounts &amp; organizations.
             </div>
           )}
+
+          <InstallApp variant="login" />
         </form>
       </div>
     </div>

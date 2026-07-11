@@ -17,6 +17,7 @@ import {
 } from './icons'
 import type { ScreenKey } from '../types'
 import { Avatar } from './shared'
+import { InstallApp } from './InstallApp'
 
 const PAGE_TITLE: Record<ScreenKey, string> = {
   dashboard: 'Dashboard',
@@ -114,6 +115,7 @@ export function Shell({ children }: { children: ReactNode }) {
           })}
 
         <div style={sx('margin-top:auto;border-top:1px solid var(--line);padding-top:12px')}>
+          <InstallApp variant="sidebar" />
           <div style={sx('display:flex;align-items:center;gap:11px;padding:8px 8px')}>
             <Avatar initials={user.member.initials} bg="var(--accent)" size={36} fontSize={13} />
             <div style={sx('min-width:0;flex:1')}>
