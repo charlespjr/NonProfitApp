@@ -15,8 +15,8 @@ import type { Context, Next } from 'hono'
 import { getCookie } from 'hono/cookie'
 import { verify } from 'hono/jwt'
 import { and, eq } from 'drizzle-orm'
-import { getDb } from './db'
-import { orgs, users } from './schema'
+import { getDb } from './db.js'
+import { orgs, users } from './schema.js'
 
 const JWT_SECRET = process.env.JWT_SECRET || 'dev-only-secret-change-in-production'
 

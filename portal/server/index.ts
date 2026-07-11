@@ -6,7 +6,7 @@
 import { serve } from '@hono/node-server'
 import { serveStatic } from '@hono/node-server/serve-static'
 import { Hono } from 'hono'
-import { app as api } from './app'
+import { app as api } from './app.js'
 
 const root = new Hono()
 root.route('/', api)

@@ -6,7 +6,7 @@
  * Bridges Vercel's Node (req, res) signature to the Hono app's fetch handler.
  */
 import type { IncomingMessage, ServerResponse } from 'node:http'
-import { app } from '../server/app'
+import { app } from '../server/app.js'
 
 export default async function handler(req: IncomingMessage, res: ServerResponse) {
   try {

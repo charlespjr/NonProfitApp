@@ -2,7 +2,7 @@
  * Server API tests — run with `npm run test:server`.
  * Uses the embedded PGlite database; no external services required.
  */
-import { app } from './app'
+import { app } from './app.js'
 
 let failures = 0
 function check(name: string, cond: boolean, extra?: unknown) {
