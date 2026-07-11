@@ -280,12 +280,12 @@ export async function syncPaidInvoices(): Promise<{ checked: number; activated: 
         .update(qboInvoices)
         .set({ status: 'paid', paidAt: new Date() })
         .where(eq(qboInvoices.invoiceId, row.invoiceId))
-      if (row.tier !== 'launch_partner') {
-        await db
-          .update(orgs)
-          .set({ plan: row.tier, planStatus: 'active' })
-          .where(eq(orgs.id, row.orgId))
-      }
+      // Launch Partner includes the product (unlimited board) — paying its
+      // invoice unlocks the portal just like a subscription plan.
+      await db
+        .update(orgs)
+        .set({ plan: row.tier, planStatus: 'active' })
+        .where(eq(orgs.id, row.orgId))
       activated.push(row.orgId)
     }
   }
