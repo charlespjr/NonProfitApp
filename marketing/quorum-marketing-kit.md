@@ -26,7 +26,7 @@ Starting a nonprofit means drowning in paperwork: state filings, IRS forms, byla
 
 **URLs:**
 - Marketing site: https://quorum-board-os.vercel.app
-- App (self-serve signup): https://non-profit-app-six.vercel.app
+- App (self-serve signup): https://app.quorumsuite.com
 
 ---
 
