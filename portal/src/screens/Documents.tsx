@@ -1,7 +1,7 @@
 import { sx } from '../lib/sx'
 import { useStore } from '../state/store'
 import { DOC_INFO } from '../data/seed'
-import { IconDocuments, IconInfo } from '../components/icons'
+import { IconDocuments, IconInfo, IconPlus } from '../components/icons'
 import { STATUS_META } from '../components/shared'
 import type { DocCategory } from '../types'
 
@@ -41,6 +41,15 @@ export function Documents() {
             </button>
           )
         })}
+        {store.currentUser?.isAdmin && (
+          <button
+            className="hv-bright"
+            onClick={store.openAddDoc}
+            style={sx('display:flex;align-items:center;gap:7px;margin-left:auto;border:none;background:var(--brand);color:#fff;font-size:13px;font-weight:600;padding:8px 14px;border-radius:9px;cursor:pointer')}
+          >
+            <IconPlus /> Add document
+          </button>
+        )}
       </div>
 
       <div style={sx('background:var(--panel);border:1px solid var(--line);border-radius:14px;overflow:hidden')}>
@@ -72,7 +81,7 @@ export function Documents() {
               </div>
               <div style={sx('font-size:13px;color:var(--muted)')}>{d.cat}</div>
               <div><span style={STATUS_META[st].style}>{STATUS_META[st].label}</span></div>
-              <div style={{ textAlign: 'right' }}>
+              <div style={sx('display:flex;align-items:center;justify-content:flex-end;gap:6px')}>
                 <button
                   className="hv-bright-sm"
                   onClick={() => store.openModal(d.id)}
@@ -84,6 +93,17 @@ export function Documents() {
                 >
                   {isSigned ? 'View' : 'Open in DocuSeal'}
                 </button>
+                {store.currentUser?.isAdmin && state.customDocs.some((c) => c.id === d.id) && (
+                  <button
+                    className="hv-danger"
+                    title="Remove this document"
+                    aria-label={'Remove document: ' + d.name}
+                    onClick={() => store.removeCustomDoc(d.id)}
+                    style={sx('border:none;background:transparent;color:var(--muted);font-size:15px;line-height:1;cursor:pointer;padding:6px')}
+                  >
+                    ×
+                  </button>
+                )}
               </div>
             </div>
           )

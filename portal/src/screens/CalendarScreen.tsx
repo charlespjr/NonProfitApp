@@ -8,6 +8,15 @@ const WEEKDAYS = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT']
 const LEAD = 3
 const DAYS = 31
 
+/** Boards live on different calendars — offer the common ones plus an
+ *  ICS feed any calendar app can subscribe to. */
+const CAL_PROVIDERS: Array<{ id: string; name: string; letter: string; color: string; hint: string }> = [
+  { id: 'google', name: 'Google Calendar', letter: 'G', color: '#ea4335', hint: 'Sign in with the Google account your foundation uses.' },
+  { id: 'microsoft', name: 'Outlook / Microsoft 365', letter: 'M', color: '#0078d4', hint: 'Sign in with your Microsoft work or personal account.' },
+  { id: 'apple', name: 'Apple iCloud Calendar', letter: '', color: '#111111', hint: 'Subscribe from iPhone, iPad, or Mac — meetings appear in the Calendar app.' },
+  { id: 'ics', name: 'Other calendar (ICS feed)', letter: '@', color: 'var(--accent)', hint: 'Any calendar app that accepts an ICS subscription link works.' },
+]
+
 export function CalendarScreen() {
   const store = useStore()
   const { state } = store
@@ -15,26 +24,41 @@ export function CalendarScreen() {
   if (!state.calConnected) {
     return (
       <div style={sx('max-width:1080px;margin:0 auto')}>
-        <div style={sx('background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:52px 30px;text-align:center;max-width:460px;margin:40px auto')}>
+        <div style={sx('background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:44px 30px;text-align:center;max-width:520px;margin:40px auto')}>
           <div style={sx('width:58px;height:58px;border-radius:14px;background:var(--bg);border:1px solid var(--line);display:grid;place-items:center;margin:0 auto 18px')}>
             <IconCalendar size={28} stroke="var(--accent)" />
           </div>
           <div style={sx('font-family:Spectral,serif;font-size:20px;font-weight:600')}>Connect your calendar</div>
           <div style={sx('font-size:13.5px;color:var(--muted);margin-top:8px;line-height:1.55')}>
-            Sync board meetings, committee sessions, and event planning with Google Calendar to see everything in one place.
+            Board meetings, votes, and filing deadlines sync to the calendar your organization already uses. Pick yours:
           </div>
-          <button
-            className="hv-border-accent-shadow"
-            onClick={store.connectCal}
-            style={sx('margin-top:22px;display:inline-flex;align-items:center;gap:10px;border:1px solid var(--line);background:var(--panel);color:var(--ink);font-size:14px;font-weight:600;padding:11px 20px;border-radius:10px;cursor:pointer')}
-          >
-            <span style={{ display: 'flex' }}><GoogleG /></span>
-            Connect Google Calendar
-          </button>
+          <div style={sx('display:flex;flex-direction:column;gap:9px;margin-top:20px;text-align:left')}>
+            {CAL_PROVIDERS.map((p) => (
+              <button
+                key={p.id}
+                className="hv-border-accent-shadow"
+                onClick={() => store.connectCal(p.id, p.name)}
+                style={sx('display:flex;align-items:center;gap:12px;border:1px solid var(--line);background:var(--panel);color:var(--ink);font-size:13.5px;font-weight:600;padding:11px 15px;border-radius:11px;cursor:pointer;width:100%;text-align:left')}
+              >
+                {p.id === 'google' ? (
+                  <span style={sx('width:26px;height:26px;border-radius:7px;background:var(--bg);border:1px solid var(--line);display:grid;place-items:center;flex:none')}><GoogleG size={15} /></span>
+                ) : (
+                  <span style={{ ...sx('width:26px;height:26px;border-radius:7px;color:#fff;display:grid;place-items:center;flex:none;font-weight:800;font-size:13px'), background: p.color }}>{p.letter}</span>
+                )}
+                <span style={sx('flex:1;min-width:0')}>
+                  {p.name}
+                  <span style={sx('display:block;font-size:11.5px;font-weight:500;color:var(--muted);margin-top:1px')}>{p.hint}</span>
+                </span>
+                <span aria-hidden style={sx('color:var(--muted)')}>→</span>
+              </button>
+            ))}
+          </div>
         </div>
       </div>
     )
   }
+
+  const calProvider = CAL_PROVIDERS.find((p) => p.id === state.calProvider)
 
   const meetings = store.meetingsView()
   const meetingByDay: Record<number, Meeting> = {}
@@ -46,8 +70,16 @@ export function CalendarScreen() {
         <div style={sx('display:flex;align-items:center;gap:10px;flex-wrap:wrap')}>
           <div style={sx('font-family:Spectral,serif;font-size:22px;font-weight:600')}>July 2026</div>
           <div style={sx('display:flex;align-items:center;gap:7px;background:var(--good-soft);color:var(--good);font-size:12px;font-weight:600;padding:5px 11px;border-radius:20px')}>
-            <span style={{ display: 'flex' }}><GoogleG size={14} /></span> Google Calendar connected
+            {(!calProvider || calProvider.id === 'google') && <span style={{ display: 'flex' }}><GoogleG size={14} /></span>}
+            {(calProvider?.name || 'Google Calendar') + ' connected'}
           </div>
+          <button
+            className="hv-danger"
+            onClick={store.disconnectCal}
+            style={sx('border:none;background:transparent;color:var(--muted);font-size:12px;font-weight:600;cursor:pointer')}
+          >
+            Disconnect
+          </button>
           {state.zoomConnected ? (
             <div style={sx('display:flex;align-items:center;gap:7px;background:#e7f1ff;color:#2160c4;font-size:12px;font-weight:600;padding:5px 11px;border-radius:20px')}>
               <IconZoom size={14} /> Zoom connected

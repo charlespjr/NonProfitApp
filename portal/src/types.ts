@@ -120,6 +120,14 @@ export interface MotionDraftForm {
   meeting: string
 }
 
+/** Form state for adding an organization's own document to the library. */
+export interface DocForm {
+  name: string
+  cat: DocCategory
+  desc: string
+  body: string
+}
+
 export interface DocNotifiedEntry {
   at: string
   count: number
@@ -135,6 +143,8 @@ export interface PersistedState {
   notes: Note[]
   activeNoteId: string | null
   calConnected: boolean
+  /** Which calendar the org syncs to (google, microsoft, apple, ics). */
+  calProvider: string
   emailConnected: boolean
   /** Which provider the foundation mailbox lives with (google, microsoft, …). */
   emailProvider: string
@@ -160,6 +170,7 @@ export interface UiState {
   drafting: DraftingState | null
   emailPreview: string | null
   acct: AcctForm | null
+  docForm: DocForm | null
   navOpen: boolean
   noteSaved: 'Saved' | 'Saving…'
   loginError: string

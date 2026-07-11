@@ -59,6 +59,7 @@ const defaultPersisted: PersistedState = {
   notes: [],
   activeNoteId: null,
   calConnected: false,
+  calProvider: '',
   emailConnected: false,
   emailProvider: '',
   emailAddress: '',
@@ -81,6 +82,7 @@ const defaultUi = {
   drafting: null,
   emailPreview: null,
   acct: null,
+  docForm: null,
   navOpen: false,
   noteSaved: 'Saved' as const,
   loginError: '',
@@ -162,6 +164,9 @@ export interface Store {
   signMember(memberId: string): void
   signAll(): void
   notifyDocSigners(docId: string): void
+  openAddDoc(): void
+  saveDoc(): void
+  removeCustomDoc(docId: string): void
 
   // notes
   newNote(): void
@@ -188,7 +193,7 @@ export interface Store {
   revokeAcct(): void
 
   // integrations
-  connectCal(): void
+  connectCal(providerId: string, providerName: string): void
   disconnectCal(): void
   connectZoom(): void
   disconnectZoom(): void
@@ -206,6 +211,7 @@ const BOARD_KEYS = [
   'notes',
   'activeNoteId',
   'calConnected',
+  'calProvider',
   'emailConnected',
   'emailProvider',
   'emailAddress',
@@ -313,6 +319,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       notes: [],
       activeNoteId: null,
       calConnected: false,
+      calProvider: '',
       emailConnected: false,
       emailProvider: '',
       emailAddress: '',
@@ -367,6 +374,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         notes: state.notes,
         activeNoteId: state.activeNoteId,
         calConnected: state.calConnected,
+        calProvider: state.calProvider,
         emailConnected: state.emailConnected,
         emailProvider: state.emailProvider,
         emailAddress: state.emailAddress,
@@ -670,6 +678,52 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       flash('Emailed ' + pending.length + ' board members to sign via DocuSeal')
     },
     [state.emailConnected, state.accounts, state.sessionUserId, sigFor, roster, flash, guard],
+  )
+
+  // ---------------------------------------------------- custom documents
+  const openAddDoc = useCallback(() => {
+    if (!guard()) return
+    set({ docForm: { name: '', cat: 'Governance', desc: '', body: '' } })
+  }, [guard, set])
+
+  const saveDoc = useCallback(() => {
+    const f = state.docForm
+    if (!f || !f.name.trim() || !guard()) return
+    const doc: PortalDoc = {
+      id: 'doc' + Date.now(),
+      name: f.name.trim(),
+      cat: f.cat,
+      updated: fmtDate(),
+      pages: Math.max(1, Math.round(f.body.length / 1800)),
+      desc: f.desc.trim() || 'Document added by your organization.',
+      todo: 'Open it in DocuSeal to route it to the board for signatures.',
+      body: f.body,
+    }
+    setState((s) => ({ ...s, customDocs: [...s.customDocs, doc], docForm: null }))
+    flash('Document added to your library')
+  }, [state.docForm, guard, flash])
+
+  const removeCustomDoc = useCallback(
+    (docId: string) => {
+      if (!guard()) return
+      setState((s) => {
+        if (!s.customDocs.some((d) => d.id === docId)) return s // seed docs stay
+        const sig = { ...s.sig }
+        delete sig[docId]
+        const docNotified = { ...s.docNotified }
+        delete docNotified[docId]
+        return {
+          ...s,
+          customDocs: s.customDocs.filter((d) => d.id !== docId),
+          motions: s.motions.map((m) => (m.docId === docId ? { ...m, docId: undefined } : m)),
+          sig,
+          docNotified,
+          modal: s.modal === docId ? null : s.modal,
+        }
+      })
+      flash('Document removed')
+    },
+    [guard, flash],
   )
 
   // ----------------------------------------------------------------- notes
@@ -1018,13 +1072,16 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   }, [flash])
 
   // ------------------------------------------------------------ integrations
-  const connectCal = useCallback(() => {
-    if (!guard()) return
-    void services.calendar.connect()
-    set({ calConnected: true })
-    flash('Google Calendar connected')
-  }, [set, flash, guard])
-  const disconnectCal = useCallback(() => set({ calConnected: false }), [set])
+  const connectCal = useCallback(
+    (providerId: string, providerName: string) => {
+      if (!guard()) return
+      void services.calendar.connect()
+      set({ calConnected: true, calProvider: providerId })
+      flash(`${providerName} connected`)
+    },
+    [set, flash, guard],
+  )
+  const disconnectCal = useCallback(() => set({ calConnected: false, calProvider: '' }), [set])
   const connectZoom = useCallback(() => {
     if (!guard()) return
     void services.zoom.connect()
@@ -1087,6 +1144,9 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     signMember,
     signAll,
     notifyDocSigners,
+    openAddDoc,
+    saveDoc,
+    removeCustomDoc,
     newNote,
     updateNote,
     deleteNote,

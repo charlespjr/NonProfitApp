@@ -52,8 +52,8 @@ export function SetupGuide() {
     },
     {
       key: 'calendar',
-      title: 'Connect Google Calendar',
-      desc: 'Board meetings and filing deadlines land on one calendar with reminders.',
+      title: 'Connect your calendar',
+      desc: 'Google, Outlook, Apple, or any ICS calendar — meetings and filing deadlines land there with reminders.',
       done: state.calConnected,
       cta: 'Connect',
       go: () => store.go('calendar'),
