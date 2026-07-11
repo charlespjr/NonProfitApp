@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { sx } from '../lib/sx'
 import { useStore } from '../state/store'
 import { IconInfo, IconPlus } from '../components/icons'
@@ -21,6 +22,7 @@ const permPill = sx('font-size:11px;font-weight:600;color:var(--brand);backgroun
 export function Team() {
   const store = useStore()
   const { state, currentUser } = store
+  const [period, setPeriod] = useState<'monthly' | 'yearly'>('monthly')
 
   return (
     <div style={sx('max-width:920px;margin:0 auto')}>
@@ -57,21 +59,51 @@ export function Team() {
             </div>
           </div>
           {store.apiOrg.plan === 'none' ? (
-            <div style={sx('display:flex;gap:8px;flex-wrap:wrap')}>
-              <button
-                className="hv-bright"
-                onClick={() => void store.checkout('growth')}
-                style={sx('border:none;background:var(--brand);color:#fff;font-size:13px;font-weight:600;padding:10px 16px;border-radius:10px;cursor:pointer')}
+            <div style={sx('display:flex;flex-direction:column;gap:8px;align-items:flex-end')}>
+              <div style={sx('display:flex;gap:6px')}>
+                {(['monthly', 'yearly'] as const).map((p) => (
+                  <button
+                    key={p}
+                    onClick={() => setPeriod(p)}
+                    style={{
+                      ...sx('font-size:11.5px;font-weight:600;padding:4px 11px;border-radius:20px;cursor:pointer'),
+                      border: '1px solid ' + (period === p ? 'var(--accent)' : 'var(--line)'),
+                      background: period === p ? 'var(--accent-soft)' : 'var(--panel)',
+                      color: period === p ? 'var(--brand)' : 'var(--muted)',
+                    }}
+                  >
+                    {p === 'monthly' ? 'Monthly' : 'Yearly — 2 months free'}
+                  </button>
+                ))}
+              </div>
+              <div style={sx('display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end')}>
+                {(
+                  [
+                    ['starter', 'Starter', '$29/mo', '$290/yr'],
+                    ['growth', 'Growth', '$59/mo', '$590/yr'],
+                    ['scale', 'Scale', '$99/mo', '$990/yr'],
+                  ] as const
+                ).map(([tier, label, mPrice, yPrice]) => (
+                  <button
+                    key={tier}
+                    className={tier === 'growth' ? 'hv-bright' : 'hv-border-accent'}
+                    onClick={() => void store.checkout(tier, period)}
+                    style={sx(
+                      tier === 'growth'
+                        ? 'border:none;background:var(--brand);color:#fff;font-size:13px;font-weight:600;padding:10px 16px;border-radius:10px;cursor:pointer'
+                        : 'border:1px solid var(--line);background:var(--panel);color:var(--brand);font-size:13px;font-weight:600;padding:10px 16px;border-radius:10px;cursor:pointer',
+                    )}
+                  >
+                    {label} · {period === 'monthly' ? mPrice : yPrice}
+                  </button>
+                ))}
+              </div>
+              <a
+                href="mailto:support@quorumsuite.com?subject=Quorum%20Launch%20Partner%20%E2%80%94%20request%20a%20quote"
+                style={sx('font-size:12px;color:var(--accent);font-weight:600;text-decoration:none')}
               >
-                Upgrade — Growth
-              </button>
-              <button
-                className="hv-border-accent"
-                onClick={() => void store.checkout('launch_partner')}
-                style={sx('border:1px solid var(--line);background:var(--panel);color:var(--brand);font-size:13px;font-weight:600;padding:10px 16px;border-radius:10px;cursor:pointer')}
-              >
-                Launch Partner
-              </button>
+                Want white-glove setup? Request a Launch Partner quote →
+              </a>
             </div>
           ) : (
             <button

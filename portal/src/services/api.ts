@@ -86,8 +86,9 @@ export const api = {
     req<{ member: ApiMember }>(`/members/${id}`, { method: 'PATCH', body: JSON.stringify(patch) }),
   deleteMember: (id: string) => req<{ ok: true }>(`/members/${id}`, { method: 'DELETE' }),
 
-  billingPlan: () => req<{ plan: string; planStatus: string; configured: boolean }>('/billing/plan'),
-  checkout: (tier: 'growth' | 'launch_partner') =>
-    req<{ url: string }>('/billing/checkout', { method: 'POST', body: JSON.stringify({ tier }) }),
+  billingPlan: () =>
+    req<{ plan: string; planStatus: string; configured: boolean; mode: 'stripe' | 'links' | 'none' }>('/billing/plan'),
+  checkout: (tier: 'starter' | 'growth' | 'scale' | 'launch_partner', period: 'monthly' | 'yearly' = 'monthly') =>
+    req<{ url: string }>('/billing/checkout', { method: 'POST', body: JSON.stringify({ tier, period }) }),
   billingPortal: () => req<{ url: string }>('/billing/portal', { method: 'POST' }),
 }

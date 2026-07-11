@@ -115,7 +115,7 @@ export interface Store {
   changePassword(password: string): Promise<void>
 
   // billing (api mode)
-  checkout(tier: 'growth' | 'launch_partner'): Promise<void>
+  checkout(tier: 'starter' | 'growth' | 'scale' | 'launch_partner', period?: 'monthly' | 'yearly'): Promise<void>
   openBillingPortal(): Promise<void>
 
   // derived domain helpers
@@ -868,13 +868,13 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 
   // -------------------------------------------------------------- billing
   const checkout = useCallback(
-    async (tier: 'growth' | 'launch_partner') => {
+    async (tier: 'starter' | 'growth' | 'scale' | 'launch_partner', period: 'monthly' | 'yearly' = 'monthly') => {
       try {
-        const { url } = await api.checkout(tier)
-        window.location.href = url
+        const { url } = await api.checkout(tier, period)
+        window.open(url, '_blank', 'noopener')
       } catch (e) {
         flash(e instanceof ApiError && e.status === 503
-          ? 'Billing isn’t configured yet — add the Stripe keys to enable subscriptions.'
+          ? 'Billing isn’t configured yet — payment links coming shortly.'
           : 'Could not start checkout — try again.')
       }
     },

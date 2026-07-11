@@ -53,6 +53,23 @@ const NOT_CONFIGURED = {
   error: 'Billing is not configured yet. Set STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET, STRIPE_PRICE_GROWTH, and STRIPE_PRICE_LAUNCH.',
 }
 
+/**
+ * QuickBooks payment-link mode: reusable QuickBooks Payments share links,
+ * one env var per plan/period. Active whenever Stripe is NOT configured and
+ * at least one PAYLINK_* var is set. Payments arrive in QuickBooks; plans
+ * are activated via POST /billing/activate (X-Admin-Key) since payment
+ * links have no webhook back to the app.
+ */
+const PAYLINKS: Record<string, string | undefined> = {
+  'starter:monthly': process.env.PAYLINK_STARTER_M,
+  'starter:yearly': process.env.PAYLINK_STARTER_Y,
+  'growth:monthly': process.env.PAYLINK_GROWTH_M,
+  'growth:yearly': process.env.PAYLINK_GROWTH_Y,
+  'scale:monthly': process.env.PAYLINK_SCALE_M,
+  'scale:yearly': process.env.PAYLINK_SCALE_Y,
+}
+const linkModeActive = () => !process.env.STRIPE_SECRET_KEY && Object.values(PAYLINKS).some(Boolean)
+
 export const billing = new Hono<Env>()
 
 billing.get('/plan', requireAdminLite, async (c) => {
@@ -61,11 +78,41 @@ billing.get('/plan', requireAdminLite, async (c) => {
   return c.json({
     plan: org?.plan ?? 'none',
     planStatus: org?.planStatus ?? 'inactive',
-    configured: !!process.env.STRIPE_SECRET_KEY,
+    configured: !!process.env.STRIPE_SECRET_KEY || linkModeActive(),
+    mode: process.env.STRIPE_SECRET_KEY ? 'stripe' : linkModeActive() ? 'links' : 'none',
   })
 })
 
+/** Manual plan activation for payment-link mode (and support operations).
+ *  Requires the ADMIN_KEY env var; scoped to a single org by id. */
+billing.post('/activate', async (c) => {
+  const adminKey = process.env.ADMIN_KEY
+  if (!adminKey || c.req.header('x-admin-key') !== adminKey) {
+    return c.json({ error: 'forbidden' }, 403)
+  }
+  const body = await c.req.json().catch(() => ({}))
+  const orgId = String(body?.orgId || '')
+  const plan = ['starter', 'growth', 'scale', 'launch_partner', 'none'].includes(body?.plan) ? body.plan : null
+  if (!orgId || !plan) return c.json({ error: 'orgId and plan (starter|growth|scale|launch_partner|none) required' }, 400)
+  const db = await getDb()
+  const [org] = await db.select().from(orgs).where(eq(orgs.id, orgId))
+  if (!org) return c.json({ error: 'org not found' }, 404)
+  await db
+    .update(orgs)
+    .set({ plan, planStatus: plan === 'none' ? 'inactive' : 'active' })
+    .where(eq(orgs.id, orgId))
+  return c.json({ ok: true, orgId, plan })
+})
+
 billing.post('/checkout', requireAdminLite, async (c) => {
+  if (linkModeActive()) {
+    const body = await c.req.json().catch(() => ({}))
+    const tier = ['starter', 'growth', 'scale'].includes(body?.tier) ? body.tier : 'growth'
+    const period = body?.period === 'yearly' ? 'yearly' : 'monthly'
+    const url = PAYLINKS[`${tier}:${period}`]
+    if (!url) return c.json({ error: `No payment link configured for ${tier} (${period}).` }, 503)
+    return c.json({ url, mode: 'links' })
+  }
   const stripe = await stripeClient()
   if (!stripe) return c.json(NOT_CONFIGURED, 503)
   const body = await c.req.json().catch(() => ({}))
