@@ -45,6 +45,27 @@ All images are 1920px PNGs, warm/terracotta theme, showing a realistic mid-launc
 
 **Suggested visual order for a feature-tour video:** 1 → 2 → 5 → 3 → 6 → 4 (status → to-do → paperwork → decision → notification → schedule).
 
+### 2b. Full-app screenshot set (14 shots — every screen and modal)
+
+Captured from the real product running as "Adams Infinite Legacy" with a 7-member board and populated mid-launch data. Files live in this repo at `marketing/app-screenshots/`; public URLs below work directly as NotebookLM sources (`https://raw.githubusercontent.com/charlespjr/NonProfitApp/main/marketing/app-screenshots/<file>`).
+
+| File | What it shows | Marketing angle |
+|---|---|---|
+| `01-signin.png` | Sign-in screen with Quorum brand panel | "Your board's private front door" |
+| `02-register.png` | "Create your foundation" self-serve registration | "From zero to your own portal in one minute" |
+| `03-dashboard.png` | Admin dashboard: progress ring, KPIs, checklist snapshot, meetings | "One glance = launch status" |
+| `04-checklist.png` | 27-step / 5-stage launch checklist with plain-English help | "The roadmap the IRS never sends you" |
+| `05-documents.png` | Document library with signature-status badges | "Paperwork that explains itself" |
+| `06-docuseal-modal.png` | DocuSeal signing modal: document preview, signer roster, progress bar, remind buttons | "Seven signatures without printing a page" |
+| `07-votes.png` | Motion card with live For/Against/Abstain tally and per-director rows | "Every decision on the record" |
+| `08-email-preview.png` | The exact vote-request email each director receives | "Meets your board in their inbox" |
+| `09-new-motion-modal.png` | New-motion form with auto Zoom + calendar + email note | "One form starts the whole vote" |
+| `10-ai-draft-modal.png` | AI-drafted board resolution (recitals, resolutions, signature block), editable, Send-to-DocuSeal | "A passed motion writes its own paperwork" |
+| `11-calendar.png` | Month view + Google Calendar / Zoom connected, This-month rail | "Meetings and deadlines, one view" |
+| `12-notes.png` | Private notes list + editor with autosave | "The founder's own scratchpad" |
+| `13-team-access.png` | Team & Access: subscription card, Hostinger email card, member table with permissions | "Volunteer-board-friendly logins — and where you upgrade" |
+| `14-manage-access-modal.png` | Manage-access modal: username, personal email, temp password generator, Vote/Sign toggles | "Grant exactly the access each member needs" |
+
 ---
 
 ## 3. Feature breakdown (benefit-first)
