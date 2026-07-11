@@ -12,6 +12,7 @@ import { Notes } from './screens/Notes'
 import { Votes } from './screens/Votes'
 import { Team } from './screens/Team'
 import {
+  AddDocumentModal,
   AIDraftModal,
   ChangePasswordModal,
   DocuSealModal,
@@ -60,6 +61,7 @@ export default function App() {
           <DocuSealModal />
           <AIDraftModal />
           <NewMotionModal />
+          <AddDocumentModal />
           <ManageAccessModal />
           <EmailPreviewModal />
           <ChangePasswordModal />

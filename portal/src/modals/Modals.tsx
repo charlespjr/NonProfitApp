@@ -320,6 +320,90 @@ export function NewMotionModal() {
   )
 }
 
+// ---------------------------------------------------- Add own document
+/** Organizations add their own documents when the built-in library isn't
+ *  what their board signs — name it, describe it, paste the text. */
+export function AddDocumentModal() {
+  const store = useStore()
+  const f = store.state.docForm
+  if (!f) return null
+  const close = () => store.set({ docForm: null })
+  const valid = !!f.name.trim()
+
+  return (
+    <ModalShell onClose={close} maxWidth={560}>
+      <div style={sx('display:flex;align-items:center;gap:12px;padding:16px 20px;border-bottom:1px solid var(--line)')}>
+        <div style={sx('font-family:Spectral,serif;font-size:17px;font-weight:600;flex:1')}>Add your own document</div>
+        <button className="hv-bg" onClick={close} style={closeBtnStyle}><IconClose /></button>
+      </div>
+      <div style={sx('padding:20px;display:flex;flex-direction:column;gap:16px;max-height:70vh;overflow:auto')}>
+        <div style={sx('display:flex;flex-direction:column;gap:7px')}>
+          <label style={fieldLabel}>Document name</label>
+          <input
+            className="inp"
+            value={f.name}
+            onChange={(e) => store.set({ docForm: { ...f, name: e.target.value } })}
+            placeholder="e.g. Memorandum of Understanding — City Food Bank"
+            style={fieldInput}
+          />
+        </div>
+        <div style={sx('display:flex;flex-direction:column;gap:7px')}>
+          <label style={fieldLabel}>Category</label>
+          <select
+            className="inp-plain"
+            value={f.cat}
+            onChange={(e) => store.set({ docForm: { ...f, cat: e.target.value as typeof f.cat } })}
+            style={fieldInput}
+          >
+            <option value="Governance">Governance</option>
+            <option value="Fundraising">Fundraising</option>
+            <option value="Donor Letters">Donor Letters</option>
+          </select>
+        </div>
+        <div style={sx('display:flex;flex-direction:column;gap:7px')}>
+          <label style={fieldLabel}>What is it? <span style={sx('color:var(--muted);font-weight:400')}>(shown in the library)</span></label>
+          <textarea
+            className="inp"
+            value={f.desc}
+            onChange={(e) => store.set({ docForm: { ...f, desc: e.target.value } })}
+            placeholder="One or two sentences: what this document is and why the board signs it."
+            style={sx('width:100%;min-height:64px;resize:vertical;padding:11px 13px;border:1px solid var(--line);border-radius:10px;background:var(--panel);font-size:14px;line-height:1.5;color:var(--ink);outline:none')}
+          />
+        </div>
+        <div style={sx('display:flex;flex-direction:column;gap:7px')}>
+          <label style={fieldLabel}>Document text <span style={sx('color:var(--muted);font-weight:400')}>(optional — paste it here)</span></label>
+          <textarea
+            className="inp"
+            value={f.body}
+            onChange={(e) => store.set({ docForm: { ...f, body: e.target.value } })}
+            placeholder="Paste the document's text so the board can read it before signing. You can leave this empty and track an externally-held file."
+            style={sx('width:100%;min-height:140px;resize:vertical;padding:11px 13px;border:1px solid var(--line);border-radius:10px;background:var(--panel);font-size:13px;line-height:1.6;color:var(--ink);outline:none;font-family:ui-monospace,monospace')}
+          />
+        </div>
+        <div style={sx('display:flex;align-items:flex-start;gap:9px;background:var(--accent-soft);border-radius:10px;padding:11px 13px')}>
+          <IconInfo size={15} style={{ flex: 'none', marginTop: 1 }} />
+          <div style={sx('font-size:12px;color:var(--brand);line-height:1.5')}>
+            Once added, open it in <strong>DocuSeal</strong> to route it to your whole board for signatures — exactly like the built-in documents. Have your attorney review anything legally binding.
+          </div>
+        </div>
+      </div>
+      <div style={sx('padding:15px 20px;border-top:1px solid var(--line);display:flex;justify-content:flex-end;gap:10px')}>
+        <button className="hv-bg" onClick={close} style={cancelBtnStyle}>Cancel</button>
+        <button
+          onClick={store.saveDoc}
+          style={{
+            ...sx('border:none;font-size:13px;font-weight:600;padding:9px 18px;border-radius:9px;color:#fff;background:var(--brand)'),
+            cursor: valid ? 'pointer' : 'not-allowed',
+            opacity: valid ? 1 : 0.5,
+          }}
+        >
+          Add to library
+        </button>
+      </div>
+    </ModalShell>
+  )
+}
+
 // -------------------------------------------------------- Manage access
 export function ManageAccessModal() {
   const store = useStore()
