@@ -82,7 +82,7 @@ function publicUser(u: typeof users.$inferSelect) {
 
 export const app = new Hono<Env>().basePath('/api')
 
-app.get('/health', (c) => c.json({ ok: true }))
+app.get('/health', (c) => c.json({ ok: true, build: 2 }))
 
 // ----------------------------------------------------------------- auth
 app.post('/auth/register', async (c) => {
