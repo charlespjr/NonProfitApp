@@ -127,7 +127,7 @@ async function main() {
   check('checkout as non-admin → 403', res.status === 403)
 
 
-  // 15b. QuickBooks API billing mode: checkout creates an invoice, sync activates
+  // 15b. QuickBooks API billing: checkout, reuse, supersede, sync-activate
   process.env.QBO_CLIENT_ID = 'cid'
   process.env.QBO_CLIENT_SECRET = 'csecret'
   process.env.QBO_REALM_ID = '9341'
@@ -135,40 +135,77 @@ async function main() {
   process.env.ADMIN_KEY = 'test-admin-key'
   const realFetch = globalThis.fetch
   const qboCalls: string[] = []
+  const voided: string[] = []
+  let createSeq = 0
+  const invoices: Record<string, { Balance: number }> = {}
   globalThis.fetch = (async (input: any, init?: any) => {
     const url = String(input)
     if (!url.includes('intuit.com')) return realFetch(input, init)
-    qboCalls.push((init?.method || 'GET') + ' ' + url.split('?')[0])
+    const method = init?.method || 'GET'
+    qboCalls.push(method + ' ' + url.split('?')[0])
     const ok = (body: unknown) => new Response(JSON.stringify(body), { status: 200, headers: { 'content-type': 'application/json' } })
     if (url.includes('oauth.platform.intuit.com')) return ok({ access_token: 'at1', refresh_token: 'rt2', expires_in: 3600 })
     if (url.includes('/query')) {
       const query = decodeURIComponent(url.split('query=')[1].split('&')[0])
       if (query.includes('from Item')) return ok({ QueryResponse: { Item: [{ Id: '67' }] } })
       if (query.includes('from Customer')) return ok({ QueryResponse: {} })
-      if (query.includes('from Invoice')) return ok({ QueryResponse: { Invoice: [{ Id: 'INV1', Balance: 0 }] } })
+      if (query.includes('from Invoice')) {
+        const m = query.match(/Id = '([^']+)'/)
+        const inv = m && invoices[m[1]]
+        return ok({ QueryResponse: { Invoice: inv ? [{ Id: m![1], Balance: inv.Balance }] : [] } })
+      }
       return ok({ QueryResponse: {} })
     }
     if (url.includes('/customer')) return ok({ Customer: { Id: 'C1' } })
-    if (url.includes('/invoice')) return ok({ Invoice: { Id: 'INV1', InvoiceLink: 'https://pay.example/inv1' } })
+    if (url.includes('operation=void')) {
+      const id = JSON.parse(init.body).Id
+      voided.push(id)
+      delete invoices[id]
+      return ok({ Invoice: { Id: id } })
+    }
+    const readMatch = url.match(/\/invoice\/([A-Za-z0-9]+)\?/)
+    if (readMatch && method === 'GET') {
+      const inv = invoices[readMatch[1]]
+      if (!inv) return new Response('nope', { status: 404 })
+      return ok({ Invoice: { Id: readMatch[1], Balance: inv.Balance, SyncToken: '0', InvoiceLink: 'https://pay.example/' + readMatch[1].toLowerCase() } })
+    }
+    if (url.includes('/invoice') && method === 'POST') {
+      const id = 'INV' + ++createSeq
+      invoices[id] = { Balance: 59 }
+      return ok({ Invoice: { Id: id, InvoiceLink: 'https://pay.example/' + id.toLowerCase() } })
+    }
     return ok({})
   }) as typeof fetch
 
   res = await app.request('/api/billing/plan', { headers: { cookie: admin } })
-  const qboPlan = (await j(res)) as { mode?: string }
-  check('billing mode switches to qbo', qboPlan.mode === 'qbo')
+  const qboPlanRes = (await j(res)) as { mode?: string }
+  check('billing mode switches to qbo', qboPlanRes.mode === 'qbo')
   res = await app.request('/api/billing/checkout', json({ tier: 'growth', period: 'monthly' }, admin))
-  const co = await j(res)
-  check('qbo checkout returns invoice pay link', res.status === 200 && co.url === 'https://pay.example/inv1' && co.invoiceId === 'INV1', co)
+  const co1 = await j(res)
+  check('qbo checkout returns invoice pay link', res.status === 200 && co1.url === 'https://pay.example/inv1' && co1.invoiceId === 'INV1', co1)
   check('qbo flow called token + customer + invoice APIs',
     qboCalls.some((x) => x.includes('oauth.platform')) &&
     qboCalls.some((x) => x.includes('/customer')) &&
     qboCalls.some((x) => x.includes('/invoice')))
+
+  // clicking the same plan again must NOT create a second invoice
+  res = await app.request('/api/billing/checkout', json({ tier: 'growth', period: 'monthly' }, admin))
+  const co2 = await j(res)
+  check('same-plan re-checkout reuses the open invoice', co2.invoiceId === 'INV1' && createSeq === 1, co2)
+
+  // switching plans must void the old invoice and create exactly one new one
+  res = await app.request('/api/billing/checkout', json({ tier: 'scale', period: 'yearly' }, admin))
+  const co3 = await j(res)
+  check('plan switch voids old invoice and creates new', co3.invoiceId === 'INV2' && voided.includes('INV1'), { co3, voided })
+
+  // payment: INV2 goes to zero balance → sync activates the org on scale
+  invoices['INV2'].Balance = 0
   res = await app.request('/api/billing/sync', { headers: { 'x-admin-key': 'test-admin-key' } })
   const sync = await j(res)
   check('sync marks invoice paid and activates org', res.status === 200 && Array.isArray(sync.activated) && sync.activated.length === 1, sync)
   res = await app.request('/api/billing/plan', { headers: { cookie: admin } })
   const planAfter = (await j(res)) as { plan?: string; planStatus?: string }
-  check('org plan active after payment', planAfter.plan === 'growth' && planAfter.planStatus === 'active', planAfter)
+  check('org plan active after payment (scale)', planAfter.plan === 'scale' && planAfter.planStatus === 'active', planAfter)
   res = await app.request('/api/billing/sync', {})
   check('sync without auth -> 403', res.status === 403)
   globalThis.fetch = realFetch
