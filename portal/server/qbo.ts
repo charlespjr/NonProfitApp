@@ -9,6 +9,12 @@
  * matching Quorum service item with online card/ACH payment enabled → hand
  * the customer the invoice's hosted payment link. Sync: list our open
  * invoices, mark orgs active when QuickBooks reports Balance = 0.
+ *
+ * Multi-business QuickBooks files: set QBO_LOCATION_NAME (e.g. "Quorum") to a
+ * QuickBooks Location whose sales forms carry Quorum's own company name and
+ * email. Every invoice is then tagged with that location (DepartmentRef), so
+ * the books can be split per business and Quorum invoices carry Quorum
+ * branding. Requires Location tracking (QuickBooks Plus/Advanced).
  */
 import { and, eq } from 'drizzle-orm'
 import { getDb } from './db.js'
@@ -153,6 +159,22 @@ async function ensureCustomer(orgId: string, orgName: string, email: string): Pr
   return created.Customer.Id
 }
 
+let departmentIdCache: string | null | undefined
+async function departmentId(): Promise<string | null> {
+  const name = process.env.QBO_LOCATION_NAME
+  if (!name) return null
+  if (departmentIdCache !== undefined) return departmentIdCache
+  try {
+    const body = await q(`select Id from Department where Name = '${name.replace(/'/g, "\\'")}'`)
+    departmentIdCache = body?.QueryResponse?.Department?.[0]?.Id ?? null
+    if (!departmentIdCache) console.error(`QBO location "${name}" not found — invoices will be untagged`)
+  } catch (e) {
+    console.error('QBO department lookup failed:', e)
+    departmentIdCache = null
+  }
+  return departmentIdCache ?? null
+}
+
 async function readInvoice(id: string): Promise<any | null> {
   try {
     const body = await qboFetch(`/invoice/${id}?minorversion=75&include=invoiceLink`)
@@ -209,9 +231,11 @@ export async function createCheckoutInvoice(input: {
   }
   const customerId = await ensureCustomer(input.orgId, input.orgName, input.adminEmail)
   const itemId = await itemIdByName(plan.itemName)
+  const deptId = await departmentId()
   const created = await qboFetch('/invoice?minorversion=75&include=invoiceLink', {
     method: 'POST',
     body: JSON.stringify({
+      ...(deptId ? { DepartmentRef: { value: deptId } } : {}),
       CustomerRef: { value: customerId },
       BillEmail: { Address: input.adminEmail },
       AllowOnlineCreditCardPayment: true,
