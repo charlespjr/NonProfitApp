@@ -4,9 +4,9 @@ import { deleteCookie, getCookie, setCookie } from 'hono/cookie'
 import { sign, verify } from 'hono/jwt'
 import { and, eq } from 'drizzle-orm'
 import bcrypt from 'bcryptjs'
-import { getDb } from './db'
-import { orgs, orgState, users } from './schema'
-import { billing } from './billing'
+import { getDb } from './db.js'
+import { orgs, orgState, users } from './schema.js'
+import { billing } from './billing.js'
 
 const JWT_SECRET = process.env.JWT_SECRET || 'dev-only-secret-change-in-production'
 const COOKIE = 'quorum_session'
@@ -82,7 +82,7 @@ function publicUser(u: typeof users.$inferSelect) {
 
 export const app = new Hono<Env>().basePath('/api')
 
-app.get('/health', (c) => c.json({ ok: true, build: 2 }))
+app.get('/health', (c) => c.json({ ok: true, build: 3 }))
 
 // ----------------------------------------------------------------- auth
 app.post('/auth/register', async (c) => {

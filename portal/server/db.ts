@@ -9,7 +9,7 @@
  */
 import type { NodePgDatabase } from 'drizzle-orm/node-postgres'
 import type { PgliteDatabase } from 'drizzle-orm/pglite'
-import { DDL } from './schema'
+import { DDL } from './schema.js'
 
 export type Db = NodePgDatabase | PgliteDatabase
 
