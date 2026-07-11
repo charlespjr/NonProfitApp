@@ -11,3 +11,11 @@ createRoot(document.getElementById('root')!).render(
     </StoreProvider>
   </StrictMode>,
 )
+
+// Installable app (PWA): register the conservative service worker in
+// production builds only, so `vite dev` never fights a cached shell.
+if (import.meta.env.PROD && 'serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js').catch(() => {})
+  })
+}

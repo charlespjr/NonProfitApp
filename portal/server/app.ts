@@ -43,7 +43,9 @@ async function readSession(c: Context): Promise<SessionUser | null> {
   }
 }
 
-type Env = { Variables: { session: SessionUser; me: typeof users.$inferSelect } }
+type Env = {
+  Variables: { session: SessionUser; me: typeof users.$inferSelect; org: typeof orgs.$inferSelect }
+}
 
 async function requireAuth(c: Context<Env>, next: Next) {
   const session = await readSession(c)
@@ -61,6 +63,31 @@ async function requireAuth(c: Context<Env>, next: Next) {
 
 async function requireAdmin(c: Context<Env>, next: Next) {
   if (!c.get('me').isAdmin) return c.json({ error: 'admin only' }, 403)
+  await next()
+}
+
+/** Board size included with each plan; absent = unlimited. */
+const PLAN_MEMBER_LIMITS: Record<string, number> = { starter: 7 }
+
+/**
+ * The free preview is read-only: anyone can register, sign in, and look
+ * around, but every write (board state, members) needs an active plan.
+ * Auth, reads, and billing stay open so upgrading is always possible.
+ */
+async function requireActivePlan(c: Context<Env>, next: Next) {
+  const db = await getDb()
+  const [org] = await db.select().from(orgs).where(eq(orgs.id, c.get('session').orgId))
+  if (!org || org.plan === 'none' || org.planStatus !== 'active') {
+    return c.json(
+      {
+        error:
+          'Your board is on the free preview — you can look around, but making changes needs an active plan. Choose a plan in Team & Access.',
+        code: 'upgrade_required',
+      },
+      402,
+    )
+  }
+  c.set('org', org)
   await next()
 }
 
@@ -85,7 +112,7 @@ export const app = new Hono<Env>().basePath('/api')
 app.get('/health', (c) =>
   c.json({
     ok: true,
-    build: 4,
+    build: 5,
     // Diagnostics: is a real database wired in, and which db-ish env var
     // NAMES exist (never values). Safe to expose; invaluable when a
     // marketplace integration injects credentials under a surprise name.
@@ -188,7 +215,7 @@ app.get('/state', requireAuth, async (c) => {
   return c.json({ data: row?.data ?? {}, version: row?.version ?? 0 })
 })
 
-app.put('/state', requireAuth, async (c) => {
+app.put('/state', requireAuth, requireActivePlan, async (c) => {
   const body = await c.req.json().catch(() => null)
   if (!body || typeof body.data !== 'object' || typeof body.version !== 'number') {
     return c.json({ error: 'data (object) and version (number) required' }, 400)
@@ -215,7 +242,7 @@ app.get('/members', requireAuth, async (c) => {
   return c.json({ members: rows.map(publicUser) })
 })
 
-app.post('/members', requireAuth, requireAdmin, async (c) => {
+app.post('/members', requireAuth, requireAdmin, requireActivePlan, async (c) => {
   const body = await c.req.json().catch(() => null)
   const name = (body?.name || '').trim()
   const username = (body?.username || '').trim().toLowerCase()
@@ -225,6 +252,16 @@ app.post('/members', requireAuth, requireAdmin, async (c) => {
   const db = await getDb()
   const orgId = c.get('session').orgId
   const existing = await db.select().from(users).where(eq(users.orgId, orgId))
+  const limit = PLAN_MEMBER_LIMITS[c.get('org').plan]
+  if (limit && existing.length >= limit) {
+    return c.json(
+      {
+        error: `The Starter plan includes up to ${limit} board members. Upgrade to Growth for an unlimited board.`,
+        code: 'member_limit',
+      },
+      402,
+    )
+  }
   if (existing.some((u) => u.username === username)) return c.json({ error: 'username already in use' }, 409)
   if (existing.some((u) => u.email === email)) return c.json({ error: 'email already in use' }, 409)
   const userId = id('usr_')
@@ -247,7 +284,7 @@ app.post('/members', requireAuth, requireAdmin, async (c) => {
   return c.json({ member: publicUser(row) }, 201)
 })
 
-app.patch('/members/:id', requireAuth, requireAdmin, async (c) => {
+app.patch('/members/:id', requireAuth, requireAdmin, requireActivePlan, async (c) => {
   const db = await getDb()
   const orgId = c.get('session').orgId
   const targetId = c.req.param('id') || ''
@@ -279,7 +316,7 @@ app.patch('/members/:id', requireAuth, requireAdmin, async (c) => {
   return c.json({ member: publicUser(row) })
 })
 
-app.delete('/members/:id', requireAuth, requireAdmin, async (c) => {
+app.delete('/members/:id', requireAuth, requireAdmin, requireActivePlan, async (c) => {
   const targetId = c.req.param('id') || ''
   if (targetId === c.get('me').id) return c.json({ error: 'you cannot revoke your own access' }, 400)
   const db = await getDb()

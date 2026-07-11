@@ -23,6 +23,14 @@ const json = (body: unknown, cookie?: string): RequestInit => ({
 })
 
 async function main() {
+  process.env.ADMIN_KEY = 'test-admin-key'
+  const activate = (orgId: string, plan: string) =>
+    app.request('/api/billing/activate', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', 'x-admin-key': 'test-admin-key' },
+      body: JSON.stringify({ orgId, plan }),
+    })
+
   // 1. unauthenticated is rejected
   let res = await app.request('/api/state')
   check('unauthenticated /state → 401', res.status === 401)
@@ -56,6 +64,15 @@ async function main() {
   // 6. login with email works
   res = await app.request('/api/auth/login', json({ identifier: 'ALITALIA.ADAMS@GMAIL.COM', password: 'correct-horse-9' }))
   check('email login (case-insensitive) → 200', res.status === 200)
+
+  // 6b. free preview is read-only: every write is 402 until a plan is active
+  res = await app.request('/api/state', { ...json({ data: { tasks: {} }, version: 0 }, admin), method: 'PUT' })
+  const gated = await j(res)
+  check('unpaid PUT /state → 402 upgrade_required', res.status === 402 && gated.code === 'upgrade_required', gated)
+  res = await app.request('/api/members', json({ name: 'Too Early', username: 'early', email: 'early@x.com' }, admin))
+  check('unpaid invite member → 402', res.status === 402)
+  res = await activate(reg.org.id, 'growth')
+  check('activate org (growth) via admin key', res.status === 200)
 
   // 7. state starts empty, PUT bumps version, stale version conflicts
   res = await app.request('/api/state', { headers: { cookie: admin } })
@@ -103,6 +120,9 @@ async function main() {
     orgName: 'Other Foundation', name: 'Sam Lee', email: 'sam@other.org', username: 'sam', password: 'password-99',
   }))
   const sam = cookieOf(res)
+  const samOrgId = (await j(res)).org.id as string
+  // Starter plan: writes allowed, board capped at 7 members.
+  await activate(samOrgId, 'starter')
   res = await app.request('/api/state', { headers: { cookie: sam } })
   const samState = await j(res)
   check('second org state isolated (v0, empty)', samState.version === 0 && !samState.data?.tasks)
@@ -117,10 +137,22 @@ async function main() {
   const crossOrg = (await j(res)) as { org?: { name?: string } }
   check('cross-org username disambiguated by password', res.status === 200 && crossOrg.org?.name === 'Other Foundation')
 
+  // 14b. Starter caps the board at 7 members; Growth lifts the cap
+  for (let i = 0; i < 5; i++) {
+    res = await app.request('/api/members', json({ name: 'Member ' + i, username: 'm' + i, email: 'm' + i + '@other.org' }, sam))
+  }
+  check('starter allows up to 7 members', res.status === 201, await res.clone().text())
+  res = await app.request('/api/members', json({ name: 'One Too Many', username: 'm8', email: 'm8@other.org' }, sam))
+  const capped = await j(res)
+  check('8th member on starter → 402 member_limit', res.status === 402 && capped.code === 'member_limit', capped)
+  await activate(samOrgId, 'growth')
+  res = await app.request('/api/members', json({ name: 'Eighth Fine', username: 'm8', email: 'm8@other.org' }, sam))
+  check('growth lifts the member cap', res.status === 201)
+
   // 15. billing unconfigured behaves gracefully
   res = await app.request('/api/billing/plan', { headers: { cookie: admin } })
   const plan = (await j(res)) as { plan?: string; configured?: boolean }
-  check('billing plan readable, unconfigured', res.status === 200 && plan.plan === 'none' && plan.configured === false)
+  check('billing plan readable, unconfigured', res.status === 200 && plan.plan === 'growth' && plan.configured === false)
   res = await app.request('/api/billing/checkout', json({ tier: 'growth' }, admin))
   check('checkout without Stripe → 503', res.status === 503)
   res = await app.request('/api/billing/checkout', json({ tier: 'growth' }, judyCookie))
