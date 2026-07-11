@@ -163,6 +163,89 @@ function LogoCard() {
   )
 }
 
+/** The org's own Anthropic API key powers AI-drafted motions & resolutions.
+ *  Stored server-side only; the client sees a connected/not-connected flag. */
+function AiKeyCard() {
+  const store = useStore()
+  const [key, setKey] = useState('')
+  const [open, setOpen] = useState(false)
+  if (store.mode !== 'api') return null
+  const connected = !!store.apiOrg?.aiConfigured
+
+  return (
+    <div style={sx('background:var(--panel);border:1px solid var(--line);border-radius:13px;padding:14px 18px;margin-bottom:14px')}>
+      <div style={sx('display:flex;align-items:center;gap:14px;flex-wrap:wrap')}>
+        <div style={{ ...sx('width:42px;height:42px;border-radius:11px;color:#fff;display:grid;place-items:center;flex:none;font-weight:800;font-size:17px'), background: connected ? 'var(--good)' : '#CC785C' }}>
+          ✳
+        </div>
+        <div style={sx('flex:1;min-width:200px')}>
+          <div style={sx('font-size:14px;font-weight:600')}>
+            AI drafting {connected && <span style={sx('margin-left:8px;font-size:11px;font-weight:600;color:var(--good);background:var(--good-soft);padding:2px 9px;border-radius:20px;vertical-align:middle')}>connected</span>}
+          </div>
+          <div style={sx('font-size:12.5px;color:var(--muted);line-height:1.5;margin-top:2px')}>
+            {connected
+              ? 'Passed motions can draft their own formal resolutions with AI. Your key is stored securely and never shown again.'
+              : 'Add your organization’s Anthropic API key and passed motions draft their own formal resolutions with AI. Without a key, Quorum uses its built-in template — also fine.'}
+          </div>
+        </div>
+        <div style={sx('display:flex;gap:8px;flex:none')}>
+          {connected && (
+            <button
+              className="hv-border-danger"
+              onClick={() => void store.setAiKey('')}
+              style={sx('border:1px solid var(--line);background:var(--panel);color:var(--muted);font-size:12.5px;font-weight:600;padding:8px 14px;border-radius:9px;cursor:pointer')}
+            >
+              Remove key
+            </button>
+          )}
+          <button
+            className="hv-border-accent"
+            onClick={() => setOpen(!open)}
+            style={sx('border:1px solid var(--line);background:var(--panel);color:var(--brand);font-size:12.5px;font-weight:600;padding:8px 14px;border-radius:9px;cursor:pointer')}
+          >
+            {connected ? 'Replace key' : 'Set up AI drafting'}
+          </button>
+        </div>
+      </div>
+      {open && (
+        <div style={sx('margin-top:14px;background:var(--bg);border:1px solid var(--line);border-radius:11px;padding:14px 16px')}>
+          <div style={sx('font-size:12px;font-weight:700;color:var(--brand);letter-spacing:.05em;text-transform:uppercase;margin-bottom:8px')}>Get your key — free to start</div>
+          <ol style={sx('margin:0;padding-left:19px;display:flex;flex-direction:column;gap:6px')}>
+            <li style={sx('font-size:12.5px;color:var(--ink);line-height:1.55')}>Create a free account at <strong>console.anthropic.com</strong> (Anthropic makes Claude, the AI).</li>
+            <li style={sx('font-size:12.5px;color:var(--ink);line-height:1.55')}>Open <strong>API Keys</strong> and click <strong>Create Key</strong> — name it "Quorum".</li>
+            <li style={sx('font-size:12.5px;color:var(--ink);line-height:1.55')}>Copy the key (it starts with <code>sk-ant-</code>) and paste it below. New accounts include free starter credit, and each drafted document costs about a penny after that.</li>
+          </ol>
+          <div style={sx('display:flex;gap:8px;margin-top:12px;flex-wrap:wrap')}>
+            <input
+              className="inp"
+              type="password"
+              value={key}
+              onChange={(e) => setKey(e.target.value)}
+              placeholder="sk-ant-…"
+              style={sx('flex:1;min-width:220px;padding:10px 13px;border:1px solid var(--line);border-radius:10px;background:var(--panel);font-size:13.5px;color:var(--ink);outline:none;font-family:ui-monospace,monospace')}
+            />
+            <button
+              className="hv-bright"
+              onClick={() => {
+                if (!key.trim().startsWith('sk-ant-')) {
+                  store.flash('Anthropic keys start with sk-ant-')
+                  return
+                }
+                void store.setAiKey(key.trim())
+                setKey('')
+                setOpen(false)
+              }}
+              style={sx('border:none;background:var(--brand);color:#fff;font-size:13px;font-weight:600;padding:10px 18px;border-radius:10px;cursor:pointer')}
+            >
+              Save key
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
 /** Provider-agnostic "connect your foundation email" card. */
 function EmailCard() {
   const store = useStore()
@@ -401,6 +484,8 @@ export function Team() {
       </div>
 
       <LogoCard />
+
+      <AiKeyCard />
 
       <EmailCard />
 

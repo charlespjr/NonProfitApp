@@ -115,6 +115,22 @@ async function main() {
   res = await app.request('/api/auth/login', json({ identifier: 'judy.adams', password: 'my-new-pass-1' }))
   check('new password works', res.status === 200)
 
+  // 12b. AI drafting key: validated, admin-only, never echoed back
+  res = await app.request('/api/org/ai-key', json({ key: 'not-a-key' }, admin))
+  check('malformed anthropic key → 400', res.status === 400)
+  res = await app.request('/api/org/ai-key', json({ key: 'sk-ant-api03-test-key' }, judyCookie))
+  check('non-admin cannot set ai key → 403', res.status === 403)
+  res = await app.request('/api/ai/draft', json({ motionTitle: 'Adopt budget' }, admin))
+  const noKey = await j(res)
+  check('draft without key → 400 no_ai_key', res.status === 400 && noKey.code === 'no_ai_key', noKey)
+  res = await app.request('/api/org/ai-key', json({ key: 'sk-ant-api03-test-key' }, admin))
+  check('ai key saved', res.status === 200 && (await j(res)).aiConfigured === true)
+  res = await app.request('/api/auth/me', { headers: { cookie: admin } })
+  const meAi = await j(res)
+  check('key never leaks to clients; only aiConfigured', meAi.org.aiConfigured === true && !('anthropicKey' in meAi.org), meAi.org)
+  res = await app.request('/api/org/ai-key', json({ key: '' }, admin))
+  check('ai key removable', res.status === 200 && (await j(res)).aiConfigured === false)
+
   // 13. tenant isolation: a second org cannot see the first org's data
   res = await app.request('/api/auth/register', json({
     orgName: 'Other Foundation', name: 'Sam Lee', email: 'sam@other.org', username: 'sam', password: 'password-99',

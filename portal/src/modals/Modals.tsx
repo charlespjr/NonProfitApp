@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { sx } from '../lib/sx'
 import { useStore } from '../state/store'
-import { DOC_INFO, MEETINGS } from '../data/seed'
+import { DOC_BODIES, DOC_INFO, MEETINGS } from '../data/seed'
 import {
   IconCalendarSm,
   IconCheck,
@@ -30,6 +30,9 @@ export function DocuSealModal() {
 
   const rawInfo = DOC_INFO[doc.id] || { desc: doc.desc || '', todo: doc.todo || '' }
   const info = { desc: store.brand(rawInfo.desc), todo: store.brand(rawInfo.todo) }
+  // Custom/AI docs carry their own text; built-in docs use the starter
+  // templates — branded for this organization either way.
+  const bodyText = store.brand(doc.body || DOC_BODIES[doc.id] || '')
   const roster = store.roster()
   const sig = store.sigFor(doc.id)
   const signedCount = roster.filter((m) => sig[m.id]).length
@@ -56,11 +59,17 @@ export function DocuSealModal() {
           <div style={sx('text-align:center;font-family:Spectral,serif;font-size:12px;letter-spacing:.06em;color:#666;text-transform:uppercase')}>{store.orgName}</div>
           <div style={sx('text-align:center;font-family:Spectral,serif;font-size:18px;font-weight:600;margin-top:5px')}>{doc.name}</div>
           <div style={sx('height:1px;background:#eee;margin:14px 0')} />
-          <div style={sx('font-size:12.5px;line-height:1.7;color:#444')}>
-            <div style={sx('height:8px;background:#f0f0f0;border-radius:3px;width:100%;margin-bottom:7px')} />
-            <div style={sx('height:8px;background:#f0f0f0;border-radius:3px;width:92%;margin-bottom:7px')} />
-            <div style={sx('height:8px;background:#f0f0f0;border-radius:3px;width:96%')} />
-          </div>
+          {bodyText ? (
+            <div data-m="docbody" style={sx("font-size:12.5px;line-height:1.65;color:#333;white-space:pre-wrap;max-height:340px;overflow:auto;font-family:'Spectral',Georgia,serif")}>
+              {bodyText}
+            </div>
+          ) : (
+            <div style={sx('font-size:12.5px;line-height:1.7;color:#444')}>
+              <div style={sx('height:8px;background:#f0f0f0;border-radius:3px;width:100%;margin-bottom:7px')} />
+              <div style={sx('height:8px;background:#f0f0f0;border-radius:3px;width:92%;margin-bottom:7px')} />
+              <div style={sx('height:8px;background:#f0f0f0;border-radius:3px;width:96%')} />
+            </div>
+          )}
           <div style={sx('display:flex;align-items:center;justify-content:center;gap:8px;border-top:1px solid #eee;margin-top:14px;padding-top:10px')}>
             {state.orgLogo && <img src={state.orgLogo} alt="" style={sx('max-height:16px;max-width:52px;object-fit:contain;opacity:.75')} />}
             <span style={sx('font-size:10px;letter-spacing:.08em;color:#999;text-transform:uppercase')}>{store.orgName} · Page 1 of {doc.pages}</span>

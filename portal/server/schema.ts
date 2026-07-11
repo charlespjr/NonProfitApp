@@ -28,6 +28,9 @@ export const orgs = pgTable('orgs', {
   plan: text('plan').notNull().default('none'),
   /** Stripe subscription status mirror: 'inactive' | 'active' | 'past_due' | 'canceled' */
   planStatus: text('plan_status').notNull().default('inactive'),
+  /** The org's own Anthropic API key for AI drafting. Never sent to clients —
+   *  responses expose only aiConfigured: boolean. */
+  anthropicKey: text('anthropic_key'),
 })
 
 export const users = pgTable(
@@ -144,4 +147,5 @@ CREATE TABLE IF NOT EXISTS qbo_invoices (
   created_at timestamptz NOT NULL DEFAULT now(),
   paid_at timestamptz
 );
+ALTER TABLE orgs ADD COLUMN IF NOT EXISTS anthropic_key text;
 `
