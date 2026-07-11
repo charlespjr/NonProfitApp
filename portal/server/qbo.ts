@@ -10,7 +10,7 @@
  * the customer the invoice's hosted payment link. Sync: list our open
  * invoices, mark orgs active when QuickBooks reports Balance = 0.
  */
-import { eq } from 'drizzle-orm'
+import { and, eq } from 'drizzle-orm'
 import { getDb } from './db.js'
 import { orgs, qboInvoices, qboTokens } from './schema.js'
 
@@ -153,6 +153,15 @@ async function ensureCustomer(orgId: string, orgName: string, email: string): Pr
   return created.Customer.Id
 }
 
+async function readInvoice(id: string): Promise<any | null> {
+  try {
+    const body = await qboFetch(`/invoice/${id}?minorversion=75&include=invoiceLink`)
+    return body?.Invoice ?? null
+  } catch {
+    return null
+  }
+}
+
 export interface CheckoutInvoice {
   invoiceId: string
   payUrl: string
@@ -169,6 +178,35 @@ export async function createCheckoutInvoice(input: {
   const planKey = input.tier === 'launch_partner' ? 'launch_partner:once' : `${input.tier}:${input.period}`
   const plan = QBO_PLANS[planKey]
   if (!plan) throw new Error(`unknown plan ${planKey}`)
+  const db0 = await getDb()
+  // One open invoice per org: reuse an identical open invoice (double-click,
+  // back-button, changed their mind and came back), void any other open
+  // Quorum invoice so the QuickBooks pay page never stacks multiple charges.
+  const openRows = await db0
+    .select()
+    .from(qboInvoices)
+    .where(and(eq(qboInvoices.orgId, input.orgId), eq(qboInvoices.status, 'open')))
+  for (const row of openRows) {
+    const existing = await readInvoice(row.invoiceId)
+    if (!existing) {
+      await db0.update(qboInvoices).set({ status: 'void' }).where(eq(qboInvoices.invoiceId, row.invoiceId))
+      continue
+    }
+    if (Number(existing.Balance) === 0) continue // paid — the sync will activate it
+    const samePlan = row.tier === input.tier && row.period === input.period
+    if (samePlan && existing.InvoiceLink) {
+      return { invoiceId: row.invoiceId, payUrl: existing.InvoiceLink, amount: row.amount }
+    }
+    try {
+      await qboFetch('/invoice?operation=void&minorversion=75', {
+        method: 'POST',
+        body: JSON.stringify({ Id: String(existing.Id), SyncToken: String(existing.SyncToken ?? '0') }),
+      })
+    } catch (e) {
+      console.error('void of superseded invoice failed:', e)
+    }
+    await db0.update(qboInvoices).set({ status: 'void' }).where(eq(qboInvoices.invoiceId, row.invoiceId))
+  }
   const customerId = await ensureCustomer(input.orgId, input.orgName, input.adminEmail)
   const itemId = await itemIdByName(plan.itemName)
   const created = await qboFetch('/invoice?minorversion=75&include=invoiceLink', {
