@@ -50,6 +50,9 @@ export function DocuSealModal() {
 
       <div style={sx('padding:20px 22px;overflow:auto;background:var(--bg)')}>
         <div style={sx('background:#fff;border:1px solid var(--line);border-radius:8px;padding:22px 26px;box-shadow:0 2px 14px rgba(0,0,0,.06);color:#222;margin-bottom:16px')}>
+          {state.orgLogo && (
+            <img src={state.orgLogo} alt="" data-m="dslogo" style={sx('display:block;max-height:38px;max-width:150px;object-fit:contain;margin:0 auto 8px')} />
+          )}
           <div style={sx('text-align:center;font-family:Spectral,serif;font-size:12px;letter-spacing:.06em;color:#666;text-transform:uppercase')}>{store.orgName}</div>
           <div style={sx('text-align:center;font-family:Spectral,serif;font-size:18px;font-weight:600;margin-top:5px')}>{doc.name}</div>
           <div style={sx('height:1px;background:#eee;margin:14px 0')} />
@@ -57,6 +60,10 @@ export function DocuSealModal() {
             <div style={sx('height:8px;background:#f0f0f0;border-radius:3px;width:100%;margin-bottom:7px')} />
             <div style={sx('height:8px;background:#f0f0f0;border-radius:3px;width:92%;margin-bottom:7px')} />
             <div style={sx('height:8px;background:#f0f0f0;border-radius:3px;width:96%')} />
+          </div>
+          <div style={sx('display:flex;align-items:center;justify-content:center;gap:8px;border-top:1px solid #eee;margin-top:14px;padding-top:10px')}>
+            {state.orgLogo && <img src={state.orgLogo} alt="" style={sx('max-height:16px;max-width:52px;object-fit:contain;opacity:.75')} />}
+            <span style={sx('font-size:10px;letter-spacing:.08em;color:#999;text-transform:uppercase')}>{store.orgName} · Page 1 of {doc.pages}</span>
           </div>
         </div>
 
@@ -704,6 +711,9 @@ export function EmailPreviewModal() {
             </div>
           </div>
           <div style={sx('padding:20px 18px')}>
+            {state.orgLogo && (
+              <img src={state.orgLogo} alt="" style={sx('display:block;max-height:34px;max-width:140px;object-fit:contain;margin-bottom:8px')} />
+            )}
             <div style={sx('font-family:Spectral,serif;font-size:18px;font-weight:600;color:var(--ink);margin-bottom:4px')}>{store.orgName}</div>
             <div style={sx('font-size:13.5px;color:var(--ink);line-height:1.6;margin-bottom:16px')}>
               Hello, the board is asked to vote on the motion below. Please review the details and cast your vote in the portal.

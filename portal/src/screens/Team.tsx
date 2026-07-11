@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { sx } from '../lib/sx'
 import { useStore } from '../state/store'
 import { IconInfo, IconPlus } from '../components/icons'
@@ -100,6 +100,68 @@ const EMAIL_PROVIDERS: EmailProvider[] = [
     smtp: 'SMTP host & port: from your provider',
   },
 ]
+
+/** Upload the organization's logo — it brands the sidebar, every document's
+ *  letterhead (header + footer), and board emails. */
+function LogoCard() {
+  const store = useStore()
+  const { state } = store
+  const inputRef = useRef<HTMLInputElement>(null)
+
+  return (
+    <div style={sx('display:flex;align-items:center;gap:14px;background:var(--panel);border:1px solid var(--line);border-radius:13px;padding:14px 18px;margin-bottom:14px;flex-wrap:wrap')}>
+      {state.orgLogo ? (
+        <img
+          src={state.orgLogo}
+          alt="Organization logo"
+          data-m="orglogo"
+          style={sx('height:42px;max-width:120px;object-fit:contain;flex:none;border-radius:6px')}
+        />
+      ) : (
+        <div style={sx('width:42px;height:42px;border-radius:11px;background:var(--bg);border:1.5px dashed var(--line);color:var(--muted);display:grid;place-items:center;flex:none;font-weight:800;font-size:16px')}>
+          {store.orgName.charAt(0)}
+        </div>
+      )}
+      <div style={sx('flex:1;min-width:200px')}>
+        <div style={sx('font-size:14px;font-weight:600')}>Organization logo</div>
+        <div style={sx('font-size:12.5px;color:var(--muted);line-height:1.5;margin-top:2px')}>
+          {state.orgLogo
+            ? 'Shown in the sidebar and on the header & footer of every document and board email.'
+            : 'Upload your logo and it appears in the sidebar and on the letterhead of every document and board email.'}
+        </div>
+      </div>
+      <input
+        ref={inputRef}
+        type="file"
+        accept="image/*"
+        style={{ display: 'none' }}
+        onChange={(e) => {
+          const f = e.target.files?.[0]
+          if (f) void store.uploadLogo(f)
+          e.target.value = ''
+        }}
+      />
+      <div style={sx('display:flex;gap:8px;flex:none')}>
+        {state.orgLogo && (
+          <button
+            className="hv-border-danger"
+            onClick={store.removeLogo}
+            style={sx('border:1px solid var(--line);background:var(--panel);color:var(--muted);font-size:12.5px;font-weight:600;padding:8px 14px;border-radius:9px;cursor:pointer')}
+          >
+            Remove
+          </button>
+        )}
+        <button
+          className="hv-border-accent"
+          onClick={() => inputRef.current?.click()}
+          style={sx('border:1px solid var(--line);background:var(--panel);color:var(--brand);font-size:12.5px;font-weight:600;padding:8px 14px;border-radius:9px;cursor:pointer')}
+        >
+          {state.orgLogo ? 'Replace logo' : 'Upload logo'}
+        </button>
+      </div>
+    </div>
+  )
+}
 
 /** Provider-agnostic "connect your foundation email" card. */
 function EmailCard() {
@@ -337,6 +399,8 @@ export function Team() {
           Each board member signs in with a <strong>username &amp; password</strong> you set — they don't need a foundation email. Their <strong>personal email</strong> is where DocuSeal sends documents to sign. Give <strong>Vote</strong> access to weigh in on motions; you keep <strong>Sign</strong>/admin rights.
         </div>
       </div>
+
+      <LogoCard />
 
       <EmailCard />
 

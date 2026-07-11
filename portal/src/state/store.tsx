@@ -19,6 +19,7 @@ import {
   mockZoom,
 } from '../services'
 import { api, ApiError, type ApiMember, type ApiOrg, type ApiSession } from '../services/api'
+import { fileToLogoDataUrl } from '../lib/image'
 import type {
   Account,
   AppState,
@@ -71,6 +72,7 @@ const defaultPersisted: PersistedState = {
   theme: 'warm',
   dashboardLayout: 'Overview grid',
   setupDismissed: false,
+  orgLogo: '',
 }
 
 const defaultUi = {
@@ -168,6 +170,10 @@ export interface Store {
   saveDoc(): void
   removeCustomDoc(docId: string): void
 
+  // organization logo (branding on sidebar, documents, board emails)
+  uploadLogo(file: File): Promise<void>
+  removeLogo(): void
+
   // notes
   newNote(): void
   updateNote(field: 'title' | 'body', value: string): void
@@ -221,6 +227,7 @@ const BOARD_KEYS = [
   'theme',
   'dashboardLayout',
   'setupDismissed',
+  'orgLogo',
 ] as const
 
 type BoardSlice = Pick<AppState, (typeof BOARD_KEYS)[number]>
@@ -327,6 +334,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       motions: [],
       customDocs: [],
       setupDismissed: false,
+      orgLogo: '',
       ...(data as Partial<BoardSlice>),
       accounts: accountsFrom(members),
       extraMembers: [],
@@ -386,6 +394,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         theme: state.theme,
         dashboardLayout: state.dashboardLayout,
         setupDismissed: state.setupDismissed,
+        orgLogo: state.orgLogo,
       }
       try {
         localStorage.setItem(STORAGE_KEY, JSON.stringify(p))
@@ -725,6 +734,27 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     },
     [guard, flash],
   )
+
+  // ------------------------------------------------------ organization logo
+  const uploadLogo = useCallback(
+    async (file: File) => {
+      if (!guard()) return
+      try {
+        const dataUrl = await fileToLogoDataUrl(file)
+        set({ orgLogo: dataUrl })
+        flash('Logo uploaded — your documents and emails now carry it')
+      } catch (e) {
+        flash(e instanceof Error ? e.message : 'Could not read that image.')
+      }
+    },
+    [guard, set, flash],
+  )
+
+  const removeLogo = useCallback(() => {
+    if (!guard()) return
+    set({ orgLogo: '' })
+    flash('Logo removed')
+  }, [guard, set, flash])
 
   // ----------------------------------------------------------------- notes
   const newNote = useCallback(() => {
@@ -1147,6 +1177,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     openAddDoc,
     saveDoc,
     removeCustomDoc,
+    uploadLogo,
+    removeLogo,
     newNote,
     updateNote,
     deleteNote,
