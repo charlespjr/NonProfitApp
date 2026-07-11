@@ -70,9 +70,13 @@ export function Shell({ children }: { children: ReactNode }) {
 
       <aside data-m="sidebar" style={sx('width:252px;flex:none;background:var(--panel);border-right:1px solid var(--line);display:flex;flex-direction:column;padding:20px 15px;position:sticky;top:0;height:100vh')}>
         <div style={sx('display:flex;align-items:center;gap:11px;padding:6px 8px 20px')}>
-          <div style={sx('width:36px;height:36px;border-radius:10px;background:var(--brand);color:#fff;display:grid;place-items:center;font-family:Spectral,serif;font-size:18px;font-weight:600')}>
-            {(store.apiOrg?.name || 'Adams Infinite')[0]}
-          </div>
+          {state.orgLogo ? (
+            <img src={state.orgLogo} alt="" style={sx('width:36px;height:36px;border-radius:10px;object-fit:contain;background:var(--bg);flex:none')} />
+          ) : (
+            <div style={sx('width:36px;height:36px;border-radius:10px;background:var(--brand);color:#fff;display:grid;place-items:center;font-family:Spectral,serif;font-size:18px;font-weight:600')}>
+              {(store.apiOrg?.name || 'Adams Infinite')[0]}
+            </div>
+          )}
           <div style={{ lineHeight: 1.15, minWidth: 0 }}>
             <div style={sx('font-family:Spectral,serif;font-size:15px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis')}>
               {store.apiOrg?.name || 'Adams Infinite'}

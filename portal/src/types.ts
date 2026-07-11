@@ -159,6 +159,9 @@ export interface PersistedState {
   dashboardLayout: DashboardLayout
   /** Admin hid the "Get set up" guide on the dashboard. */
   setupDismissed: boolean
+  /** The organization's logo as a compact data-URL ('' = none). Shown in
+   *  the sidebar and on document/email letterheads. */
+  orgLogo: string
 }
 
 export interface UiState {
