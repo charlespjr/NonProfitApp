@@ -169,6 +169,7 @@ async function main() {
   const qboCalls: string[] = []
   const voided: string[] = []
   let createSeq = 0
+  let lastInvoiceLines: Array<{ Amount: number }> = []
   const invoices: Record<string, { Balance: number }> = {}
   globalThis.fetch = (async (input: any, init?: any) => {
     const url = String(input)
@@ -203,6 +204,7 @@ async function main() {
     }
     if (url.includes('/invoice') && method === 'POST') {
       const id = 'INV' + ++createSeq
+      lastInvoiceLines = JSON.parse(init.body).Line
       invoices[id] = { Balance: 59 }
       return ok({ Invoice: { Id: id, InvoiceLink: 'https://pay.example/' + id.toLowerCase() } })
     }
@@ -238,16 +240,22 @@ async function main() {
   res = await app.request('/api/billing/plan', { headers: { cookie: admin } })
   const planAfter = (await j(res)) as { plan?: string; planStatus?: string }
   check('org plan active after payment (scale)', planAfter.plan === 'scale' && planAfter.planStatus === 'active', planAfter)
-  // Launch Partner is a buyable plan: paying its invoice unlocks the portal
-  res = await app.request('/api/billing/checkout', json({ tier: 'launch_partner' }, admin))
+  // Launch Partner: one invoice bundling the $599 setup fee + the Growth
+  // subscription; paying it lands the org on the recurring Growth plan.
+  res = await app.request('/api/billing/checkout', json({ tier: 'launch_partner', period: 'monthly' }, admin))
   const coLp = await j(res)
   check('launch partner checkout creates invoice', res.status === 200 && !!coLp.invoiceId, coLp)
+  check(
+    'launch partner invoice bundles setup + Growth ($748)',
+    lastInvoiceLines.length === 2 && lastInvoiceLines.reduce((s, l) => s + l.Amount, 0) === 748,
+    lastInvoiceLines,
+  )
   invoices[coLp.invoiceId].Balance = 0
   res = await app.request('/api/billing/sync', { headers: { 'x-admin-key': 'test-admin-key' } })
   await j(res)
   res = await app.request('/api/billing/plan', { headers: { cookie: admin } })
   const planLp = (await j(res)) as { plan?: string; planStatus?: string }
-  check('paid launch partner activates the org', planLp.plan === 'launch_partner' && planLp.planStatus === 'active', planLp)
+  check('paid launch partner lands the org on Growth', planLp.plan === 'growth' && planLp.planStatus === 'active', planLp)
 
   res = await app.request('/api/billing/sync', {})
   check('sync without auth -> 403', res.status === 403)
