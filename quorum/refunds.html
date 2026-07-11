@@ -55,6 +55,24 @@
   .flinks a{color:rgba(251,246,238,.75);text-decoration:none}
   .flinks a:hover{color:#fff}
 
+
+  /* shared menu header */
+  .nav-burger{display:none}
+  .nav-in{gap:18px;position:relative}
+  .nav-links{display:flex;gap:22px;font-size:14px;font-weight:600;color:rgba(251,246,238,.7)}
+  .nav-links a{text-decoration:none;padding:4px 0;border-bottom:2px solid transparent}
+  .nav-links a:hover{color:#fff}
+  .nav-links a.on{color:#fff;border-bottom-color:var(--terra)}
+  .nav-right{display:flex;align-items:center;gap:12px}
+  .nav-cta{padding:11px 20px !important;font-size:14px !important}
+  .nav-burger{display:none;border:1px solid rgba(251,246,238,.3);background:transparent;color:var(--cream);width:40px;height:40px;border-radius:9px;cursor:pointer;font-size:18px;line-height:1}
+  @media(max-width:920px){
+    .nav-links{display:none;position:absolute;top:100%;left:0;right:0;background:#2A1E16;flex-direction:column;gap:0;padding:6px 24px 14px;border-top:1px solid rgba(251,246,238,.1);z-index:60}
+    .nav-links a{padding:13px 0;border-bottom:1px solid rgba(251,246,238,.08);font-size:15px}
+    .nav-links a.on{border-bottom-color:rgba(251,246,238,.08);color:var(--terra)}
+    body.navopen .nav-links{display:flex}
+    .nav-burger{display:block}
+  }
 </style>
 </head>
 <body>
