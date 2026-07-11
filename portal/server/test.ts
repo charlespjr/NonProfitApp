@@ -126,6 +126,57 @@ async function main() {
   res = await app.request('/api/billing/checkout', json({ tier: 'growth' }, judyCookie))
   check('checkout as non-admin → 403', res.status === 403)
 
+
+  // 15b. QuickBooks API billing mode: checkout creates an invoice, sync activates
+  process.env.QBO_CLIENT_ID = 'cid'
+  process.env.QBO_CLIENT_SECRET = 'csecret'
+  process.env.QBO_REALM_ID = '9341'
+  process.env.QBO_REFRESH_TOKEN = 'seed-rt'
+  process.env.ADMIN_KEY = 'test-admin-key'
+  const realFetch = globalThis.fetch
+  const qboCalls: string[] = []
+  globalThis.fetch = (async (input: any, init?: any) => {
+    const url = String(input)
+    if (!url.includes('intuit.com')) return realFetch(input, init)
+    qboCalls.push((init?.method || 'GET') + ' ' + url.split('?')[0])
+    const ok = (body: unknown) => new Response(JSON.stringify(body), { status: 200, headers: { 'content-type': 'application/json' } })
+    if (url.includes('oauth.platform.intuit.com')) return ok({ access_token: 'at1', refresh_token: 'rt2', expires_in: 3600 })
+    if (url.includes('/query')) {
+      const query = decodeURIComponent(url.split('query=')[1].split('&')[0])
+      if (query.includes('from Item')) return ok({ QueryResponse: { Item: [{ Id: '67' }] } })
+      if (query.includes('from Customer')) return ok({ QueryResponse: {} })
+      if (query.includes('from Invoice')) return ok({ QueryResponse: { Invoice: [{ Id: 'INV1', Balance: 0 }] } })
+      return ok({ QueryResponse: {} })
+    }
+    if (url.includes('/customer')) return ok({ Customer: { Id: 'C1' } })
+    if (url.includes('/invoice')) return ok({ Invoice: { Id: 'INV1', InvoiceLink: 'https://pay.example/inv1' } })
+    return ok({})
+  }) as typeof fetch
+
+  res = await app.request('/api/billing/plan', { headers: { cookie: admin } })
+  const qboPlan = (await j(res)) as { mode?: string }
+  check('billing mode switches to qbo', qboPlan.mode === 'qbo')
+  res = await app.request('/api/billing/checkout', json({ tier: 'growth', period: 'monthly' }, admin))
+  const co = await j(res)
+  check('qbo checkout returns invoice pay link', res.status === 200 && co.url === 'https://pay.example/inv1' && co.invoiceId === 'INV1', co)
+  check('qbo flow called token + customer + invoice APIs',
+    qboCalls.some((x) => x.includes('oauth.platform')) &&
+    qboCalls.some((x) => x.includes('/customer')) &&
+    qboCalls.some((x) => x.includes('/invoice')))
+  res = await app.request('/api/billing/sync', { headers: { 'x-admin-key': 'test-admin-key' } })
+  const sync = await j(res)
+  check('sync marks invoice paid and activates org', res.status === 200 && Array.isArray(sync.activated) && sync.activated.length === 1, sync)
+  res = await app.request('/api/billing/plan', { headers: { cookie: admin } })
+  const planAfter = (await j(res)) as { plan?: string; planStatus?: string }
+  check('org plan active after payment', planAfter.plan === 'growth' && planAfter.planStatus === 'active', planAfter)
+  res = await app.request('/api/billing/sync', {})
+  check('sync without auth -> 403', res.status === 403)
+  globalThis.fetch = realFetch
+  delete process.env.QBO_CLIENT_ID
+  delete process.env.QBO_CLIENT_SECRET
+  delete process.env.QBO_REALM_ID
+  delete process.env.QBO_REFRESH_TOKEN
+
   // 16. revoke member
   res = await app.request('/api/members/' + judy.id, { method: 'DELETE', headers: { cookie: admin } })
   check('revoke member → 200', res.status === 200)

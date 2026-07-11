@@ -17,10 +17,11 @@ import { verify } from 'hono/jwt'
 import { and, eq } from 'drizzle-orm'
 import { getDb } from './db.js'
 import { orgs, users } from './schema.js'
+import { createCheckoutInvoice, qboConfigured, syncPaidInvoices } from './qbo.js'
 
 const JWT_SECRET = process.env.JWT_SECRET || 'dev-only-secret-change-in-production'
 
-type Env = { Variables: { orgId: string; isAdmin: boolean } }
+type Env = { Variables: { orgId: string; isAdmin: boolean; adminEmail: string } }
 
 async function requireAdminLite(c: Context<Env>, next: Next) {
   const token = getCookie(c, 'quorum_session')
@@ -36,6 +37,7 @@ async function requireAdminLite(c: Context<Env>, next: Next) {
     if (!me.isAdmin) return c.json({ error: 'admin only' }, 403)
     c.set('orgId', me.orgId)
     c.set('isAdmin', true)
+    c.set('adminEmail', me.email)
   } catch {
     return c.json({ error: 'unauthenticated' }, 401)
   }
@@ -68,20 +70,53 @@ const PAYLINKS: Record<string, string | undefined> = {
   'scale:monthly': process.env.PAYLINK_SCALE_M,
   'scale:yearly': process.env.PAYLINK_SCALE_Y,
 }
-const linkModeActive = () => !process.env.STRIPE_SECRET_KEY && Object.values(PAYLINKS).some(Boolean)
+const linkModeActive = () => Object.values(PAYLINKS).some(Boolean)
+
+/** Billing mode precedence: Stripe > QuickBooks API > static payment links. */
+function billingMode(): 'stripe' | 'qbo' | 'links' | 'none' {
+  if (process.env.STRIPE_SECRET_KEY) return 'stripe'
+  if (qboConfigured()) return 'qbo'
+  if (linkModeActive()) return 'links'
+  return 'none'
+}
+
+// Opportunistic paid-invoice sync: cheap, throttled, fire-and-forget. Runs
+// whenever an admin looks at billing, so plans activate within minutes of
+// payment even between cron runs.
+let lastSync = 0
+function maybeSync() {
+  if (billingMode() !== 'qbo' || Date.now() - lastSync < 5 * 60_000) return
+  lastSync = Date.now()
+  syncPaidInvoices().catch((e) => console.error('qbo sync failed:', e))
+}
 
 export const billing = new Hono<Env>()
 
 billing.get('/plan', requireAdminLite, async (c) => {
   const db = await getDb()
   const [org] = await db.select().from(orgs).where(eq(orgs.id, c.get('orgId')))
+  maybeSync()
   return c.json({
     plan: org?.plan ?? 'none',
     planStatus: org?.planStatus ?? 'inactive',
-    configured: !!process.env.STRIPE_SECRET_KEY || linkModeActive(),
-    mode: process.env.STRIPE_SECRET_KEY ? 'stripe' : linkModeActive() ? 'links' : 'none',
+    configured: billingMode() !== 'none',
+    mode: billingMode(),
   })
 })
+
+/** Paid-invoice sync — called by Vercel Cron (Authorization: Bearer CRON_SECRET)
+ *  or manually with the admin key. */
+async function runSync(c: import('hono').Context) {
+  const auth = c.req.header('authorization') || ''
+  const cronOk = !!process.env.CRON_SECRET && auth === `Bearer ${process.env.CRON_SECRET}`
+  const adminOk = !!process.env.ADMIN_KEY && c.req.header('x-admin-key') === process.env.ADMIN_KEY
+  if (!cronOk && !adminOk) return c.json({ error: 'forbidden' }, 403)
+  if (billingMode() !== 'qbo') return c.json({ ok: true, skipped: 'not in qbo mode' })
+  const result = await syncPaidInvoices()
+  return c.json({ ok: true, ...result })
+}
+billing.get('/sync', runSync)
+billing.post('/sync', runSync)
 
 /** Manual plan activation for payment-link mode (and support operations).
  *  Requires the ADMIN_KEY env var; scoped to a single org by id. */
@@ -105,7 +140,28 @@ billing.post('/activate', async (c) => {
 })
 
 billing.post('/checkout', requireAdminLite, async (c) => {
-  if (linkModeActive()) {
+  if (billingMode() === 'qbo') {
+    const body = await c.req.json().catch(() => ({}))
+    const tier = ['starter', 'growth', 'scale', 'launch_partner'].includes(body?.tier) ? body.tier : 'growth'
+    const period = body?.period === 'yearly' ? 'yearly' : 'monthly'
+    const db = await getDb()
+    const [org] = await db.select().from(orgs).where(eq(orgs.id, c.get('orgId')))
+    if (!org) return c.json({ error: 'org not found' }, 404)
+    try {
+      const inv = await createCheckoutInvoice({
+        orgId: org.id,
+        orgName: org.name,
+        adminEmail: c.get('adminEmail'),
+        tier,
+        period,
+      })
+      return c.json({ url: inv.payUrl, mode: 'qbo', invoiceId: inv.invoiceId })
+    } catch (e) {
+      console.error('qbo checkout failed:', e)
+      return c.json({ error: 'Could not create your invoice — try again or contact support@quorumsuite.com.' }, 502)
+    }
+  }
+  if (billingMode() === 'links') {
     const body = await c.req.json().catch(() => ({}))
     const tier = ['starter', 'growth', 'scale'].includes(body?.tier) ? body.tier : 'growth'
     const period = body?.period === 'yearly' ? 'yearly' : 'monthly'
