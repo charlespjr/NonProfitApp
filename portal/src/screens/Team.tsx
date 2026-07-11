@@ -289,9 +289,9 @@ export function Team() {
               <div style={sx('display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end')}>
                 {(
                   [
-                    ['starter', 'Starter', '$29/mo', '$290/yr'],
-                    ['growth', 'Growth', '$59/mo', '$590/yr'],
-                    ['scale', 'Scale', '$99/mo', '$990/yr'],
+                    ['starter', 'Starter', '$49/mo', '$490/yr'],
+                    ['growth', 'Growth', '$149/mo', '$1,490/yr'],
+                    ['scale', 'Scale', '$299/mo', '$2,990/yr'],
                   ] as const
                 ).map(([tier, label, mPrice, yPrice]) => (
                   <button

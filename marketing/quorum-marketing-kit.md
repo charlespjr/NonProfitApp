@@ -22,7 +22,7 @@ Starting a nonprofit means drowning in paperwork: state filings, IRS forms, byla
 3. **Real-world proven** — built running Adams Infinite Legacy, an actual California 501(c)(3)
 4. **AI where it helps** — a passed motion drafts its own formal resolution, ready for counsel review and e-signature
 
-**Pricing (founding-member, locked for life):** Growth subscription + Launch Partner ($490 one-time white-glove setup + Growth). *Do not quote exact monthly pricing in videos — say "founding-member pricing, locked for life."*
+**Pricing (founding-member, locked for life):** Growth subscription + Launch Partner ($599 one-time white-glove setup + Growth). *Do not quote exact monthly pricing in videos — say "founding-member pricing, locked for life."*
 
 **URLs:**
 - Marketing site: https://quorum-board-os.vercel.app

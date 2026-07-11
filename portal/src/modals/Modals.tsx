@@ -531,9 +531,9 @@ export function UpgradeModal() {
             <div style={sx('display:flex;flex-direction:column;gap:8px')}>
               {(
                 [
-                  ['starter', 'Starter', '$29/mo', '$290/yr', 'Up to 7 board members'],
-                  ['growth', 'Growth', '$59/mo', '$590/yr', 'Unlimited board · most popular'],
-                  ['scale', 'Scale', '$99/mo', '$990/yr', 'Unlimited board · priority support'],
+                  ['starter', 'Starter', '$49/mo', '$490/yr', 'Up to 7 board members'],
+                  ['growth', 'Growth', '$149/mo', '$1,490/yr', 'Unlimited board · most popular'],
+                  ['scale', 'Scale', '$299/mo', '$2,990/yr', 'Unlimited board · priority support'],
                 ] as const
               ).map(([tier, label, mPrice, yPrice, blurb]) => (
                 <button

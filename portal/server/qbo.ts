@@ -29,13 +29,13 @@ export interface QboPlan {
 
 /** Service items already created in the Paragon QBO catalog. */
 export const QBO_PLANS: Record<string, QboPlan> = {
-  'starter:monthly': { itemName: 'Quorum Starter (Monthly)', amount: '29.00' },
-  'starter:yearly': { itemName: 'Quorum Starter (Yearly)', amount: '290.00' },
-  'growth:monthly': { itemName: 'Quorum Growth (Monthly)', amount: '59.00' },
-  'growth:yearly': { itemName: 'Quorum Growth (Yearly)', amount: '590.00' },
-  'scale:monthly': { itemName: 'Quorum Scale (Monthly)', amount: '99.00' },
-  'scale:yearly': { itemName: 'Quorum Scale (Yearly)', amount: '990.00' },
-  'launch_partner:once': { itemName: 'Quorum Launch Partner', amount: '490.00' },
+  'starter:monthly': { itemName: 'Quorum Starter (Monthly)', amount: '49.00' },
+  'starter:yearly': { itemName: 'Quorum Starter (Yearly)', amount: '490.00' },
+  'growth:monthly': { itemName: 'Quorum Growth (Monthly)', amount: '149.00' },
+  'growth:yearly': { itemName: 'Quorum Growth (Yearly)', amount: '1490.00' },
+  'scale:monthly': { itemName: 'Quorum Scale (Monthly)', amount: '299.00' },
+  'scale:yearly': { itemName: 'Quorum Scale (Yearly)', amount: '2990.00' },
+  'launch_partner:once': { itemName: 'Quorum Launch Partner', amount: '599.00' },
 }
 
 export function qboConfigured(): boolean {
