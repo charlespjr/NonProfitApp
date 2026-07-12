@@ -2,6 +2,7 @@ import { sx } from '../lib/sx'
 import { useStore } from '../state/store'
 import { GoogleG, IconCalendar, IconZoom } from '../components/icons'
 import type { Meeting } from '../types'
+import { computeDeadlines, DEMO_ANCHOR, DEMO_TODAY, duePhrase, fmtDue, type DeadlineItem } from '../data/deadlines'
 
 const WEEKDAYS = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT']
 /** July 2026: the 1st falls on a Wednesday → 3 leading blanks. */
@@ -39,6 +40,16 @@ export function CalendarScreen() {
   const meetings = store.meetingsView()
   const meetingByDay: Record<number, Meeting> = {}
   store.allMeetings().forEach((m) => (meetingByDay[m.day] = m))
+
+  const isApi = store.mode === 'api'
+  const anchor = isApi && state.startDate ? new Date(state.startDate) : DEMO_ANCHOR
+  const today = isApi ? new Date() : DEMO_TODAY
+  const trialActive = isApi ? store.apiOrg?.plan === 'none' : true
+  const deadlines = computeDeadlines(anchor, state.tasks, { trial: trialActive })
+  const deadlineByDay: Record<number, DeadlineItem> = {}
+  deadlines.forEach((d) => {
+    if (d.due.getFullYear() === 2026 && d.due.getMonth() === 6) deadlineByDay[d.due.getDate()] = d
+  })
 
   return (
     <div style={sx('max-width:1080px;margin:0 auto')}>
@@ -111,6 +122,17 @@ export function CalendarScreen() {
                       {m.time.replace(':00', '')} {m.title}
                     </div>
                   )}
+                  {deadlineByDay[d] && (
+                    <div
+                      style={sx(
+                        deadlineByDay[d].kind === 'trial'
+                          ? 'margin-top:6px;background:var(--accent-soft);color:var(--brand);border:1px solid var(--accent);font-size:10.5px;font-weight:700;padding:4px 6px;border-radius:6px;line-height:1.25'
+                          : 'margin-top:6px;background:var(--warn-soft);color:var(--warn);border:1px solid var(--warn);font-size:10.5px;font-weight:700;padding:4px 6px;border-radius:6px;line-height:1.25',
+                      )}
+                    >
+                      {deadlineByDay[d].kind === 'trial' ? 'Free trial ends — choose a plan' : `Due · ${deadlineByDay[d].label}`}
+                    </div>
+                  )}
                 </div>
               )
             })}
@@ -143,6 +165,27 @@ export function CalendarScreen() {
               </div>
             ))}
           </div>
+          {deadlines.length > 0 && (
+            <>
+              <div style={sx('font-family:Spectral,serif;font-size:15px;font-weight:600;margin:20px 0 14px;padding-top:16px;border-top:1px solid var(--line)')}>
+                Deadlines
+              </div>
+              <div style={sx('display:flex;flex-direction:column;gap:14px')}>
+                {deadlines.map((dl) => (
+                  <div key={dl.id} style={sx('display:flex;gap:12px')}>
+                    <div style={{ ...sx('width:4px;border-radius:4px;flex:none'), background: dl.kind === 'trial' ? 'var(--brand)' : 'var(--warn)' }} />
+                    <div style={sx('min-width:0;flex:1')}>
+                      <div style={sx('font-size:13.5px;font-weight:600')}>{dl.label}</div>
+                      <div style={sx('font-size:12px;color:var(--muted);margin-top:2px')}>
+                        {fmtDue(dl.due, dl.due.getFullYear() !== today.getFullYear())} · {duePhrase(dl.due, today)}
+                      </div>
+                      <div style={sx('font-size:12px;color:var(--muted)')}>{dl.detail}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
           <button
             className="hv-border-danger"
             onClick={store.disconnectCal}

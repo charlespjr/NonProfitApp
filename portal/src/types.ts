@@ -129,6 +129,8 @@ export interface DocNotifiedEntry {
 export interface PersistedState {
   sessionUserId: string | null
   screen: ScreenKey
+  /** ISO date the org opened its portal — anchors trial & compliance deadlines. */
+  startDate: string
   sig: Record<string, Record<string, boolean>>
   docNotified: Record<string, DocNotifiedEntry>
   tasks: Record<string, boolean>

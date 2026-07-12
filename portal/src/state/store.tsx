@@ -53,6 +53,7 @@ function fmtDate(d = new Date()): string {
 const defaultPersisted: PersistedState = {
   sessionUserId: null,
   screen: 'dashboard',
+  startDate: '',
   sig: {},
   docNotified: {},
   tasks: {},
@@ -205,6 +206,7 @@ const BOARD_KEYS = [
   'tasks',
   'notes',
   'activeNoteId',
+  'startDate',
   'calConnected',
   'emailConnected',
   'emailProvider',
@@ -325,6 +327,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       extraMembers: [],
       sessionUserId: sess.me.id,
       screen: 'dashboard',
+      startDate: s.startDate || new Date().toISOString(),
     }))
     // allow the persist effect to run again after this render settles
     setTimeout(() => (hydratingRef.current = false), 0)
@@ -361,6 +364,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       const p: PersistedState = {
         sessionUserId: state.sessionUserId,
         screen: state.screen,
+        startDate: state.startDate,
         sig: state.sig,
         docNotified: state.docNotified,
         tasks: state.tasks,

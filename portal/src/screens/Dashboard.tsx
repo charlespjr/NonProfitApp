@@ -4,6 +4,7 @@ import { PHASES } from '../data/seed'
 import { IconDocuments, IconZoom } from '../components/icons'
 import { ProgressRing, STATUS_META } from '../components/shared'
 import { SetupGuide } from '../components/SetupGuide'
+import { computeDeadlines, DEMO_ANCHOR, DEMO_TODAY, daysUntil, duePhrase, fmtDue } from '../data/deadlines'
 
 const kpiCard = sx('background:var(--panel);border:1px solid var(--line);border-radius:13px;padding:16px 17px')
 const card = sx('background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:20px')
@@ -33,6 +34,14 @@ export function Dashboard() {
   const signedCount = docs.filter((d) => store.docStatusOf(d) === 'signed').length
   const recentDocs = docs.slice(0, 4)
   const upcoming = store.meetingsView().slice(0, 3)
+
+  const isApi = store.mode === 'api'
+  const anchor = isApi && state.startDate ? new Date(state.startDate) : DEMO_ANCHOR
+  const today = isApi ? new Date() : DEMO_TODAY
+  const trialActive = isApi ? store.apiOrg?.plan === 'none' : true
+  const deadlines = computeDeadlines(anchor, state.tasks, { trial: trialActive })
+  const trialDeadline = deadlines.find((d) => d.kind === 'trial')
+  const keyDeadlines = deadlines.slice(0, 3)
   const next = upcoming[0]
 
   const h = new Date().getHours()
@@ -45,8 +54,15 @@ export function Dashboard() {
       <SetupGuide />
       <div style={sx('display:flex;align-items:flex-end;justify-content:space-between;gap:20px;flex-wrap:wrap;margin-bottom:22px')}>
         <div>
-          <div style={sx('font-family:Spectral,serif;font-size:28px;font-weight:500;letter-spacing:-.01em')}>
-            {greeting}, {firstName}.
+          <div style={sx('display:flex;align-items:center;gap:12px;flex-wrap:wrap')}>
+            <div style={sx('font-family:Spectral,serif;font-size:28px;font-weight:500;letter-spacing:-.01em')}>
+              {greeting}, {firstName}.
+            </div>
+            {trialDeadline && (
+              <span style={sx('background:var(--accent-soft);color:var(--brand);border:1px solid var(--accent);font-size:12px;font-weight:700;padding:4px 12px;border-radius:20px;white-space:nowrap')}>
+                Trial · {Math.max(0, daysUntil(trialDeadline.due, today))} days left
+              </span>
+            )}
           </div>
           <div style={sx("color:var(--muted);font-size:14px;margin-top:5px")}>Here's where things stand with the foundation's launch.</div>
         </div>
@@ -178,6 +194,33 @@ export function Dashboard() {
               ))}
             </div>
           </div>
+
+          {keyDeadlines.length > 0 && (
+            <div style={card}>
+              <div style={sx('display:flex;align-items:center;justify-content:space-between;margin-bottom:14px')}>
+                <div style={sx('font-family:Spectral,serif;font-size:16px;font-weight:600')}>Key deadlines</div>
+                <button onClick={() => store.go('checklist')} style={linkBtn}>Checklist →</button>
+              </div>
+              <div style={sx('display:flex;flex-direction:column;gap:11px')}>
+                {keyDeadlines.map((dl) => (
+                  <div key={dl.id} style={sx('display:flex;gap:13px;align-items:center')}>
+                    <div style={sx('width:46px;height:52px;border-radius:10px;background:var(--bg);border:1px solid var(--line);display:flex;flex-direction:column;align-items:center;justify-content:center;flex:none')}>
+                      <div style={{ ...sx('font-size:10px;letter-spacing:.08em;font-weight:700;text-transform:uppercase'), color: dl.kind === 'trial' ? 'var(--brand)' : 'var(--warn)' }}>
+                        {dl.due.toLocaleDateString('en-US', { month: 'short' })}
+                      </div>
+                      <div style={sx('font-family:Spectral,serif;font-size:20px;font-weight:600;line-height:1')}>{dl.due.getDate()}</div>
+                    </div>
+                    <div style={sx('min-width:0;flex:1')}>
+                      <div style={sx('font-size:13.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis')}>{dl.label}</div>
+                      <div style={sx('font-size:11.5px;color:var(--muted)')}>
+                        {fmtDue(dl.due, dl.due.getFullYear() !== today.getFullYear())} · {duePhrase(dl.due, today)}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>
