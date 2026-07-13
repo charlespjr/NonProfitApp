@@ -61,7 +61,7 @@ module.exports = {
     await a.at(a.p(5) + 0.5)
     await a.click('text="Calendar"')
     await a.sleep(800)
-    await a.hover('button:has-text("Join Zoom")', 900)
+    await a.hover('text="Join Zoom"', 900)
     await a.at(a.p(6) + 0.6)
     await a.hover('text=WORKSPACE', 800)
     await a.at(a.p(7) + 0.8)

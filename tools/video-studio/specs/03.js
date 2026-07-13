@@ -41,7 +41,7 @@ module.exports = {
     await a.hover('text=Fully signed', 700)
     await a.at(a.p(7) + 0.5)
     await a.hover('text=Upcoming meetings', 700); await a.sleep(1300)
-    await a.hover('button:has-text("Join")', 700)
+    await a.hover('text="Join"', 700)
     await a.at(a.p(8) + 0.4)
     await a.hover('input[placeholder^="Search documents"]', 800); await a.sleep(1500)
     await a.hover('button:has-text("New note")', 700)

@@ -40,7 +40,7 @@ module.exports = {
     await a.sleep(800)
     await a.hover('text=Donor Letter — Cash Gift', 800)
     await a.at(a.p(5) + 1.0)
-    await a.click('button:has-text("All")')
+    await a.click('text="All"')
     await a.move(900, 500, 1000)
   },
 }

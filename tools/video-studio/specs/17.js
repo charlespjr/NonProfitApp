@@ -35,7 +35,7 @@ module.exports = {
     await a.sleep(800)
     await a.hover('text=Zoom connected', 800)
     await a.at(a.p(5) + 0.7)
-    await a.hover('button:has-text("Join Zoom")', 900)
+    await a.hover('text="Join Zoom"', 900)
     await a.at(a.p(6) + 0.6)
     await a.hover('text=Disconnect Zoom', 800)
     await a.move(900, 500, 1000)
