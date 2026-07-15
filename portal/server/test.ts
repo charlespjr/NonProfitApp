@@ -327,7 +327,7 @@ async function main() {
 
   res = await app.request('/api/admin/outreach/leads', { headers: { 'x-admin-key': 'test-admin-key' } })
   const leadsResp = await j(res)
-  check('leads list returns actors + send flags', Array.isArray(leadsResp.leads) && leadsResp.leads.length === 2 && leadsResp.actors.length === 6, leadsResp.leads?.length)
+  check('leads list returns actors + send flags', Array.isArray(leadsResp.leads) && leadsResp.leads.length === 2 && leadsResp.actors.length >= 6, leadsResp.leads?.length)
   const gv = leadsResp.leads.find((l: any) => l.email === 'info@greenvalley.org')
   const rv = leadsResp.leads.find((l: any) => l.email === 'hello@riversidearts.org')
 

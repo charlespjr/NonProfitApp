@@ -85,6 +85,58 @@ export const ACTORS: Record<string, ActorDef> = {
     buildInput: (q) => ({ filingName: q.query?.trim() || '', searchMode: 'contains', maxItems: q.limit ?? 100 }),
     findsEmails: false,
   },
+  // Facebook email scrapers — most nonprofits have a page; keyword + location.
+  fb_mind: {
+    id: 'BZYFV9KlZT0gX13LA',
+    label: 'Facebook Email Scraper — Mass (finds emails)',
+    buildInput: (q) => ({
+      keywords: [[q.query?.trim(), q.state?.trim()].filter(Boolean).join(' ') || 'nonprofit'],
+      location: q.state?.trim() || '',
+      platform: 'Facebook',
+      maxEmails: q.limit ?? 100,
+      proxyConfiguration: { useApifyProxy: true },
+    }),
+    findsEmails: true,
+  },
+  fb_best: {
+    id: 'xt9dRXomhQkoDhQGp',
+    label: 'Facebook Email Scraper — Best B2B/B2C (finds emails)',
+    buildInput: (q) => ({
+      keywords: [[q.query?.trim(), q.state?.trim()].filter(Boolean).join(' ') || 'nonprofit'],
+      country: q.state?.trim() || 'United States',
+      scrapeFrom: 'All',
+      emailType: 'B2C',
+      maxEmails: q.limit ?? 100,
+    }),
+    findsEmails: true,
+  },
+  fb_perfect: {
+    id: 'i4B662uq8aosylSDD',
+    label: 'Facebook Email Scraper — Perfectscrape (finds emails)',
+    buildInput: (q) => ({
+      keyword: [q.query?.trim(), q.state?.trim()].filter(Boolean).join(' ') || 'nonprofit',
+      pagesToScrape: q.limit ?? 100,
+      scrapeGmail: true,
+      scrapeYahoo: true,
+      scrapeOutlook: true,
+      proxyConfiguration: { useApifyProxy: true },
+    }),
+    findsEmails: true,
+  },
+  fb_bhansali: {
+    id: 'art7F0rZJYgNKVX5S',
+    label: 'Facebook Email Scraper — Bhansali (finds emails)',
+    buildInput: (q) => ({
+      Keyword: [q.query?.trim(), q.state?.trim()].filter(Boolean).join(' ') || 'nonprofit',
+      location: q.state?.trim() || '',
+      social_network: 'facebook.com/',
+      Country: 'www',
+      Email_Type: '0',
+      Limit: String(q.limit ?? 100),
+      proxySettings: { useApifyProxy: true },
+    }),
+    findsEmails: true,
+  },
 }
 
 export function apifyConfigured(): boolean {
@@ -101,30 +153,61 @@ export interface NormalizedLead {
   website: string | null
 }
 
+const EMAIL_RE = /[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}/i
+/** Placeholder/junk domains scrapers commonly emit — never real leads. */
+const JUNK_DOMAINS = new Set([
+  'mysite.com', 'example.com', 'example.org', 'example.net', 'domain.com', 'email.com',
+  'yourdomain.com', 'test.com', 'sentry.io', 'wixpress.com', 'wix.com', 'sentry-next.wixpress.com',
+  'godaddy.com', 'squarespace.com', 'no-reply.com', 'noreply.com', 'gstatic.com', 'schema.org',
+])
+function cleanEmail(s: string): string | null {
+  const m = s.match(EMAIL_RE)
+  if (!m) return null
+  const email = m[0].toLowerCase()
+  const domain = email.split('@')[1]
+  if (JUNK_DOMAINS.has(domain)) return null
+  if (/\.(png|jpg|jpeg|gif|webp|svg|css|js)$/i.test(email)) return null // asset paths
+  return email
+}
 const firstEmail = (v: unknown): string | null => {
-  if (Array.isArray(v)) return firstEmail(v[0])
-  if (typeof v === 'string') {
-    const m = v.match(/[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}/i)
-    return m ? m[0].toLowerCase() : null
-  }
+  if (Array.isArray(v)) { for (const x of v) { const e = firstEmail(x); if (e) return e } return null }
+  if (typeof v === 'string') return cleanEmail(v)
+  if (v && typeof v === 'object') return cleanEmail(String((v as { email?: unknown }).email ?? ''))
   return null
 }
 const str = (v: unknown): string | null => (typeof v === 'string' && v.trim() ? v.trim() : null)
 
+/** Any email hiding in a string value of the item, whatever the key. */
+function scanForEmail(raw: Record<string, unknown>): string | null {
+  for (const v of Object.values(raw)) {
+    if (typeof v === 'string') { const e = cleanEmail(v); if (e) return e }
+    else if (Array.isArray(v)) { const e = firstEmail(v); if (e) return e }
+  }
+  return null
+}
+
 /** Map a raw dataset item (shapes vary per actor) into our lead fields. */
 export function normalizeItem(raw: Record<string, unknown>): NormalizedLead {
+  const email =
+    firstEmail(raw.email_found) || firstEmail(raw.email) || firstEmail(raw.emails) ||
+    firstEmail(raw.contactEmail) || firstEmail(raw.emailAddress) || firstEmail(raw.Email) ||
+    scanForEmail(raw)
+  const website = str(raw.website) || str(raw.url) || str(raw.domain) || str(raw.profileUrl) || null
+  let orgName =
+    str(raw.orgName) || str(raw.name) || str(raw.organization) || str(raw.title) ||
+    str(raw.pageName) || str(raw.businessName) || str(raw.fullName) ||
+    str((raw.organization as Record<string, unknown>)?.name) || null
+  // Fall back to the website/email domain so a lead is never nameless.
+  if (!orgName && website) orgName = website.replace(/^https?:\/\//, '').replace(/^www\./, '').split('/')[0]
+  if (!orgName && email) orgName = email.split('@')[1]
   return {
-    orgName:
-      str(raw.orgName) || str(raw.name) || str(raw.organization) || str(raw.title) ||
-      str((raw.organization as Record<string, unknown>)?.name) || 'Unknown organization',
-    email:
-      firstEmail(raw.email) || firstEmail(raw.emails) || firstEmail(raw.contactEmail) ||
-      firstEmail(raw.emailAddress) || null,
+    orgName: orgName || 'Unknown organization',
+    email,
     ein: str(raw.ein) || str(raw.EIN) || null,
     state: str(raw.state) || str(raw.stateCode) || str(raw.location) || null,
     city: str(raw.city) || null,
     ntee: str(raw.ntee) || str(raw.nteeCode) || str(raw.category) || null,
-    website: str(raw.website) || str(raw.url) || str(raw.domain) || null,
+    website,
   }
 }
 
