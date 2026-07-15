@@ -3,17 +3,26 @@ import { createRoot } from 'react-dom/client'
 import './styles/global.css'
 import App from './App'
 import { StoreProvider } from './state/store'
+import { AdminPortal } from './screens/AdminPortal'
 import { initInstallCapture } from './lib/install'
 
 // Catch the browser's install offer before first render so the
 // "Install app" button can fire the real one-tap prompt.
 initInstallCapture()
 
+// /admin is the owner console (ADMIN_KEY-gated), fully outside the
+// customer session/store.
+const isAdminRoute = window.location.pathname.replace(/\/+$/, '') === '/admin'
+
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <StoreProvider>
-      <App />
-    </StoreProvider>
+    {isAdminRoute ? (
+      <AdminPortal />
+    ) : (
+      <StoreProvider>
+        <App />
+      </StoreProvider>
+    )}
   </StrictMode>,
 )
 

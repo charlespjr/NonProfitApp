@@ -5,7 +5,7 @@ import { sign, verify } from 'hono/jwt'
 import { and, eq } from 'drizzle-orm'
 import bcrypt from 'bcryptjs'
 import { databaseUrl, getDb } from './db.js'
-import { orgs, orgState, users } from './schema.js'
+import { orgs, orgState, qboInvoices, users } from './schema.js'
 import { billing } from './billing.js'
 
 const JWT_SECRET = process.env.JWT_SECRET || 'dev-only-secret-change-in-production'
@@ -420,6 +420,59 @@ app.post('/ai/draft', requireAuth, requireActivePlan, async (c) => {
     console.error('anthropic draft unreachable:', e)
     return c.json({ error: 'Could not reach the AI service — try again.' }, 502)
   }
+})
+
+// ----------------------------------------------------- owner admin portal
+/** These endpoints power app.quorumsuite.com/admin — the business owner's
+ *  view across ALL organizations. Gated by the ADMIN_KEY secret, never by
+ *  user sessions. Plan changes reuse POST /billing/activate (same key). */
+const adminKeyOk = (c: Context) =>
+  !!process.env.ADMIN_KEY && c.req.header('x-admin-key') === process.env.ADMIN_KEY
+
+app.get('/admin/orgs', async (c) => {
+  if (!adminKeyOk(c)) return c.json({ error: 'forbidden' }, 403)
+  const db = await getDb()
+  const [allOrgs, allUsers, states, invoices] = await Promise.all([
+    db.select().from(orgs),
+    db.select().from(users),
+    db.select().from(orgState),
+    db.select().from(qboInvoices),
+  ])
+  const rows = allOrgs
+    .map((o) => {
+      const members = allUsers.filter((u) => u.orgId === o.id)
+      const admin = members.find((u) => u.isAdmin)
+      const st = states.find((s) => s.orgId === o.id)
+      const inv = invoices.filter((i) => i.orgId === o.id)
+      return {
+        id: o.id,
+        name: o.name,
+        createdAt: o.createdAt,
+        plan: o.plan,
+        planStatus: o.planStatus,
+        aiConfigured: !!o.anthropicKey,
+        members: members.length,
+        adminName: admin?.name ?? '—',
+        adminEmail: admin?.email ?? '—',
+        stateVersion: st?.version ?? 0,
+        lastActivity: st?.updatedAt ?? o.createdAt,
+        openInvoices: inv.filter((i) => i.status === 'open').length,
+        paidInvoices: inv.filter((i) => i.status === 'paid').length,
+      }
+    })
+    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+  return c.json({ orgs: rows })
+})
+
+app.delete('/admin/orgs/:id', async (c) => {
+  if (!adminKeyOk(c)) return c.json({ error: 'forbidden' }, 403)
+  const orgId = c.req.param('id') || ''
+  const db = await getDb()
+  const [org] = await db.select().from(orgs).where(eq(orgs.id, orgId))
+  if (!org) return c.json({ error: 'org not found' }, 404)
+  // FK cascades remove the org's users, state, and invoice records.
+  await db.delete(orgs).where(eq(orgs.id, orgId))
+  return c.json({ ok: true, deleted: orgId, name: org.name })
 })
 
 // -------------------------------------------------------------- billing
