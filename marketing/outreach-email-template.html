@@ -1,84 +1,4 @@
-/**
- * Outreach sending + CAN-SPAM compliance.
- *
- * Env: RESEND_API_KEY (real send), OUTREACH_FROM (e.g. "Quorum <hello@quorumsuite.com>"),
- *      APP_URL (for the unsubscribe link). Without RESEND_API_KEY every send
- *      is a dry-run — recorded, nothing delivered — so the whole workflow is
- *      usable before the sending domain is verified.
- *
- * CAN-SPAM: every email gets a one-click unsubscribe link (per-lead token),
- * a physical mailing address, and honest sender identity. Unsubscribes are
- * honored immediately and permanently via the suppression status.
- */
-const POSTAL = 'Paragon Government Solutions LLC · 11166 Fairfax Blvd, STE 500, Fairfax, VA 22030'
-
-export function resendConfigured(): boolean {
-  return !!process.env.RESEND_API_KEY
-}
-
-function appUrl(): string {
-  return (process.env.APP_URL || 'https://app.quorumsuite.com').replace(/\/+$/, '')
-}
-
-/** Merge {{orgName}} etc. and append the required CAN-SPAM footer. */
-export function renderEmail(
-  bodyHtml: string,
-  lead: { orgName: string; unsubToken: string },
-): string {
-  const merged = bodyHtml
-    .split('{{orgName}}').join(escapeHtml(lead.orgName))
-    .split('{{org}}').join(escapeHtml(lead.orgName))
-  const unsub = `${appUrl()}/api/outreach/unsubscribe?token=${encodeURIComponent(lead.unsubToken)}`
-  const footer = `
-    <hr style="border:none;border-top:1px solid #e7e4db;margin:26px 0 14px" />
-    <div style="font-family:Arial,sans-serif;font-size:12px;color:#8b8074;line-height:1.6">
-      You received this email because we found ${escapeHtml(lead.orgName)} in public nonprofit records and thought Quorum could help.
-      <br />${POSTAL}
-      <br /><a href="${unsub}" style="color:#a15c39">Unsubscribe</a> — we'll remove you immediately and never contact you again.
-    </div>`
-  return `<div style="max-width:560px;margin:0 auto">${merged}${footer}</div>`
-}
-
-export interface SendResult {
-  ok: boolean
-  dryRun: boolean
-  error?: string
-}
-
-/** Send one email via Resend, or record a dry-run when unconfigured. */
-export async function sendEmail(input: {
-  to: string
-  subject: string
-  html: string
-}): Promise<SendResult> {
-  const key = process.env.RESEND_API_KEY
-  if (!key) return { ok: true, dryRun: true }
-  const from = process.env.OUTREACH_FROM || 'Quorum <hello@quorumsuite.com>'
-  try {
-    const res = await fetch('https://api.resend.com/emails', {
-      method: 'POST',
-      headers: { authorization: `Bearer ${key}`, 'content-type': 'application/json' },
-      body: JSON.stringify({ from, to: input.to, subject: input.subject, html: input.html }),
-    })
-    if (!res.ok) return { ok: false, dryRun: false, error: `Resend ${res.status}: ${(await res.text()).slice(0, 160)}` }
-    return { ok: true, dryRun: false }
-  } catch (e) {
-    return { ok: false, dryRun: false, error: e instanceof Error ? e.message : 'send failed' }
-  }
-}
-
-function escapeHtml(s: string): string {
-  return s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c] as string))
-}
-
-/**
- * Professionally designed, email-client-safe first-touch template.
- * Table-based layout + inline styles for Gmail/Outlook/Apple Mail. The
- * outreach engine appends the CAN-SPAM unsubscribe line after this footer.
- */
-export const DEFAULT_TEMPLATE = {
-  subject: 'A simpler way to run {{orgName}}’s board',
-  body: `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f8f4ec;font-family:Arial,Helvetica,sans-serif">
+<!doctype html><html><head><meta charset="utf-8"><title>Quorum outreach email</title></head><body style="margin:0"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f8f4ec;font-family:Arial,Helvetica,sans-serif">
 <tr><td align="center" style="padding:8px">
 <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;background:#ffffff;border:1px solid #e8e0d2;border-radius:14px;overflow:hidden">
 
@@ -90,7 +10,7 @@ export const DEFAULT_TEMPLATE = {
 
   <!-- body -->
   <tr><td style="padding:30px 32px 8px">
-    <p style="margin:0 0 16px;font-size:16px;color:#2c231c;line-height:1.6">Hi {{orgName}} team,</p>
+    <p style="margin:0 0 16px;font-size:16px;color:#2c231c;line-height:1.6">Hi Adams Infinite Legacy team,</p>
     <p style="margin:0 0 16px;font-size:15px;color:#2c231c;line-height:1.65">Running a nonprofit board means juggling filings, bylaws, votes, and signatures — usually across email threads and scattered docs. We built <strong>Quorum</strong> to put all of it in one place:</p>
     <table role="presentation" cellpadding="0" cellspacing="0" style="margin:0 0 18px">
       <tr><td style="padding:4px 0;font-size:15px;color:#4a4038;line-height:1.5">✅ &nbsp;A plain-English launch &amp; compliance checklist</td></tr>
@@ -142,5 +62,4 @@ export const DEFAULT_TEMPLATE = {
 
 </table>
 </td></tr>
-</table>`,
-}
+</table><table role="presentation" width="100%"><tr><td align="center"><table width="600" style="max-width:600px"><tr><td style="padding:14px 32px;font-family:Arial;font-size:12px;color:#8b8074;line-height:1.6">You received this email because we found Adams Infinite Legacy in public nonprofit records.<br>Paragon Government Solutions LLC · 11166 Fairfax Blvd, STE 500, Fairfax, VA 22030<br><a href="https://app.quorumsuite.com/api/outreach/unsubscribe?token=demo" style="color:#a15c39">Unsubscribe</a></td></tr></table></td></tr></table></body></html>
