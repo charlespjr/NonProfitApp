@@ -17,6 +17,10 @@
     {
       "path": "/api/billing/sync",
       "schedule": "0 6 * * *"
+    },
+    {
+      "path": "/api/outreach/drip-run",
+      "schedule": "30 14 * * *"
     }
   ]
 }

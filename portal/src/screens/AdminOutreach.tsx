@@ -51,6 +51,13 @@ export function AdminOutreach({ adminKey }: { adminKey: string }) {
   const [body, setBody] = useState('')
   const [showCompose, setShowCompose] = useState(false)
 
+  // daily drip
+  const [drip, setDrip] = useState<{ subject: string; body: string; dailyCap: number; active: boolean; lastRunAt: string | null; lastSentCount: number } | null>(null)
+  const [queued, setQueued] = useState(0)
+  const [dripSubject, setDripSubject] = useState('')
+  const [dripBody, setDripBody] = useState('')
+  const [dripCap, setDripCap] = useState(25)
+
   const hdr = { 'x-admin-key': adminKey }
 
   const load = useCallback(async () => {
@@ -65,7 +72,18 @@ export function AdminOutreach({ adminKey }: { adminKey: string }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [adminKey])
 
-  useEffect(() => { void load() }, [load])
+  const loadDrip = useCallback(async () => {
+    try {
+      const res = await fetch('/api/admin/outreach/drip', { headers: hdr })
+      const b = await res.json()
+      setDrip(b.drip)
+      setQueued(b.queued)
+      if (b.drip) { setDripSubject(b.drip.subject); setDripBody(b.drip.body); setDripCap(b.drip.dailyCap) }
+    } catch { /* ignore */ }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [adminKey])
+
+  useEffect(() => { void load(); void loadDrip() }, [load, loadDrip])
 
   const discover = async () => {
     setBusy('discover'); setError(''); setNote('')
@@ -85,6 +103,33 @@ export function AdminOutreach({ adminKey }: { adminKey: string }) {
     await fetch('/api/admin/outreach/leads/' + id, { method: 'DELETE', headers: hdr })
     setSelected((s) => { const n = new Set(s); n.delete(id); return n })
     await load()
+  }
+
+  const saveDrip = async (active: boolean) => {
+    setBusy('drip'); setError(''); setNote('')
+    try {
+      const seedSubj = dripSubject || data?.template.subject || ''
+      const seedBody = dripBody || data?.template.body || ''
+      const res = await fetch('/api/admin/outreach/drip', {
+        method: 'POST', headers: { ...hdr, 'content-type': 'application/json' },
+        body: JSON.stringify({ subject: seedSubj, body: seedBody, dailyCap: dripCap, active }),
+      })
+      const b = await res.json()
+      if (!res.ok) { setError(b.error || 'Could not save drip'); return }
+      setNote(active ? `Daily drip is ON — up to ${dripCap} emails/day to new leads.` : 'Daily drip paused.')
+      await loadDrip()
+    } finally { setBusy('') }
+  }
+
+  const runDripNow = async () => {
+    setBusy('driprun'); setError(''); setNote('')
+    try {
+      const res = await fetch('/api/outreach/drip-run', { method: 'POST', headers: hdr })
+      const b = await res.json()
+      if (!res.ok) { setError(b.error || 'Run failed'); return }
+      setNote(b.skipped ? 'Drip is not active — turn it on first.' : `Drip ran: ${b.sent + (b.dryRun || 0)} email(s), ${b.remaining} still queued.`)
+      await load(); await loadDrip()
+    } finally { setBusy('') }
   }
 
   const send = async () => {
@@ -157,6 +202,43 @@ export function AdminOutreach({ adminKey }: { adminKey: string }) {
         </div>
         <div style={sx('font-size:11.5px;color:var(--muted);margin-top:8px;line-height:1.5')}>
           Tip: the IRS/990 sources find organizations; the <strong>Charity Email Scraper ✉</strong> finds their email addresses. Only leads with an email are stored.
+        </div>
+      </div>
+
+      {/* daily drip */}
+      <div style={sx('background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px 18px;margin-bottom:16px')}>
+        <div style={sx('display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:6px')}>
+          <div style={sx('font-size:14px;font-weight:600')}>Daily drip</div>
+          {drip?.active ? (
+            <span style={sx('font-size:11px;font-weight:700;color:var(--good);background:var(--good-soft);padding:3px 10px;border-radius:20px')}>ON · up to {drip.dailyCap}/day</span>
+          ) : (
+            <span style={sx('font-size:11px;font-weight:700;color:var(--muted);background:var(--bg);border:1px solid var(--line);padding:3px 10px;border-radius:20px')}>Paused</span>
+          )}
+          <span style={sx('font-size:11.5px;color:var(--muted)')}>{queued} new lead{queued === 1 ? '' : 's'} queued{drip?.lastRunAt ? ` · last run sent ${drip.lastSentCount}` : ''}</span>
+        </div>
+        <div style={sx('font-size:12px;color:var(--muted);line-height:1.5;margin-bottom:12px')}>
+          Sends this message to the next batch of never-contacted leads automatically every morning — a steady drip protects your sending reputation. Same unsubscribe + address footer as manual sends.
+        </div>
+        <div style={sx('display:flex;flex-direction:column;gap:10px')}>
+          <input value={dripSubject} onChange={(e) => setDripSubject(e.target.value)} placeholder="Subject — {{orgName}} merges the org name" style={sx('width:100%;padding:9px 12px;border:1px solid var(--line);border-radius:9px;background:var(--bg);font-size:13px;color:var(--ink)')} />
+          <textarea value={dripBody} onChange={(e) => setDripBody(e.target.value)} placeholder="Email body (HTML). Leave blank to use the default template." style={sx('width:100%;min-height:110px;resize:vertical;padding:10px 12px;border:1px solid var(--line);border-radius:9px;background:var(--bg);font-size:12px;line-height:1.5;color:var(--ink);font-family:ui-monospace,monospace')} />
+          <div style={sx('display:flex;gap:10px;align-items:center;flex-wrap:wrap')}>
+            <label style={sx('font-size:12.5px;color:var(--muted);display:flex;align-items:center;gap:7px')}>
+              Send up to
+              <input type="number" min={1} max={500} value={dripCap} onChange={(e) => setDripCap(Math.max(1, Math.min(500, Number(e.target.value) || 1)))} style={sx('width:70px;padding:7px 9px;border:1px solid var(--line);border-radius:8px;background:var(--bg);font-size:13px;color:var(--ink)')} />
+              per day
+            </label>
+            <div style={sx('flex:1')} />
+            <button className="hv-bg" disabled={busy === 'driprun'} onClick={() => void runDripNow()} style={sx('border:1px solid var(--line);background:var(--panel);color:var(--brand);font-size:12.5px;font-weight:600;padding:8px 14px;border-radius:9px;cursor:pointer')}>Run today’s batch now</button>
+            {drip?.active ? (
+              <button className="hv-border-danger" disabled={busy === 'drip'} onClick={() => void saveDrip(false)} style={sx('border:1px solid var(--line);background:var(--panel);color:var(--muted);font-size:12.5px;font-weight:600;padding:8px 14px;border-radius:9px;cursor:pointer')}>Pause drip</button>
+            ) : (
+              <button className="hv-bright" disabled={busy === 'drip'} onClick={() => void saveDrip(true)} style={sx('border:none;background:var(--brand);color:#fff;font-size:12.5px;font-weight:600;padding:8px 16px;border-radius:9px;cursor:pointer')}>Turn on daily drip</button>
+            )}
+            {drip?.active && (
+              <button className="hv-bg" disabled={busy === 'drip'} onClick={() => void saveDrip(true)} style={sx('border:1px solid var(--line);background:var(--panel);color:var(--brand);font-size:12.5px;font-weight:600;padding:8px 14px;border-radius:9px;cursor:pointer')}>Save changes</button>
+            )}
+          </div>
         </div>
       </div>
 

@@ -357,6 +357,39 @@ async function main() {
   })
   const send2 = await j(res)
   check('send skips unsubscribed leads', send2.skipped >= 1 && send2.targeted < 2, send2)
+
+  // 15e. daily drip: config, cron-auth, batch cap, honors active flag
+  // add a few fresh 'new' leads via discovery so the drip has a queue
+  globalThis.fetch = (async (input: any, init?: any) => {
+    const url = String(input)
+    if (url.includes('api.apify.com')) return new Response(JSON.stringify([
+      { name: 'Drip Org 1', email: 'd1@ex.org' }, { name: 'Drip Org 2', email: 'd2@ex.org' }, { name: 'Drip Org 3', email: 'd3@ex.org' },
+    ]), { status: 200, headers: { 'content-type': 'application/json' } })
+    return realFetch2(input, init)
+  }) as typeof fetch
+  await app.request('/api/admin/outreach/discover', { method: 'POST', headers: { 'content-type': 'application/json', 'x-admin-key': 'test-admin-key' }, body: JSON.stringify({ source: 'emails', query: 'x' }) })
+
+  res = await app.request('/api/outreach/drip-run', { method: 'POST' })
+  check('drip-run without auth → 403', res.status === 403)
+  res = await app.request('/api/outreach/drip-run', { method: 'POST', headers: { 'x-admin-key': 'test-admin-key' } })
+  check('drip-run when inactive → skipped', (await j(res)).skipped === 'drip not active')
+  res = await app.request('/api/admin/outreach/drip', json({ subject: 'Hi {{orgName}}', body: '<p>hey</p>', dailyCap: 2, active: true }, undefined))
+  check('drip save without key → 403', res.status === 403)
+  res = await app.request('/api/admin/outreach/drip', { method: 'POST', headers: { 'content-type': 'application/json', 'x-admin-key': 'test-admin-key' }, body: JSON.stringify({ subject: 'Hi {{orgName}}', body: '<p>hey</p>', dailyCap: 2, active: true }) })
+  check('drip activated', res.status === 200 && (await j(res)).active === true)
+  res = await app.request('/api/outreach/drip-run', { method: 'POST', headers: { 'x-admin-key': 'test-admin-key' } })
+  const drip1 = await j(res)
+  check('drip sends only dailyCap (2) leaves remainder', drip1.ran === 2 && drip1.remaining === 1, drip1)
+  res = await app.request('/api/outreach/drip-run', { method: 'POST', headers: { 'x-admin-key': 'test-admin-key' } })
+  const drip2 = await j(res)
+  check('next drip run sends the last queued lead', drip2.ran === 1 && drip2.remaining === 0, drip2)
+  res = await app.request('/api/outreach/drip-run', { method: 'POST', headers: { 'x-admin-key': 'test-admin-key' } })
+  check('drip run with empty queue → 0', (await j(res)).ran === 0)
+  process.env.CRON_SECRET = 'cron-test'
+  res = await app.request('/api/outreach/drip-run', { headers: { authorization: 'Bearer cron-test' } })
+  check('cron bearer authorizes drip', res.status === 200)
+  delete process.env.CRON_SECRET
+
   globalThis.fetch = realFetch2
   delete process.env.APIFY_TOKEN
 

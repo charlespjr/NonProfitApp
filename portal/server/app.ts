@@ -5,7 +5,7 @@ import { sign, verify } from 'hono/jwt'
 import { and, eq } from 'drizzle-orm'
 import bcrypt from 'bcryptjs'
 import { databaseUrl, getDb } from './db.js'
-import { orgs, orgState, outreachCampaigns, outreachLeads, outreachSends, qboInvoices, users } from './schema.js'
+import { orgs, orgState, outreachCampaigns, outreachDrip, outreachLeads, outreachSends, qboInvoices, users } from './schema.js'
 import { billing } from './billing.js'
 import { ACTORS, apifyConfigured, runActor } from './apify.js'
 import { DEFAULT_TEMPLATE, renderEmail, resendConfigured, sendEmail } from './outreach.js'
@@ -553,22 +553,15 @@ app.delete('/admin/outreach/leads/:id', async (c) => {
   return c.json({ ok: true })
 })
 
-/** Send a campaign to the selected leads. Skips unsubscribed/bounced leads,
- *  renders per-lead unsubscribe + postal footer, records one send row each,
- *  and marks leads emailed. Dry-run (nothing delivered) until RESEND_API_KEY
- *  is set. */
-app.post('/admin/outreach/send', async (c) => {
-  if (!adminKeyOk(c)) return c.json({ error: 'forbidden' }, 403)
-  const body = await c.req.json().catch(() => ({}))
-  const subject = String(body?.subject || '').slice(0, 300)
-  const bodyHtml = String(body?.body || '')
-  const leadIds: string[] = Array.isArray(body?.leadIds) ? body.leadIds.map(String) : []
-  if (!subject || !bodyHtml || leadIds.length === 0) {
-    return c.json({ error: 'subject, body, and at least one lead are required' }, 400)
-  }
-  const db = await getDb()
-  const all = await db.select().from(outreachLeads)
-  const targets = all.filter((l) => leadIds.includes(l.id) && l.status !== 'unsubscribed' && l.status !== 'bounced')
+/** Core send: email a campaign to a set of lead rows (already filtered to
+ *  contactable). Records a send row per lead, marks each emailed, returns a
+ *  tally. Shared by the manual send and the daily drip. */
+async function deliverCampaign(
+  db: Awaited<ReturnType<typeof getDb>>,
+  subject: string,
+  bodyHtml: string,
+  targets: Array<typeof outreachLeads.$inferSelect>,
+): Promise<{ campaignId: string; sent: number; dryRun: number; failed: number }> {
   const campaignId = id('camp_')
   await db.insert(outreachCampaigns).values({ id: campaignId, subject, body: bodyHtml })
   let sent = 0
@@ -588,12 +581,87 @@ app.post('/admin/outreach/send', async (c) => {
     } else failed++
   }
   await db.update(outreachCampaigns).set({ sentCount: sent + dryRun }).where(eq(outreachCampaigns.id, campaignId))
+  return { campaignId, sent, dryRun, failed }
+}
+
+/** Send a campaign to the selected leads. Skips unsubscribed/bounced leads,
+ *  renders per-lead unsubscribe + postal footer, records one send row each,
+ *  and marks leads emailed. Dry-run (nothing delivered) until RESEND_API_KEY
+ *  is set. */
+app.post('/admin/outreach/send', async (c) => {
+  if (!adminKeyOk(c)) return c.json({ error: 'forbidden' }, 403)
+  const body = await c.req.json().catch(() => ({}))
+  const subject = String(body?.subject || '').slice(0, 300)
+  const bodyHtml = String(body?.body || '')
+  const leadIds: string[] = Array.isArray(body?.leadIds) ? body.leadIds.map(String) : []
+  if (!subject || !bodyHtml || leadIds.length === 0) {
+    return c.json({ error: 'subject, body, and at least one lead are required' }, 400)
+  }
+  const db = await getDb()
+  const all = await db.select().from(outreachLeads)
+  const targets = all.filter((l) => leadIds.includes(l.id) && l.status !== 'unsubscribed' && l.status !== 'bounced')
+  const r = await deliverCampaign(db, subject, bodyHtml, targets)
   return c.json({
-    campaignId, targeted: targets.length, sent, dryRun, failed,
+    campaignId: r.campaignId, targeted: targets.length, sent: r.sent, dryRun: r.dryRun, failed: r.failed,
     skipped: leadIds.length - targets.length,
     mode: resendConfigured() ? 'live' : 'dryrun',
   })
 })
+
+// ------------------------------------------------------ daily drip campaign
+const DRIP_ID = 'drip'
+
+app.get('/admin/outreach/drip', async (c) => {
+  if (!adminKeyOk(c)) return c.json({ error: 'forbidden' }, 403)
+  const db = await getDb()
+  const [cfg] = await db.select().from(outreachDrip).where(eq(outreachDrip.id, DRIP_ID))
+  const leads = await db.select().from(outreachLeads)
+  const queued = leads.filter((l) => l.status === 'new').length
+  return c.json({
+    drip: cfg
+      ? { subject: cfg.subject, body: cfg.body, dailyCap: cfg.dailyCap, active: cfg.active, lastRunAt: cfg.lastRunAt, lastSentCount: cfg.lastSentCount }
+      : null,
+    queued,
+    mode: resendConfigured() ? 'live' : 'dryrun',
+  })
+})
+
+app.post('/admin/outreach/drip', async (c) => {
+  if (!adminKeyOk(c)) return c.json({ error: 'forbidden' }, 403)
+  const body = await c.req.json().catch(() => ({}))
+  const subject = String(body?.subject || '').slice(0, 300)
+  const bodyHtml = String(body?.body || '')
+  const dailyCap = Math.min(500, Math.max(1, Number(body?.dailyCap) || 25))
+  const active = !!body?.active
+  if (active && (!subject || !bodyHtml)) return c.json({ error: 'subject and body are required to activate the drip' }, 400)
+  const db = await getDb()
+  const [existing] = await db.select().from(outreachDrip).where(eq(outreachDrip.id, DRIP_ID))
+  if (existing) {
+    await db.update(outreachDrip).set({ subject, body: bodyHtml, dailyCap, active }).where(eq(outreachDrip.id, DRIP_ID))
+  } else {
+    await db.insert(outreachDrip).values({ id: DRIP_ID, subject, body: bodyHtml, dailyCap, active })
+  }
+  return c.json({ ok: true, active })
+})
+
+/** Cron-driven daily drip: send the active campaign to the next `dailyCap`
+ *  never-contacted leads. Auth: Vercel Cron (Bearer CRON_SECRET) or the
+ *  admin key (for a manual "run now"). */
+async function runDrip(c: Context) {
+  const auth = c.req.header('authorization') || ''
+  const cronOk = !!process.env.CRON_SECRET && auth === `Bearer ${process.env.CRON_SECRET}`
+  if (!cronOk && !adminKeyOk(c)) return c.json({ error: 'forbidden' }, 403)
+  const db = await getDb()
+  const [cfg] = await db.select().from(outreachDrip).where(eq(outreachDrip.id, DRIP_ID))
+  if (!cfg || !cfg.active) return c.json({ ok: true, skipped: 'drip not active' })
+  const leads = await db.select().from(outreachLeads)
+  const batch = leads.filter((l) => l.status === 'new').slice(0, cfg.dailyCap)
+  const r = batch.length ? await deliverCampaign(db, cfg.subject, cfg.body, batch) : { sent: 0, dryRun: 0, failed: 0 }
+  await db.update(outreachDrip).set({ lastRunAt: new Date(), lastSentCount: r.sent + r.dryRun }).where(eq(outreachDrip.id, DRIP_ID))
+  return c.json({ ok: true, ran: batch.length, sent: r.sent, dryRun: r.dryRun, failed: r.failed, remaining: leads.filter((l) => l.status === 'new').length - batch.length })
+}
+app.get('/outreach/drip-run', runDrip)
+app.post('/outreach/drip-run', runDrip)
 
 /** Public one-click unsubscribe (CAN-SPAM). No auth — the token is the proof. */
 app.get('/outreach/unsubscribe', async (c) => {
