@@ -5,8 +5,10 @@ import { sign, verify } from 'hono/jwt'
 import { and, eq } from 'drizzle-orm'
 import bcrypt from 'bcryptjs'
 import { databaseUrl, getDb } from './db.js'
-import { orgs, orgState, qboInvoices, users } from './schema.js'
+import { orgs, orgState, outreachCampaigns, outreachLeads, outreachSends, qboInvoices, users } from './schema.js'
 import { billing } from './billing.js'
+import { ACTORS, apifyConfigured, runActor } from './apify.js'
+import { DEFAULT_TEMPLATE, renderEmail, resendConfigured, sendEmail } from './outreach.js'
 
 const JWT_SECRET = process.env.JWT_SECRET || 'dev-only-secret-change-in-production'
 const COOKIE = 'quorum_session'
@@ -473,6 +475,137 @@ app.delete('/admin/orgs/:id', async (c) => {
   // FK cascades remove the org's users, state, and invoice records.
   await db.delete(orgs).where(eq(orgs.id, orgId))
   return c.json({ ok: true, deleted: orgId, name: org.name })
+})
+
+// --------------------------------------------------------- outreach CRM
+/** Discover nonprofit leads via an Apify actor and upsert them (dedup by
+ *  email). Actors that don't return emails still land as leads without one;
+ *  run the email-finder actor over the same query to fill them in. */
+app.post('/admin/outreach/discover', async (c) => {
+  if (!adminKeyOk(c)) return c.json({ error: 'forbidden' }, 403)
+  if (!apifyConfigured()) return c.json({ error: 'Set APIFY_TOKEN to enable discovery.', code: 'no_apify' }, 400)
+  const body = await c.req.json().catch(() => ({}))
+  const source = String(body?.source || '')
+  if (!ACTORS[source]) return c.json({ error: 'unknown source actor' }, 400)
+  let found
+  try {
+    found = await runActor(source, {
+      query: String(body?.query || '').slice(0, 200),
+      state: String(body?.state || '').slice(0, 40) || undefined,
+      limit: Math.min(500, Math.max(1, Number(body?.limit) || 100)),
+    })
+  } catch (e) {
+    console.error('apify discover failed:', e)
+    return c.json({ error: 'Discovery run failed — check the actor input or your Apify plan.' }, 502)
+  }
+  const db = await getDb()
+  const existing = await db.select().from(outreachLeads)
+  const byEmail = new Map(existing.filter((l) => l.email).map((l) => [l.email.toLowerCase(), l]))
+  let added = 0
+  let withEmail = 0
+  for (const item of found) {
+    if (!item.email) continue // only store contactable leads
+    withEmail++
+    const email = item.email.toLowerCase()
+    if (byEmail.has(email)) continue
+    await db.insert(outreachLeads).values({
+      id: id('lead_'),
+      orgName: item.orgName,
+      email,
+      ein: item.ein,
+      state: item.state,
+      city: item.city,
+      ntee: item.ntee,
+      website: item.website,
+      source,
+      unsubToken: crypto.randomUUID().replace(/-/g, ''),
+    })
+    byEmail.set(email, {} as typeof existing[number])
+    added++
+  }
+  return c.json({ found: found.length, withEmail, added, sourceLabel: ACTORS[source].label })
+})
+
+app.get('/admin/outreach/leads', async (c) => {
+  if (!adminKeyOk(c)) return c.json({ error: 'forbidden' }, 403)
+  const db = await getDb()
+  const rows = await db.select().from(outreachLeads)
+  rows.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+  const counts = rows.reduce<Record<string, number>>((m, r) => ((m[r.status] = (m[r.status] || 0) + 1), m), {})
+  return c.json({
+    leads: rows.map((l) => ({
+      id: l.id, orgName: l.orgName, email: l.email, state: l.state, city: l.city,
+      ntee: l.ntee, website: l.website, source: l.source, status: l.status,
+      lastEmailedAt: l.lastEmailedAt, createdAt: l.createdAt,
+    })),
+    counts,
+    actors: Object.entries(ACTORS).map(([key, a]) => ({ key, label: a.label, findsEmails: a.findsEmails })),
+    apifyConfigured: apifyConfigured(),
+    sendConfigured: resendConfigured(),
+    template: DEFAULT_TEMPLATE,
+  })
+})
+
+app.delete('/admin/outreach/leads/:id', async (c) => {
+  if (!adminKeyOk(c)) return c.json({ error: 'forbidden' }, 403)
+  const db = await getDb()
+  await db.delete(outreachLeads).where(eq(outreachLeads.id, c.req.param('id') || ''))
+  return c.json({ ok: true })
+})
+
+/** Send a campaign to the selected leads. Skips unsubscribed/bounced leads,
+ *  renders per-lead unsubscribe + postal footer, records one send row each,
+ *  and marks leads emailed. Dry-run (nothing delivered) until RESEND_API_KEY
+ *  is set. */
+app.post('/admin/outreach/send', async (c) => {
+  if (!adminKeyOk(c)) return c.json({ error: 'forbidden' }, 403)
+  const body = await c.req.json().catch(() => ({}))
+  const subject = String(body?.subject || '').slice(0, 300)
+  const bodyHtml = String(body?.body || '')
+  const leadIds: string[] = Array.isArray(body?.leadIds) ? body.leadIds.map(String) : []
+  if (!subject || !bodyHtml || leadIds.length === 0) {
+    return c.json({ error: 'subject, body, and at least one lead are required' }, 400)
+  }
+  const db = await getDb()
+  const all = await db.select().from(outreachLeads)
+  const targets = all.filter((l) => leadIds.includes(l.id) && l.status !== 'unsubscribed' && l.status !== 'bounced')
+  const campaignId = id('camp_')
+  await db.insert(outreachCampaigns).values({ id: campaignId, subject, body: bodyHtml })
+  let sent = 0
+  let dryRun = 0
+  let failed = 0
+  for (const lead of targets) {
+    const html = renderEmail(bodyHtml, lead)
+    const subj = subject.split('{{orgName}}').join(lead.orgName).split('{{org}}').join(lead.orgName)
+    const r = await sendEmail({ to: lead.email, subject: subj, html })
+    await db.insert(outreachSends).values({
+      id: id('send_'), campaignId, leadId: lead.id,
+      status: r.dryRun ? 'dryrun' : r.ok ? 'sent' : 'failed', error: r.error ?? null,
+    })
+    if (r.ok) {
+      await db.update(outreachLeads).set({ status: 'emailed', lastEmailedAt: new Date() }).where(eq(outreachLeads.id, lead.id))
+      r.dryRun ? dryRun++ : sent++
+    } else failed++
+  }
+  await db.update(outreachCampaigns).set({ sentCount: sent + dryRun }).where(eq(outreachCampaigns.id, campaignId))
+  return c.json({
+    campaignId, targeted: targets.length, sent, dryRun, failed,
+    skipped: leadIds.length - targets.length,
+    mode: resendConfigured() ? 'live' : 'dryrun',
+  })
+})
+
+/** Public one-click unsubscribe (CAN-SPAM). No auth — the token is the proof. */
+app.get('/outreach/unsubscribe', async (c) => {
+  const token = c.req.query('token') || ''
+  const html = (msg: string) =>
+    c.html(`<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Unsubscribe — Quorum</title><body style="font-family:system-ui,Arial,sans-serif;background:#faf4ed;color:#332b24;display:grid;place-items:center;min-height:100vh;margin:0"><div style="max-width:420px;text-align:center;padding:32px;background:#fffdf9;border:1px solid #efe5d8;border-radius:16px"><div style="font-size:30px">✓</div><h1 style="font-size:20px">${msg}</h1><p style="color:#8b8074;font-size:14px">Paragon Government Solutions LLC · Fairfax, VA</p></div></body>`)
+  if (!token) return html('Invalid unsubscribe link.')
+  const db = await getDb()
+  const [lead] = await db.select().from(outreachLeads).where(eq(outreachLeads.unsubToken, token))
+  if (!lead) return html('This link is no longer valid.')
+  await db.update(outreachLeads).set({ status: 'unsubscribed' }).where(eq(outreachLeads.id, lead.id))
+  return html("You’ve been unsubscribed. We won’t contact you again.")
 })
 
 // -------------------------------------------------------------- billing

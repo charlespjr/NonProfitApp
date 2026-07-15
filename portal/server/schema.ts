@@ -88,6 +88,48 @@ export const qboInvoices = pgTable('qbo_invoices', {
   paidAt: timestamp('paid_at', { withTimezone: true }),
 })
 
+/** Outreach CRM (owner/admin only). Nonprofit leads discovered via Apify,
+ *  the campaigns sent to them, and one row per delivery attempt. Entirely
+ *  separate from customer orgs. */
+export const outreachLeads = pgTable(
+  'outreach_leads',
+  {
+    id: text('id').primaryKey(),
+    orgName: text('org_name').notNull(),
+    email: text('email').notNull(),
+    ein: text('ein'),
+    state: text('state'),
+    city: text('city'),
+    ntee: text('ntee'),
+    website: text('website'),
+    source: text('source'), // which actor / dataset produced it
+    /** 'new' | 'emailed' | 'replied' | 'unsubscribed' | 'bounced' */
+    status: text('status').notNull().default('new'),
+    unsubToken: text('unsub_token').notNull(),
+    lastEmailedAt: timestamp('last_emailed_at', { withTimezone: true }),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [uniqueIndex('outreach_leads_email').on(t.email)],
+)
+
+export const outreachCampaigns = pgTable('outreach_campaigns', {
+  id: text('id').primaryKey(),
+  subject: text('subject').notNull(),
+  body: text('body').notNull(),
+  sentCount: integer('sent_count').notNull().default(0),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+})
+
+export const outreachSends = pgTable('outreach_sends', {
+  id: text('id').primaryKey(),
+  campaignId: text('campaign_id').notNull(),
+  leadId: text('lead_id').notNull(),
+  /** 'sent' | 'failed' | 'dryrun' */
+  status: text('status').notNull(),
+  error: text('error'),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+})
+
 export const orgState = pgTable('org_state', {
   orgId: text('org_id')
     .primaryKey()
@@ -148,4 +190,35 @@ CREATE TABLE IF NOT EXISTS qbo_invoices (
   paid_at timestamptz
 );
 ALTER TABLE orgs ADD COLUMN IF NOT EXISTS anthropic_key text;
+CREATE TABLE IF NOT EXISTS outreach_leads (
+  id text PRIMARY KEY,
+  org_name text NOT NULL,
+  email text NOT NULL,
+  ein text,
+  state text,
+  city text,
+  ntee text,
+  website text,
+  source text,
+  status text NOT NULL DEFAULT 'new',
+  unsub_token text NOT NULL,
+  last_emailed_at timestamptz,
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+CREATE UNIQUE INDEX IF NOT EXISTS outreach_leads_email ON outreach_leads(email);
+CREATE TABLE IF NOT EXISTS outreach_campaigns (
+  id text PRIMARY KEY,
+  subject text NOT NULL,
+  body text NOT NULL,
+  sent_count integer NOT NULL DEFAULT 0,
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+CREATE TABLE IF NOT EXISTS outreach_sends (
+  id text PRIMARY KEY,
+  campaign_id text NOT NULL,
+  lead_id text NOT NULL,
+  status text NOT NULL,
+  error text,
+  created_at timestamptz NOT NULL DEFAULT now()
+);
 `

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { sx } from '../lib/sx'
 import { THEMES } from '../styles/theme'
+import { AdminOutreach } from './AdminOutreach'
 
 interface AdminOrgRow {
   id: string
@@ -47,6 +48,7 @@ export function AdminPortal() {
   const [error, setError] = useState('')
   const [busy, setBusy] = useState('')
   const [planPick, setPlanPick] = useState<Record<string, string>>({})
+  const [tab, setTab] = useState<'orgs' | 'outreach'>('orgs')
 
   const load = useCallback(
     async (k: string) => {
@@ -155,19 +157,36 @@ export function AdminPortal() {
         <div style={sx('display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:18px')}>
           <div style={sx('width:38px;height:38px;border-radius:10px;background:var(--brand);color:#fff;display:grid;place-items:center;font-family:Spectral,serif;font-size:19px;font-weight:600')}>Q</div>
           <div style={sx('flex:1;min-width:200px')}>
-            <div style={sx('font-family:Spectral,serif;font-size:22px;font-weight:600')}>Quorum Admin — organizations</div>
-            <div style={sx('font-size:12.5px;color:var(--muted)')}>Every org on the platform. Plan changes take effect immediately.</div>
+            <div style={sx('font-family:Spectral,serif;font-size:22px;font-weight:600')}>Quorum Admin</div>
+            <div style={sx('display:flex;gap:6px;margin-top:8px')}>
+              {(['orgs', 'outreach'] as const).map((t) => (
+                <button
+                  key={t}
+                  onClick={() => setTab(t)}
+                  style={{
+                    ...sx('font-size:12.5px;font-weight:600;padding:6px 14px;border-radius:9px;cursor:pointer;border:1px solid'),
+                    borderColor: tab === t ? 'var(--accent)' : 'var(--line)',
+                    background: tab === t ? 'var(--accent-soft)' : 'var(--panel)',
+                    color: tab === t ? 'var(--brand)' : 'var(--muted)',
+                  }}
+                >
+                  {t === 'orgs' ? 'Organizations' : 'Outreach'}
+                </button>
+              ))}
+            </div>
           </div>
           <div style={sx('display:flex;gap:8px;flex-wrap:wrap')}>
-            <span style={sx('font-size:12px;font-weight:700;background:var(--panel);border:1px solid var(--line);padding:6px 12px;border-radius:20px')}>{rows.length} orgs</span>
-            <span style={sx('font-size:12px;font-weight:700;color:var(--good);background:var(--good-soft);padding:6px 12px;border-radius:20px')}>{active.length} paying</span>
-            <span style={sx('font-size:12px;font-weight:700;color:var(--brand);background:var(--accent-soft);padding:6px 12px;border-radius:20px')}>≈ ${mrr.toLocaleString()}/mo</span>
-            <button
-              onClick={() => void load(key)}
-              style={sx('font-size:12px;font-weight:700;background:var(--panel);border:1px solid var(--line);color:var(--brand);padding:6px 12px;border-radius:20px;cursor:pointer')}
-            >
-              ↻ Refresh
-            </button>
+            {tab === 'orgs' && <>
+              <span style={sx('font-size:12px;font-weight:700;background:var(--panel);border:1px solid var(--line);padding:6px 12px;border-radius:20px')}>{rows.length} orgs</span>
+              <span style={sx('font-size:12px;font-weight:700;color:var(--good);background:var(--good-soft);padding:6px 12px;border-radius:20px')}>{active.length} paying</span>
+              <span style={sx('font-size:12px;font-weight:700;color:var(--brand);background:var(--accent-soft);padding:6px 12px;border-radius:20px')}>≈ ${mrr.toLocaleString()}/mo</span>
+              <button
+                onClick={() => void load(key)}
+                style={sx('font-size:12px;font-weight:700;background:var(--panel);border:1px solid var(--line);color:var(--brand);padding:6px 12px;border-radius:20px;cursor:pointer')}
+              >
+                ↻ Refresh
+              </button>
+            </>}
             <button
               onClick={() => { sessionStorage.removeItem(KEY_STORAGE); setKey(''); setRows(null); setInput('') }}
               style={sx('font-size:12px;font-weight:700;background:var(--panel);border:1px solid var(--line);color:var(--muted);padding:6px 12px;border-radius:20px;cursor:pointer')}
@@ -177,6 +196,9 @@ export function AdminPortal() {
           </div>
         </div>
 
+        {tab === 'outreach' ? (
+          <AdminOutreach adminKey={key} />
+        ) : (<>
         {error && <div style={sx('margin-bottom:12px;font-size:12.5px;color:var(--danger);background:var(--warn-soft);padding:9px 13px;border-radius:9px')}>{error}</div>}
 
         <div style={sx('background:var(--panel);border:1px solid var(--line);border-radius:14px;overflow-x:auto')}>
@@ -251,6 +273,7 @@ export function AdminPortal() {
         <div style={sx('margin-top:12px;font-size:11.5px;color:var(--muted)')}>
           Plan changes here don't create invoices — customers pay through the app. Deleting an organization removes its logins, board state, and invoice records permanently.
         </div>
+        </>)}
       </div>
     </div>
   )
