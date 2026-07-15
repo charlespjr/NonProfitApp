@@ -21,41 +21,66 @@ export interface ActorDef {
 }
 
 export const ACTORS: Record<string, ActorDef> = {
+  // input field names verified against each actor's published input schema
+  emails: {
+    id: 'uX5AIhMeVCDRXN3h0',
+    label: 'Charity Email Scraper (finds emails)',
+    buildInput: (q) => ({
+      googleMapsSearchTerm: q.query?.trim() || 'nonprofit organization',
+      googleMapsLocation: [q.state?.trim() || 'United States'],
+      maxBusinesses: q.limit ?? 100,
+    }),
+    findsEmails: true,
+  },
   propublica: {
     id: 'wO8XZnQ0QvkelrzCM',
     label: 'ProPublica Nonprofit Crawler (IRS 990)',
-    buildInput: (q) => ({ search: q.query, state: q.state, maxResults: q.limit ?? 100 }),
+    buildInput: (q) => ({
+      mode: 'search',
+      searchTerm: q.query?.trim() || '',
+      state: q.state?.trim() || '',
+      includeFilings: false,
+      maxItems: q.limit ?? 100,
+    }),
     findsEmails: false,
   },
   explorer: {
     id: 'AGJVz4LZzmjeDkK8P',
     label: 'Nonprofit Explorer (IRS 990 search)',
-    buildInput: (q) => ({ query: q.query, state: q.state, maxItems: q.limit ?? 100 }),
+    buildInput: (q) => ({
+      query: q.query?.trim() || '',
+      state: q.state?.trim() || '',
+      maxResults: q.limit ?? 100,
+      includeFilings: false,
+    }),
     findsEmails: false,
   },
   irs990: {
     id: 'dMeZqceVdmxNdL4dp',
     label: 'IRS 990 Scraper',
-    buildInput: (q) => ({ search: q.query, state: q.state, limit: q.limit ?? 100 }),
+    buildInput: (q) => ({
+      searchType: 'search',
+      query: q.query?.trim() || '',
+      fetchDetails: false,
+      maxResults: q.limit ?? 100,
+    }),
     findsEmails: false,
   },
   guidestar: {
     id: 'kJUWFBFByp1O9XpP1',
     label: 'GuideStar / ProPublica Scraper',
-    buildInput: (q) => ({ query: q.query, state: q.state, maxResults: q.limit ?? 100 }),
+    buildInput: (q) => ({
+      searchQuery: q.query?.trim() || '',
+      state: q.state?.trim() || '',
+      maxItems: q.limit ?? 100,
+    }),
     findsEmails: false,
   },
   wyoming: {
     id: 'zaRytWJXTc9nCm7gY',
     label: 'Wyoming Business Entity Scraper',
-    buildInput: (q) => ({ search: q.query, maxResults: q.limit ?? 100 }),
+    buildInput: (q) => ({ filingName: q.query?.trim() || '', searchMode: 'contains', maxItems: q.limit ?? 100 }),
     findsEmails: false,
-  },
-  emails: {
-    id: 'uX5AIhMeVCDRXN3h0',
-    label: 'Charity Email Scraper (finds emails)',
-    buildInput: (q) => ({ query: q.query, location: q.state, maxResults: q.limit ?? 100 }),
-    findsEmails: true,
   },
 }
 
@@ -117,7 +142,9 @@ export async function runActor(
   }
   const token = process.env.APIFY_TOKEN
   if (!token) throw new Error('APIFY_TOKEN not set')
-  const url = `https://api.apify.com/v2/acts/${def.id}/run-sync-get-dataset-items?token=${token}&timeout=120&format=json`
+  // 280s run cap — the email scraper (Google Maps + proxy) is slow; still
+  // under Vercel's function limit. Errors surface with the actor's message.
+  const url = `https://api.apify.com/v2/acts/${def.id}/run-sync-get-dataset-items?token=${token}&timeout=280&format=json`
   const res = await fetch(url, {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
