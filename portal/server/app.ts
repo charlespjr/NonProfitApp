@@ -509,7 +509,9 @@ app.post('/admin/outreach/discover', async (c) => {
     })
   } catch (e) {
     console.error('apify discover failed:', e)
-    return c.json({ error: 'Discovery run failed — check the actor input or your Apify plan.' }, 502)
+    // Admin-only endpoint — surface the real Apify error so misconfigured
+    // actor input or plan limits are diagnosable from the console.
+    return c.json({ error: 'Discovery run failed: ' + (e instanceof Error ? e.message : String(e)).slice(0, 400) }, 502)
   }
   const db = await getDb()
   const existing = await db.select().from(outreachLeads)
