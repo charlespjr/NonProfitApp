@@ -358,6 +358,18 @@ async function main() {
   const send2 = await j(res)
   check('send skips unsubscribed leads', send2.skipped >= 1 && send2.targeted < 2, send2)
 
+  // 15d2. test-send: validates address, requires key, records nothing
+  res = await app.request('/api/admin/outreach/test-send', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ to: 'me@ex.org', subject: 'x', body: '<p>y</p>' }) })
+  check('test-send without key → 403', res.status === 403)
+  res = await app.request('/api/admin/outreach/test-send', { method: 'POST', headers: { 'content-type': 'application/json', 'x-admin-key': 'test-admin-key' }, body: JSON.stringify({ to: 'not-an-email', subject: 'x', body: '<p>y</p>' }) })
+  check('test-send bad address → 400', res.status === 400)
+  const beforeSends = (await (await getDbFn()).select().from((await import('./schema.js')).outreachSends)).length
+  res = await app.request('/api/admin/outreach/test-send', { method: 'POST', headers: { 'content-type': 'application/json', 'x-admin-key': 'test-admin-key' }, body: JSON.stringify({ to: 'me@ex.org', subject: 'Hi {{orgName}}', body: '<p>Hello {{orgName}}</p>' }) })
+  const testSendRes = await j(res)
+  check('test-send ok (dry run), records nothing', res.status === 200 && testSendRes.dryRun === true, testSendRes)
+  const afterSends = (await (await getDbFn()).select().from((await import('./schema.js')).outreachSends)).length
+  check('test-send did not create a send row', beforeSends === afterSends, { beforeSends, afterSends })
+
   // 15e. daily drip: config, cron-auth, batch cap, honors active flag
   // add a few fresh 'new' leads via discovery so the drip has a queue
   globalThis.fetch = (async (input: any, init?: any) => {

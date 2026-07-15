@@ -621,6 +621,24 @@ app.post('/admin/outreach/send', async (c) => {
   })
 })
 
+/** Send a one-off test of the current draft to any address, so you can see
+ *  the real email in your own inbox. Renders with a sample org name + a
+ *  demo unsubscribe token; records nothing (no lead, campaign, or send row). */
+app.post('/admin/outreach/test-send', async (c) => {
+  if (!adminKeyOk(c)) return c.json({ error: 'forbidden' }, 403)
+  const body = await c.req.json().catch(() => ({}))
+  const to = String(body?.to || '').trim()
+  const subject = String(body?.subject || '').slice(0, 300)
+  const bodyHtml = String(body?.body || '')
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(to)) return c.json({ error: 'enter a valid email address' }, 400)
+  if (!subject || !bodyHtml) return c.json({ error: 'subject and body are required' }, 400)
+  const sample = { orgName: 'Your Organization', unsubToken: 'test-preview' }
+  const subj = '[TEST] ' + subject.split('{{orgName}}').join(sample.orgName).split('{{org}}').join(sample.orgName)
+  const r = await sendEmail({ to, subject: subj, html: renderEmail(bodyHtml, sample) })
+  if (!r.ok && !r.dryRun) return c.json({ error: r.error || 'send failed' }, 502)
+  return c.json({ ok: true, dryRun: r.dryRun, mode: resendConfigured() ? 'live' : 'dryrun' })
+})
+
 // ------------------------------------------------------ daily drip campaign
 const DRIP_ID = 'drip'
 
