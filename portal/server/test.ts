@@ -281,6 +281,25 @@ async function main() {
   delete process.env.QBO_REALM_ID
   delete process.env.QBO_REFRESH_TOKEN
 
+  // 15c. owner admin endpoints: list all orgs, delete an org (ADMIN_KEY only)
+  res = await app.request('/api/admin/orgs')
+  check('admin list without key → 403', res.status === 403)
+  res = await app.request('/api/admin/orgs', { headers: { 'x-admin-key': 'test-admin-key' } })
+  const adminList = (await j(res)) as { orgs: Array<{ id: string; name: string; members: number; adminEmail: string; plan: string }> }
+  check('admin list returns all orgs with rollups', res.status === 200 && adminList.orgs.length >= 2, adminList.orgs?.length)
+  const ail = adminList.orgs.find((o) => o.name === 'Adams Infinite Legacy')
+  check('admin rollup has members + admin email + plan', !!ail && ail.members >= 2 && ail.adminEmail === 'alitalia.adams@gmail.com' && ail.plan === 'growth', ail)
+  // delete a throwaway org and confirm its logins die with it
+  res = await app.request('/api/auth/register', json({ orgName: 'Delete Me Org', name: 'Del Me', email: 'del@me.org', username: 'delme', password: 'delete-me-99' }))
+  const delCookie = cookieOf(res)
+  const delOrgId = ((await j(res)) as { org: { id: string } }).org.id
+  res = await app.request('/api/admin/orgs/' + delOrgId, { method: 'DELETE' })
+  check('admin delete without key → 403', res.status === 403)
+  res = await app.request('/api/admin/orgs/' + delOrgId, { method: 'DELETE', headers: { 'x-admin-key': 'test-admin-key' } })
+  check('admin delete org → 200', res.status === 200)
+  res = await app.request('/api/auth/me', { headers: { cookie: delCookie } })
+  check('deleted org’s sessions invalid → 401', res.status === 401)
+
   // 16. revoke member
   res = await app.request('/api/members/' + judy.id, { method: 'DELETE', headers: { cookie: admin } })
   check('revoke member → 200', res.status === 200)
