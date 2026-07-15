@@ -29,6 +29,9 @@ export const ACTORS: Record<string, ActorDef> = {
       googleMapsSearchTerm: q.query?.trim() || 'nonprofit organization',
       googleMapsLocation: [q.state?.trim() || 'United States'],
       maxBusinesses: q.limit ?? 100,
+      // Google Maps blocks datacenter IPs — residential proxy is required
+      // or the scraper silently returns zero results.
+      proxyConfiguration: { useApifyProxy: true, apifyProxyGroups: ['RESIDENTIAL'] },
     }),
     findsEmails: true,
   },
@@ -153,5 +156,9 @@ export async function runActor(
   if (!res.ok) throw new Error(`Apify actor failed (${res.status}): ${(await res.text()).slice(0, 200)}`)
   const items = (await res.json()) as Array<Record<string, unknown>>
   if (!Array.isArray(items)) return []
+  lastRawSample = items.slice(0, 2)
   return items.map(normalizeItem)
 }
+
+/** Raw sample of the last run's first items — admin debug only. */
+export let lastRawSample: unknown[] = []

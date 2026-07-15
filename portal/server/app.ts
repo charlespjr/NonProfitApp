@@ -7,7 +7,7 @@ import bcrypt from 'bcryptjs'
 import { databaseUrl, getDb } from './db.js'
 import { orgs, orgState, outreachCampaigns, outreachDrip, outreachLeads, outreachSends, qboInvoices, users } from './schema.js'
 import { billing } from './billing.js'
-import { ACTORS, apifyConfigured, runActor } from './apify.js'
+import { ACTORS, apifyConfigured, lastRawSample, runActor } from './apify.js'
 import { DEFAULT_TEMPLATE, renderEmail, resendConfigured, sendEmail } from './outreach.js'
 
 const JWT_SECRET = process.env.JWT_SECRET || 'dev-only-secret-change-in-production'
@@ -538,7 +538,11 @@ app.post('/admin/outreach/discover', async (c) => {
     byEmail.set(email, {} as typeof existing[number])
     added++
   }
-  return c.json({ found: found.length, withEmail, added, sourceLabel: ACTORS[source].label })
+  const out: Record<string, unknown> = { found: found.length, withEmail, added, sourceLabel: ACTORS[source].label }
+  // ?debug=1 returns the first raw items so the actor's output shape is
+  // inspectable from the admin console when a run comes back empty.
+  if (c.req.query('debug')) out.rawSample = lastRawSample
+  return c.json(out)
 })
 
 app.get('/admin/outreach/leads', async (c) => {
