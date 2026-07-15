@@ -50,6 +50,7 @@ export function AdminOutreach({ adminKey }: { adminKey: string }) {
   const [subject, setSubject] = useState('')
   const [body, setBody] = useState('')
   const [showCompose, setShowCompose] = useState(false)
+  const [testTo, setTestTo] = useState('')
 
   // daily drip
   const [drip, setDrip] = useState<{ subject: string; body: string; dailyCap: number; active: boolean; lastRunAt: string | null; lastSentCount: number } | null>(null)
@@ -129,6 +130,22 @@ export function AdminOutreach({ adminKey }: { adminKey: string }) {
       if (!res.ok) { setError(b.error || 'Run failed'); return }
       setNote(b.skipped ? 'Drip is not active — turn it on first.' : `Drip ran: ${b.sent + (b.dryRun || 0)} email(s), ${b.remaining} still queued.`)
       await load(); await loadDrip()
+    } finally { setBusy('') }
+  }
+
+  const testSend = async () => {
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(testTo.trim())) { setError('Enter a valid email for the test.'); return }
+    setBusy('test'); setError(''); setNote('')
+    try {
+      const res = await fetch('/api/admin/outreach/test-send', {
+        method: 'POST', headers: { ...hdr, 'content-type': 'application/json' },
+        body: JSON.stringify({ to: testTo.trim(), subject, body }),
+      })
+      const b = await res.json()
+      if (!res.ok) { setError(b.error || 'Test send failed'); return }
+      setNote(b.mode === 'dryrun'
+        ? `Dry run — nothing delivered (set RESEND_API_KEY to send for real).`
+        : `Test sent to ${testTo.trim()} — check your inbox (subject starts with [TEST]).`)
     } finally { setBusy('') }
   }
 
@@ -249,6 +266,13 @@ export function AdminOutreach({ adminKey }: { adminKey: string }) {
           <span key={s} style={{ ...sx('font-size:11px;font-weight:600;padding:3px 9px;border-radius:20px'), ...sx(STATUS_CSS[s] || STATUS_CSS.new) }}>{n} {s}</span>
         ))}
         <div style={sx('flex:1')} />
+        <button
+          className="hv-border-accent"
+          onClick={() => setShowCompose(true)}
+          style={sx('border:1px solid var(--line);background:var(--panel);color:var(--brand);font-size:12.5px;font-weight:600;padding:8px 14px;border-radius:9px;cursor:pointer')}
+        >
+          Compose / test email
+        </button>
         {selected.size > 0 && (
           <button
             className="hv-bright"
@@ -293,7 +317,7 @@ export function AdminOutreach({ adminKey }: { adminKey: string }) {
         <div style={sx('position:fixed;inset:0;background:rgba(30,20,14,.5);z-index:100;display:grid;place-items:center;padding:20px')} onClick={() => setShowCompose(false)}>
           <div onClick={(e) => e.stopPropagation()} style={sx('background:var(--panel);border-radius:16px;max-width:640px;width:100%;max-height:88vh;overflow:auto')}>
             <div style={sx('display:flex;align-items:center;gap:12px;padding:16px 20px;border-bottom:1px solid var(--line)')}>
-              <div style={sx('font-family:Spectral,serif;font-size:17px;font-weight:600;flex:1')}>Email {selected.size} organization{selected.size === 1 ? '' : 's'}</div>
+              <div style={sx('font-family:Spectral,serif;font-size:17px;font-weight:600;flex:1')}>{selected.size > 0 ? `Email ${selected.size} organization${selected.size === 1 ? '' : 's'}` : 'Compose &amp; test'}</div>
               <button onClick={() => setShowCompose(false)} style={sx('border:none;background:transparent;color:var(--muted);font-size:20px;cursor:pointer')}>×</button>
             </div>
             <div style={sx('padding:20px;display:flex;flex-direction:column;gap:14px')}>
@@ -309,15 +333,37 @@ export function AdminOutreach({ adminKey }: { adminKey: string }) {
                 Every email includes a one-click unsubscribe and your postal address (CAN-SPAM). Unsubscribed leads are skipped automatically.
               </div>
             </div>
+            <div style={sx('padding:12px 20px;border-top:1px solid var(--line);background:var(--bg);display:flex;gap:8px;align-items:center;flex-wrap:wrap')}>
+              <span style={sx('font-size:12px;font-weight:600;color:var(--muted)')}>Test it first:</span>
+              <input
+                value={testTo}
+                onChange={(e) => setTestTo(e.target.value)}
+                placeholder="your@email.com"
+                style={sx('flex:1;min-width:160px;padding:8px 11px;border:1px solid var(--line);border-radius:8px;background:var(--panel);font-size:13px;color:var(--ink)')}
+              />
+              <button
+                className="hv-border-accent"
+                disabled={busy === 'test'}
+                onClick={() => void testSend()}
+                style={sx('border:1px solid var(--line);background:var(--panel);color:var(--brand);font-size:12.5px;font-weight:600;padding:8px 14px;border-radius:8px;cursor:pointer')}
+              >
+                {busy === 'test' ? 'Sending…' : 'Send test to me'}
+              </button>
+            </div>
             <div style={sx('padding:14px 20px;border-top:1px solid var(--line);display:flex;justify-content:flex-end;gap:10px')}>
               <button onClick={() => setShowCompose(false)} style={sx('border:1px solid var(--line);background:var(--panel);color:var(--muted);font-size:13px;font-weight:600;padding:9px 16px;border-radius:9px;cursor:pointer')}>Cancel</button>
               <button
                 className="hv-bright"
-                disabled={busy === 'send'}
+                disabled={busy === 'send' || selected.size === 0}
                 onClick={() => void send()}
-                style={sx('border:none;background:var(--brand);color:#fff;font-size:13px;font-weight:600;padding:9px 18px;border-radius:9px;cursor:pointer')}
+                style={{
+                  ...sx('border:none;background:var(--brand);color:#fff;font-size:13px;font-weight:600;padding:9px 18px;border-radius:9px'),
+                  cursor: selected.size === 0 ? 'not-allowed' : 'pointer',
+                  opacity: selected.size === 0 ? 0.5 : 1,
+                }}
+                title={selected.size === 0 ? 'Select leads in the table to send a real campaign' : ''}
               >
-                {busy === 'send' ? 'Sending…' : data.sendConfigured ? `Send to ${selected.size}` : `Preview send (dry run)`}
+                {busy === 'send' ? 'Sending…' : selected.size === 0 ? 'Select leads to send' : data.sendConfigured ? `Send to ${selected.size}` : `Preview send (dry run)`}
               </button>
             </div>
           </div>
