@@ -300,6 +300,66 @@ async function main() {
   res = await app.request('/api/auth/me', { headers: { cookie: delCookie } })
   check('deleted org’s sessions invalid → 401', res.status === 401)
 
+  // 15d. outreach CRM: discovery (mocked Apify) → dedup → dry-run send → unsubscribe
+  process.env.APIFY_TOKEN = 'apify-test'
+  const realFetch2 = globalThis.fetch
+  globalThis.fetch = (async (input: any, init?: any) => {
+    const url = String(input)
+    if (url.includes('api.apify.com')) {
+      return new Response(JSON.stringify([
+        { name: 'Green Valley Food Bank', email: 'info@greenvalley.org', state: 'CA', city: 'Fresno', ntee: 'Food' },
+        { name: 'Riverside Arts', emails: ['hello@riversidearts.org'], state: 'CA' },
+        { name: 'No Email Org', state: 'TX' }, // dropped (no email)
+        { organization: { name: 'Dup Org' }, email: 'INFO@greenvalley.org' }, // dedup (case-insensitive)
+      ]), { status: 200, headers: { 'content-type': 'application/json' } })
+    }
+    return realFetch2(input, init)
+  }) as typeof fetch
+
+  res = await app.request('/api/admin/outreach/discover', json({ source: 'emails', query: 'food bank', state: 'CA' }, undefined))
+  check('outreach discover without key → 403', res.status === 403)
+  res = await app.request('/api/admin/outreach/discover', {
+    method: 'POST', headers: { 'content-type': 'application/json', 'x-admin-key': 'test-admin-key' },
+    body: JSON.stringify({ source: 'emails', query: 'food bank', state: 'CA' }),
+  })
+  const disc = await j(res)
+  check('discover ingests emailed leads, dedups, drops no-email', res.status === 200 && disc.added === 2 && disc.withEmail === 3, disc)
+
+  res = await app.request('/api/admin/outreach/leads', { headers: { 'x-admin-key': 'test-admin-key' } })
+  const leadsResp = await j(res)
+  check('leads list returns actors + send flags', Array.isArray(leadsResp.leads) && leadsResp.leads.length === 2 && leadsResp.actors.length === 6, leadsResp.leads?.length)
+  const gv = leadsResp.leads.find((l: any) => l.email === 'info@greenvalley.org')
+  const rv = leadsResp.leads.find((l: any) => l.email === 'hello@riversidearts.org')
+
+  // dry-run send (no RESEND_API_KEY): recorded, nothing delivered, leads marked emailed
+  res = await app.request('/api/admin/outreach/send', {
+    method: 'POST', headers: { 'content-type': 'application/json', 'x-admin-key': 'test-admin-key' },
+    body: JSON.stringify({ subject: 'Hi {{orgName}}', body: '<p>Hello {{orgName}}</p>', leadIds: [gv.id, rv.id] }),
+  })
+  const sendRes = await j(res)
+  check('dry-run send targets both, mode dryrun', res.status === 200 && sendRes.targeted === 2 && sendRes.dryRun === 2 && sendRes.mode === 'dryrun', sendRes)
+
+  // unsubscribe (public, token-gated) suppresses the lead
+  const { getDb: getDbFn } = await import('./db.js')
+  const { outreachLeads } = await import('./schema.js')
+  const dbx = await getDbFn()
+  const [{ unsubToken }] = await dbx.select().from(outreachLeads)
+  res = await app.request('/api/outreach/unsubscribe?token=' + unsubToken)
+  check('unsubscribe page returns 200', res.status === 200)
+  res = await app.request('/api/admin/outreach/leads', { headers: { 'x-admin-key': 'test-admin-key' } })
+  const afterUnsub = await j(res)
+  check('unsubscribed lead is suppressed', afterUnsub.counts.unsubscribed === 1, afterUnsub.counts)
+
+  // a send that includes the unsubscribed lead skips it
+  res = await app.request('/api/admin/outreach/send', {
+    method: 'POST', headers: { 'content-type': 'application/json', 'x-admin-key': 'test-admin-key' },
+    body: JSON.stringify({ subject: 'Round 2', body: '<p>Hi</p>', leadIds: [gv.id, rv.id] }),
+  })
+  const send2 = await j(res)
+  check('send skips unsubscribed leads', send2.skipped >= 1 && send2.targeted < 2, send2)
+  globalThis.fetch = realFetch2
+  delete process.env.APIFY_TOKEN
+
   // 16. revoke member
   res = await app.request('/api/members/' + judy.id, { method: 'DELETE', headers: { cookie: admin } })
   check('revoke member → 200', res.status === 200)
