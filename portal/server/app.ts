@@ -128,6 +128,19 @@ app.get('/health', (c) =>
     dbEnvKeys: Object.keys(process.env)
       .filter((k) => /DATABASE|POSTGRES|PGHOST|PGUSER|NEON|STORAGE/i.test(k))
       .sort(),
+    // Integration key presence (booleans + matching NAMES only, never
+    // values) — pinpoints missing/misnamed/wrong-scope env vars.
+    integrations: {
+      APIFY_TOKEN: !!process.env.APIFY_TOKEN,
+      RESEND_API_KEY: !!process.env.RESEND_API_KEY,
+      OUTREACH_FROM: !!process.env.OUTREACH_FROM,
+      QBO_CLIENT_ID: !!process.env.QBO_CLIENT_ID,
+      ADMIN_KEY: !!process.env.ADMIN_KEY,
+      CRON_SECRET: !!process.env.CRON_SECRET,
+    },
+    envKeyHints: Object.keys(process.env)
+      .filter((k) => /APIFY|RESEND|OUTREACH|MAIL|SMTP|SEND/i.test(k))
+      .sort(),
   }),
 )
 
