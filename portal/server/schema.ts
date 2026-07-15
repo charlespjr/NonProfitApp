@@ -120,6 +120,17 @@ export const outreachCampaigns = pgTable('outreach_campaigns', {
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 })
 
+/** Single-row config for the automated daily drip (id is always 'drip'). */
+export const outreachDrip = pgTable('outreach_drip', {
+  id: text('id').primaryKey(),
+  subject: text('subject').notNull(),
+  body: text('body').notNull(),
+  dailyCap: integer('daily_cap').notNull().default(25),
+  active: boolean('active').notNull().default(false),
+  lastRunAt: timestamp('last_run_at', { withTimezone: true }),
+  lastSentCount: integer('last_sent_count').notNull().default(0),
+})
+
 export const outreachSends = pgTable('outreach_sends', {
   id: text('id').primaryKey(),
   campaignId: text('campaign_id').notNull(),
@@ -220,5 +231,14 @@ CREATE TABLE IF NOT EXISTS outreach_sends (
   status text NOT NULL,
   error text,
   created_at timestamptz NOT NULL DEFAULT now()
+);
+CREATE TABLE IF NOT EXISTS outreach_drip (
+  id text PRIMARY KEY,
+  subject text NOT NULL,
+  body text NOT NULL,
+  daily_cap integer NOT NULL DEFAULT 25,
+  active boolean NOT NULL DEFAULT false,
+  last_run_at timestamptz,
+  last_sent_count integer NOT NULL DEFAULT 0
 );
 `
