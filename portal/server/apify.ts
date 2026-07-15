@@ -159,6 +159,10 @@ const JUNK_DOMAINS = new Set([
   'mysite.com', 'example.com', 'example.org', 'example.net', 'domain.com', 'email.com',
   'yourdomain.com', 'test.com', 'sentry.io', 'wixpress.com', 'wix.com', 'sentry-next.wixpress.com',
   'godaddy.com', 'squarespace.com', 'no-reply.com', 'noreply.com', 'gstatic.com', 'schema.org',
+  // SaaS/vendor addresses scraped from footers — not the organization itself
+  'wildapricot.com', 'constantcontact.com', 'mailchimp.com', 'list-manage.com', 'sentry.wixpress.com',
+  'donorbox.org', 'givebutter.com', 'classy.org', 'networkforgood.com', 'paypal.com', 'stripe.com',
+  'facebook.com', 'wordpress.com', 'weebly.com', 'godaddysites.com', 'w3.org', 'googleapis.com',
 ])
 function cleanEmail(s: string): string | null {
   const m = s.match(EMAIL_RE)
