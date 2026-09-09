@@ -44,7 +44,7 @@ export const BASE_DOCS: PortalDoc[] = [
 ]
 
 export const DOC_INFO: Record<string, DocInfo> = {
-  bylaws: { desc: 'The rulebook for how the foundation operates — its purpose, board, officers, meetings, and required policies.', todo: 'Have California nonprofit counsel review, then the full board adopts and signs. Certify it and keep it in the corporate records.' },
+  bylaws: { desc: 'The rulebook for how the foundation operates — its purpose, board, officers, meetings, and required policies.', todo: 'Have nonprofit counsel in your state review, then the full board adopts and signs. Certify it and keep it in the corporate records.' },
   minutes: { desc: 'The official record of your first (organizational) board meeting and the resolutions that formally start the corporation.', todo: 'Confirm the details (dates, addresses, filing numbers), then the board approves and the Secretary & President sign.' },
   resolution: { desc: 'A written consent that authorizes banking, credit cards, signatories, and other corporate actions without holding a separate meeting.', todo: 'Fill in the institution / account details and authorized signatories, then all directors sign to authorize.' },
   boardvote: { desc: 'A reusable record of a board decision — approved either by a vote at a meeting or by unanimous written consent.', todo: 'Describe the matter and how it was approved, then have the directors sign to record the decision.' },
@@ -65,9 +65,12 @@ export const DOC_INFO: Record<string, DocInfo> = {
  * [BRACKETS] mark fields to fill in; every template should be reviewed by
  * counsel before adoption.
  */
-const TEMPLATE_DOC_BODIES: Record<string, string> = {
+/** State-neutral starter templates (use [STATE] fill-ins, no jurisdiction
+ *  baked in). Registered organizations see these; the demo org overlays the
+ *  authentic California AIL documents from EXTRACTED_DOC_BODIES below. */
+export const TEMPLATE_DOC_BODIES: Record<string, string> = {
   bylaws: `BYLAWS OF ADAMS INFINITE LEGACY
-A California Nonprofit Public Benefit Corporation
+A [STATE] Nonprofit Public Benefit Corporation
 
 ARTICLE I — NAME AND OFFICES
 1.1 Name. The name of this corporation is Adams Infinite Legacy (the "Corporation").
@@ -96,7 +99,7 @@ ARTICLE VI — CONFLICTS OF INTEREST
 6.1 The Corporation shall maintain and enforce a Conflict of Interest Policy. Interested directors shall disclose material interests and recuse from related votes.
 
 ARTICLE VII — RECORDS AND REPORTS
-7.1 The Corporation shall keep adequate books and records, minutes of proceedings, and shall furnish an annual report to directors as required by California law.
+7.1 The Corporation shall keep adequate books and records, minutes of proceedings, and shall furnish an annual report to directors as required by applicable state law.
 
 ARTICLE VIII — INDEMNIFICATION
 8.1 To the fullest extent permitted by law, the Corporation shall indemnify its directors, officers, and agents against claims arising from service to the Corporation.
@@ -115,19 +118,19 @@ Secretary: ______________________  Date: [____]
 [TEMPLATE — have your attorney review before adoption.]`,
 
   minutes: `MINUTES OF THE ORGANIZATIONAL MEETING OF THE BOARD OF DIRECTORS
-ADAMS INFINITE LEGACY — A California Nonprofit Public Benefit Corporation
+ADAMS INFINITE LEGACY — A [STATE] Nonprofit Public Benefit Corporation
 
 Date: [DATE]   Time: [TIME]   Location: [LOCATION / VIDEO CONFERENCE]
 
 PRESENT: [LIST ALL DIRECTORS PRESENT]
 The President called the meeting to order and the Secretary recorded the minutes. A quorum was present.
 
-1. INCORPORATION. The Board acknowledged the filing of the Articles of Incorporation with the California Secretary of State on [DATE], file number [NUMBER].
+1. INCORPORATION. The Board acknowledged the filing of the Articles of Incorporation with the [STATE] Secretary of State on [DATE], file number [NUMBER].
 2. BYLAWS. RESOLVED, that the Bylaws presented to the Board are adopted as the Bylaws of the Corporation.
 3. OFFICERS. RESOLVED, that the following officers are elected to serve until their successors are elected: President: [NAME]; Secretary: [NAME]; Treasurer/CFO: [NAME].
 4. PRINCIPAL OFFICE. RESOLVED, that the principal office is fixed at [ADDRESS].
 5. FISCAL YEAR. RESOLVED, that the fiscal year ends December 31.
-6. EIN AND TAX FILINGS. RESOLVED, that the officers are authorized to obtain an EIN and to prepare and file IRS Form 1023 and California FTB Form 3500A and all related registrations.
+6. EIN AND TAX FILINGS. RESOLVED, that the officers are authorized to obtain an EIN and to prepare and file IRS Form 1023 and any state tax-exemption application and all related registrations.
 7. BANK ACCOUNT. RESOLVED, that the officers are authorized to open a bank account in the Corporation's name (see the separate banking resolution).
 8. POLICIES. RESOLVED, that the Conflict of Interest, Document Retention, Whistleblower, and Gift Acceptance Policies presented to the Board are adopted.
 9. DIRECTOR COMPENSATION. RESOLVED, that directors serve without compensation, with reimbursement only for reasonable, documented expenses.
@@ -243,7 +246,7 @@ On behalf of Adams Infinite Legacy, thank you for your generous sponsorship of $
 • No goods or services were provided in exchange for this contribution beyond acknowledgment of your support.
 • In exchange for this sponsorship, you received the following benefits with an estimated fair-market value of $[VALUE]: [DESCRIBE]. The amount of your payment exceeding that value may be deductible as a charitable contribution.
 
-Adams Infinite Legacy is a California nonprofit public benefit corporation, tax-exempt under Section 501(c)(3). EIN: [EIN]. Please retain this letter for your records.
+Adams Infinite Legacy is a nonprofit public benefit corporation, tax-exempt under Section 501(c)(3). EIN: [EIN]. Please retain this letter for your records.
 
 With gratitude,
 
@@ -264,7 +267,7 @@ Date received: [DATE]
 
 No goods or services were provided in exchange for this contribution.
 
-Adams Infinite Legacy is a California nonprofit public benefit corporation, tax-exempt under Section 501(c)(3) of the Internal Revenue Code. EIN: [EIN]. Contributions are tax-deductible to the extent allowed by law. Please retain this letter for your tax records.
+Adams Infinite Legacy is a nonprofit public benefit corporation, tax-exempt under Section 501(c)(3) of the Internal Revenue Code. EIN: [EIN]. Contributions are tax-deductible to the extent allowed by law. Please retain this letter for your tax records.
 
 With gratitude,
 
@@ -328,7 +331,7 @@ TOTAL:  $[TOTAL]
 
 Unless noted otherwise above, no goods or services were provided in exchange for these contributions.
 
-Adams Infinite Legacy is a California nonprofit public benefit corporation, tax-exempt under Section 501(c)(3). EIN: [EIN].
+Adams Infinite Legacy is a nonprofit public benefit corporation, tax-exempt under Section 501(c)(3). EIN: [EIN].
 
 With deep gratitude for your partnership,
 
@@ -348,7 +351,7 @@ export const PHASES: ChecklistPhase[] = [
   {
     name: 'Form the Corporation & Get Your Tax ID',
     items: [
-      { id: 'articles', label: 'File Articles of Incorporation with the CA Secretary of State' },
+      { id: 'articles', label: "File Articles of Incorporation with your state's Secretary of State" },
       { id: 'ein', label: 'Obtain a federal Employer Identification Number (IRS Form SS-4)' },
     ],
   },
@@ -383,11 +386,11 @@ export const PHASES: ChecklistPhase[] = [
   {
     name: 'Tax Exemption & Charitable Registration',
     items: [
-      { id: 'si100', label: 'File the Statement of Information (Form SI-100)' },
+      { id: 'si100', label: "File your state's initial report / Statement of Information" },
       { id: 'f1023', label: 'File IRS Form 1023 / 1023-EZ for 501(c)(3) recognition & pay the user fee' },
-      { id: 'ct1', label: 'Register with the CA Attorney General Registry of Charities (Form CT-1)' },
-      { id: 'ftb3500', label: 'File CA FTB Form 3500A after the federal determination letter' },
-      { id: 'rrf', label: 'Calendar annual renewals (Form RRF-1) & Form 990 filings' },
+      { id: 'ct1', label: "Register with your state's charity office before soliciting donations" },
+      { id: 'ftb3500', label: 'Apply for state income-tax exemption after the federal determination letter (if your state requires it)' },
+      { id: 'rrf', label: 'Calendar annual state charity renewals & IRS Form 990 filings' },
     ],
   },
   {
@@ -400,7 +403,7 @@ export const PHASES: ChecklistPhase[] = [
 ]
 
 export const TASK_HELP: Record<string, string> = {
-  articles: "Go to the California Secretary of State's website (bizfileOnline) and file the Articles of Incorporation for a 501(c)(3). Once approved you get a stamped copy — save it; it's the foundation's birth certificate.",
+  articles: "Go to your state's Secretary of State website (most have an online business-filing portal) and file the Articles of Incorporation for a nonprofit / public benefit corporation. Once approved you get a stamped copy — save it; it's the foundation's birth certificate.",
   orgmeeting: "Gather all seven directors (in person or by video) for the first official meeting. Use the Organizational Board Minutes as your agenda and record what's decided.",
   bylaws: 'Have your attorney review the Bylaws, then the board votes to adopt them at the meeting. Sign them in the portal and keep a copy in your records.',
   officers: 'At the meeting, formally confirm who holds each officer role (President, Treasurer, Secretary, etc.) and write it into the minutes.',
@@ -410,10 +413,10 @@ export const TASK_HELP: Record<string, string> = {
   ratify: 'In the minutes, add a line approving any actions taken before the meeting (like reserving the name or early expenses) so they become official.',
   ein: "Apply for a free EIN (the foundation's tax ID) at IRS.gov — search 'apply for EIN online.' Takes about 10 minutes and you get the number right away. You'll need it for the bank account and the 501(c)(3) application.",
   f1023: "File IRS Form 1023 (or the shorter 1023-EZ if you qualify) to become an official 501(c)(3). There's a fee (about $275–$600). This is the big one — consider having your accountant help. Best practice: file within 27 months of the Articles so your exemption is retroactive to formation.",
-  ftb3500: 'File California Form 3500A so the foundation is also exempt from state income tax. Do this after the IRS determination letter arrives — it depends on federal approval.',
-  si100: 'File Form SI-100 with the CA Secretary of State (online, small fee). It lists your officers and address, and you re-file it every two years. Deadline: within 90 days of filing the Articles.',
-  ct1: "Register with the California Attorney General's Registry of Charities (Form CT-1) so you can legally fundraise. Deadline: within 30 days of receiving any money or assets — and before you fundraise.",
-  rrf: 'Put the yearly deadlines on your calendar: the California renewal (Form RRF-1) and the IRS Form 990. Missing these can cost your tax-exempt status.',
+  ftb3500: "Many states grant their own income-tax exemption once you're a federal 501(c)(3). Check your state's tax agency and file its exemption application (if required) after the IRS determination letter arrives.",
+  si100: "File your state's initial report (often called a Statement of Information or annual report) with the Secretary of State. It lists your officers and address and is re-filed periodically — check your state's deadline (commonly within 90 days of forming).",
+  ct1: "Most states require charities to register with a state charity regulator (often the Attorney General) before soliciting donations. Register with yours — usually before you fundraise or shortly after receiving any assets.",
+  rrf: 'Put the yearly deadlines on your calendar: your state charity renewal and the IRS Form 990. Missing these can cost your tax-exempt status.',
   coi: 'Adopt the Conflict of Interest Policy at the board meeting, then have every director sign the disclosure form. Keep the signed forms on file.',
   retention: "Adopt the policy that says which records to keep, for how long, and when it's safe to destroy old ones.",
   whistleblower: 'Adopt the policy that lets staff or volunteers report concerns without fear of retaliation.',

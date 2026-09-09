@@ -1,17 +1,20 @@
 import { sx } from '../lib/sx'
 import { useStore } from '../state/store'
-import { DOC_INFO } from '../data/seed'
 import { IconDocuments, IconInfo, IconPlus } from '../components/icons'
 import { STATUS_META } from '../components/shared'
 import type { DocCategory } from '../types'
 
-const CATS: Array<'All' | DocCategory> = ['All', 'Governance', 'Fundraising', 'Donor Letters']
+/** Fixed display order; only categories with a document are shown as tabs. */
+const CAT_ORDER: DocCategory[] = ['Governance', 'Formation', 'Equity', 'Compliance', 'Fundraising', 'Donor Letters']
 
 export function Documents() {
   const store = useStore()
-  const { state } = store
+  const { state, entity } = store
+  const DOC_INFO = entity.docInfo
   const docs = store.allDocs()
   const rosterN = store.roster().length
+  const present = new Set(docs.map((d) => d.cat))
+  const CATS: Array<'All' | DocCategory> = ['All', ...CAT_ORDER.filter((c) => present.has(c))]
 
   const q = state.search.trim().toLowerCase()
   let filtered = docs.filter((d) => state.docCat === 'All' || d.cat === state.docCat)
@@ -63,10 +66,10 @@ export function Documents() {
           const rawInfo = DOC_INFO[d.id] || { desc: d.desc || '', todo: d.todo || '' }
           const info = { desc: store.brand(rawInfo.desc), todo: store.brand(rawInfo.todo) }
           const signText = isSigned
-            ? `Signed by all ${rosterN} board members`
+            ? `Signed by all ${rosterN} ${entity.memberNounPlural}`
             : st === 'draft'
               ? `Updated ${d.updated}`
-              : `${nSig} of ${rosterN} board members signed`
+              : `${nSig} of ${rosterN} ${entity.memberNounPlural} signed`
           return (
             <div key={d.id} data-m="docrow" className="hv-row" style={sx('display:grid;grid-template-columns:minmax(0,1fr) 130px 170px 150px;gap:12px;padding:15px 20px;border-bottom:1px solid var(--line);align-items:center')}>
               <div style={sx('display:flex;align-items:center;gap:13px;min-width:0')}>

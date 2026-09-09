@@ -1,12 +1,14 @@
 import { sx } from '../lib/sx'
 import { useStore } from '../state/store'
-import { BASE_DOCS, PHASES, TASK_HELP } from '../data/seed'
 import { IconCheck } from '../components/icons'
 import { ProgressRing } from '../components/shared'
 
 export function Checklist() {
   const store = useStore()
-  const { state } = store
+  const { state, entity } = store
+  const PHASES = entity.phases
+  const TASK_HELP = entity.taskHelp
+  const BASE_DOCS = entity.baseDocs
 
   let done = 0
   let total = 0
@@ -18,9 +20,9 @@ export function Checklist() {
       <div style={sx('background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:22px;margin-bottom:20px;display:flex;align-items:center;gap:20px')}>
         <ProgressRing pct={progressPct} size={64} hole={66} fontSize={16} />
         <div style={{ flex: 1 }}>
-          <div style={sx('font-family:Spectral,serif;font-size:19px;font-weight:600')}>Foundation launch checklist</div>
+          <div style={sx('font-family:Spectral,serif;font-size:19px;font-weight:600')}>{entity.orgNounCap} launch checklist</div>
           <div style={sx('font-size:13.5px;color:var(--muted);margin-top:3px')}>
-            {done} of {total} steps complete across formation, governance, compliance, and fundraising.
+            {done} of {total} steps complete across formation, governance, and compliance.
           </div>
         </div>
       </div>

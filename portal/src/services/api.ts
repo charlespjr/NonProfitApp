@@ -8,9 +8,13 @@
  *             seeded accounts, localStorage persistence.
  */
 
+import type { EntityType } from '../types'
+
 export interface ApiOrg {
   id: string
   name: string
+  /** Which kind of organization: drives checklist, docs, and terminology. */
+  entityType: EntityType
   plan: 'none' | 'starter' | 'growth' | 'scale' | 'launch_partner'
   planStatus: string
   /** Whether the org has an Anthropic API key on file (the key itself
@@ -70,7 +74,7 @@ export const api = {
   },
 
   me: () => req<ApiSession>('/auth/me'),
-  register: (input: { orgName: string; name: string; email: string; username: string; password: string }) =>
+  register: (input: { orgName: string; name: string; email: string; username: string; password: string; entityType: EntityType }) =>
     req<ApiSession>('/auth/register', { method: 'POST', body: JSON.stringify(input) }),
   login: (identifier: string, password: string) =>
     req<ApiSession>('/auth/login', { method: 'POST', body: JSON.stringify({ identifier, password }) }),

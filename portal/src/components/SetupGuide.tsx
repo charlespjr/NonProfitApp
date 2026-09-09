@@ -21,7 +21,7 @@ interface Step {
  */
 export function SetupGuide() {
   const store = useStore()
-  const { state } = store
+  const { state, entity } = store
 
   if (store.mode !== 'api' || !store.currentUser?.isAdmin || state.setupDismissed) return null
 
@@ -36,7 +36,7 @@ export function SetupGuide() {
     },
     {
       key: 'email',
-      title: 'Connect your foundation email',
+      title: `Connect your ${entity.orgNoun} email`,
       desc: 'Pick your provider (Google, Microsoft 365, Zoho…) so DocuSeal invitations and vote emails send from your address.',
       done: state.emailConnected,
       cta: 'Set up email',
@@ -52,8 +52,8 @@ export function SetupGuide() {
     },
     {
       key: 'board',
-      title: 'Invite your board',
-      desc: 'Give each director a login with Vote and Sign permissions — they only need a personal email.',
+      title: entity.key === 'llc' ? 'Invite your members' : 'Invite your board',
+      desc: `Give each ${entity.memberNoun} a login with Vote and Sign permissions — they only need a personal email.`,
       done: store.roster().length > 1,
       cta: 'Add members',
       go: () => store.go('team'),

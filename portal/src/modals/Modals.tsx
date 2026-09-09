@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { sx } from '../lib/sx'
 import { useStore } from '../state/store'
-import { DOC_BODIES, DOC_INFO, MEETINGS } from '../data/seed'
+import { MEETINGS } from '../data/seed'
 import {
   IconCalendarSm,
   IconCheck,
@@ -28,11 +28,11 @@ export function DocuSealModal() {
   const doc = store.allDocs().find((d) => d.id === docId)
   if (!doc) return null
 
-  const rawInfo = DOC_INFO[doc.id] || { desc: doc.desc || '', todo: doc.todo || '' }
+  const rawInfo = store.entity.docInfo[doc.id] || { desc: doc.desc || '', todo: doc.todo || '' }
   const info = { desc: store.brand(rawInfo.desc), todo: store.brand(rawInfo.todo) }
   // Custom/AI docs carry their own text; built-in docs use the starter
   // templates — branded for this organization either way.
-  const bodyText = store.brand(doc.body || DOC_BODIES[doc.id] || '')
+  const bodyText = store.brand(doc.body || store.entity.docBodies[doc.id] || '')
   const roster = store.roster()
   const sig = store.sigFor(doc.id)
   const signedCount = roster.filter((m) => sig[m.id]).length

@@ -1,6 +1,5 @@
 import { sx } from '../lib/sx'
 import { useStore } from '../state/store'
-import { PHASES } from '../data/seed'
 import { IconDocuments, IconZoom } from '../components/icons'
 import { ProgressRing, STATUS_META } from '../components/shared'
 import { SetupGuide } from '../components/SetupGuide'
@@ -11,7 +10,8 @@ const linkBtn = sx('border:none;background:transparent;color:var(--accent);font-
 
 export function Dashboard() {
   const store = useStore()
-  const { state, currentUser } = store
+  const { state, currentUser, entity } = store
+  const PHASES = entity.phases
   const firstName = currentUser!.member.name.split(' ')[0]
 
   let done = 0
@@ -48,7 +48,7 @@ export function Dashboard() {
           <div style={sx('font-family:Spectral,serif;font-size:28px;font-weight:500;letter-spacing:-.01em')}>
             {greeting}, {firstName}.
           </div>
-          <div style={sx("color:var(--muted);font-size:14px;margin-top:5px")}>Here's where things stand with the foundation's launch.</div>
+          <div style={sx("color:var(--muted);font-size:14px;margin-top:5px")}>Here's where things stand with the {entity.orgNoun}'s launch.</div>
         </div>
         <div style={sx('display:flex;align-items:center;gap:10px;background:var(--panel);border:1px solid var(--line);border-radius:11px;padding:11px 16px')}>
           <ProgressRing pct={progressPct} size={44} hole={62} fontSize={12} />
