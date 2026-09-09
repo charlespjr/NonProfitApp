@@ -322,6 +322,15 @@ export function DocuSealModal() {
         </div>
         <div style={sx('display:flex;gap:10px')}>
           <button className="hv-bg" onClick={store.closeModal} style={cancelBtnStyle}>Close</button>
+          {bodyText && (
+            <button
+              className="hv-border-accent"
+              onClick={() => void store.exportDocPdf(doc.id)}
+              style={sx('border:1px solid var(--line);background:var(--panel);color:var(--brand);font-size:13px;font-weight:600;padding:9px 14px;border-radius:9px;cursor:pointer')}
+            >
+              {allSigned ? 'Download signed copy' : 'Download copy'}
+            </button>
+          )}
           {!allSigned && user.isAdmin && (
             <button
               className="hv-border-accent"

@@ -180,6 +180,8 @@ export interface Store {
   openAddDoc(): void
   saveDoc(): void
   removeCustomDoc(docId: string): void
+  /** Download the document + its e-signature block as a PDF (client-side). */
+  exportDocPdf(docId: string): Promise<void>
 
   // organization logo (branding on sidebar, documents, board emails)
   uploadLogo(file: File): Promise<void>
@@ -847,6 +849,30 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     [guard, flash],
   )
 
+  const exportDocPdf = useCallback(
+    async (docId: string) => {
+      const doc = allDocs().find((d) => d.id === docId)
+      if (!doc) return
+      const bodyText = brand(doc.body || entity.docBodies[docId] || '')
+      const recs = state.signatures[docId] || {}
+      const signers = roster().map((m) => ({ name: m.name, role: m.role, record: recs[m.id] }))
+      try {
+        const { exportSignedPdf } = await import('../lib/pdf')
+        await exportSignedPdf({
+          orgName,
+          orgLogo: state.orgLogo || undefined,
+          docName: brand(doc.name),
+          bodyText,
+          signers,
+        })
+        flash('Signed copy downloaded')
+      } catch {
+        flash('Could not generate the PDF — try again')
+      }
+    },
+    [allDocs, brand, entity, state.signatures, state.orgLogo, roster, orgName, flash],
+  )
+
   // ------------------------------------------------------ organization logo
   const uploadLogo = useCallback(
     async (file: File) => {
@@ -1403,6 +1429,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     openAddDoc,
     saveDoc,
     removeCustomDoc,
+    exportDocPdf,
     uploadLogo,
     removeLogo,
     setAiKey,
