@@ -3,6 +3,7 @@ import { sx } from '../lib/sx'
 import { useStore } from '../state/store'
 import { IconInfo, IconPlus } from '../components/icons'
 import { Avatar, YouChip } from '../components/shared'
+import { ENTITY_CONFIG, ENTITY_TYPES } from '../data/entities'
 import type { AccountStatus } from '../types'
 
 const PLAN_LABELS: Record<string, string> = {
@@ -158,6 +159,45 @@ function LogoCard() {
         >
           {state.orgLogo ? 'Replace logo' : 'Upload logo'}
         </button>
+      </div>
+    </div>
+  )
+}
+
+/** Change the kind of organization (Nonprofit / C Corp / LLC). The checklist,
+ *  documents, and terminology follow the selection. Api mode only. */
+function EntityTypeCard() {
+  const store = useStore()
+  if (store.mode !== 'api') return null
+  const current = store.entityType
+
+  return (
+    <div style={sx('background:var(--panel);border:1px solid var(--line);border-radius:13px;padding:16px 18px;margin-bottom:14px')}>
+      <div style={sx('font-size:14px;font-weight:600')}>Organization type</div>
+      <div style={sx('font-size:12.5px;color:var(--muted);line-height:1.5;margin-top:2px')}>
+        Sets your launch checklist, document library, and terminology. You can change it later — your members, documents, and settings stay put.
+      </div>
+      <div style={sx('display:flex;gap:8px;margin-top:12px;flex-wrap:wrap')}>
+        {ENTITY_TYPES.map((t) => {
+          const active = current === t
+          return (
+            <button
+              key={t}
+              className={active ? undefined : 'hv-border-accent'}
+              onClick={() => void store.setEntityType(t)}
+              style={{
+                ...sx('flex:1;min-width:150px;padding:11px 12px;border-radius:10px;cursor:pointer;text-align:left'),
+                border: '1px solid ' + (active ? 'var(--brand)' : 'var(--line)'),
+                background: active ? 'var(--accent-soft)' : 'var(--panel)',
+              }}
+            >
+              <div style={{ ...sx('font-size:13px;font-weight:700'), color: active ? 'var(--brand)' : 'var(--ink)' }}>
+                {ENTITY_CONFIG[t].label}{active && ' · current'}
+              </div>
+              <div style={sx('font-size:11.5px;color:var(--muted);line-height:1.4;margin-top:3px')}>{ENTITY_CONFIG[t].blurb}</div>
+            </button>
+          )
+        })}
       </div>
     </div>
   )
@@ -482,6 +522,8 @@ export function Team() {
           Each board member signs in with a <strong>username &amp; password</strong> you set — they don't need a foundation email. Their <strong>personal email</strong> is where DocuSeal sends documents to sign. Give <strong>Vote</strong> access to weigh in on motions; you keep <strong>Sign</strong>/admin rights.
         </div>
       </div>
+
+      <EntityTypeCard />
 
       <LogoCard />
 

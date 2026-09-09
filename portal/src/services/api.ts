@@ -95,6 +95,8 @@ export const api = {
 
   setAiKey: (key: string) =>
     req<{ ok: true; aiConfigured: boolean }>('/org/ai-key', { method: 'POST', body: JSON.stringify({ key }) }),
+  setEntityType: (entityType: EntityType) =>
+    req<{ org: ApiOrg }>('/org/entity-type', { method: 'POST', body: JSON.stringify({ entityType }) }),
   aiDraft: (input: { motionTitle: string; motionDesc: string; meetingTitle?: string }) =>
     req<{ text: string }>('/ai/draft', { method: 'POST', body: JSON.stringify(input) }),
 

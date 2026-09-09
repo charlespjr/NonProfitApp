@@ -354,6 +354,22 @@ app.delete('/members/:id', requireAuth, requireAdmin, requireActivePlan, async (
   return c.json({ ok: true })
 })
 
+/** Change the org's entity type (nonprofit | c_corp | llc). Admin only.
+ *  The checklist, documents, and terminology follow the new type; existing
+ *  task/signature state keyed by the old type is simply not shown. */
+app.post('/org/entity-type', requireAuth, requireAdmin, async (c) => {
+  const body = await c.req.json().catch(() => ({}))
+  const entityType = body?.entityType
+  if (!['nonprofit', 'c_corp', 'llc'].includes(entityType)) {
+    return c.json({ error: 'entityType must be one of: nonprofit, c_corp, llc' }, 400)
+  }
+  const db = await getDb()
+  const orgId = c.get('session').orgId
+  await db.update(orgs).set({ entityType }).where(eq(orgs.id, orgId))
+  const [org] = await db.select().from(orgs).where(eq(orgs.id, orgId))
+  return c.json({ org: publicOrg(org) })
+})
+
 // ------------------------------------------------------------ AI drafting
 /** Save (or clear, with an empty key) the org's Anthropic API key. */
 app.post('/org/ai-key', requireAuth, requireAdmin, async (c) => {

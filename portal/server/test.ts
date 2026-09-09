@@ -93,6 +93,16 @@ async function main() {
   res = await app.request('/api/auth/me', { headers: { cookie: admin } })
   check('/auth/me works', res.status === 200 && (await j(res)).me.username === 'alitalia')
 
+  // 4b. admin can change the org's entity type; bad values rejected
+  res = await app.request('/api/org/entity-type', json({ entityType: 'c_corp' }, admin))
+  check('change entity type → 200', res.status === 200 && (await j(res)).org?.entityType === 'c_corp')
+  res = await app.request('/api/org/entity-type', json({ entityType: 'partnership' }, admin))
+  check('bad entity type change → 400', res.status === 400)
+  res = await app.request('/api/org/entity-type', json({ entityType: 'llc' }))
+  check('change entity type without auth → 401', res.status === 401)
+  // restore nonprofit so later assertions about the seed org are unaffected
+  await app.request('/api/org/entity-type', json({ entityType: 'nonprofit' }, admin))
+
   // 5. login with wrong password fails
   res = await app.request('/api/auth/login', json({ identifier: 'alitalia', password: 'wrong' }))
   check('bad login → 401', res.status === 401)
