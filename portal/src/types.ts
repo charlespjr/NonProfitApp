@@ -58,6 +58,20 @@ export interface DocInfo {
   todo: string
 }
 
+/** A member's electronic signature on a document — captured natively in the
+ *  portal (typed or drawn), with the consent + timestamp that make it a valid
+ *  e-signature under ESIGN/UETA. */
+export interface SignatureRecord {
+  memberId: string
+  /** The signer's name as it stood when they signed. */
+  name: string
+  method: 'typed' | 'drawn'
+  /** Typed: the name text. Drawn: a PNG data-URL of the strokes. */
+  value: string
+  /** ISO timestamp of when the signature was applied. */
+  signedAt: string
+}
+
 export interface ChecklistItem {
   id: string
   label: string
@@ -147,6 +161,9 @@ export interface PersistedState {
   sessionUserId: string | null
   screen: ScreenKey
   sig: Record<string, Record<string, boolean>>
+  /** Rich electronic-signature records, keyed docId → memberId. Parallels
+   *  `sig` (which stays the quick signed/not-signed status map). */
+  signatures: Record<string, Record<string, SignatureRecord>>
   docNotified: Record<string, DocNotifiedEntry>
   tasks: Record<string, boolean>
   notes: Note[]

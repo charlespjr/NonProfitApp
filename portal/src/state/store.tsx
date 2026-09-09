@@ -34,6 +34,7 @@ import type {
   PersistedState,
   PortalDoc,
   ScreenKey,
+  SignatureRecord,
   ThemeName,
   VoteChoice,
 } from '../types'
@@ -57,6 +58,7 @@ const defaultPersisted: PersistedState = {
   sessionUserId: null,
   screen: 'dashboard',
   sig: {},
+  signatures: {},
   docNotified: {},
   tasks: {},
   notes: [],
@@ -170,6 +172,9 @@ export interface Store {
   openModal(docId: string): void
   closeModal(): void
   signMember(memberId: string): void
+  /** Apply a real electronic signature (typed or drawn) for a member on the
+   *  currently-open document. */
+  applySignature(memberId: string, sigRecord: { method: 'typed' | 'drawn'; value: string }): void
   signAll(): void
   notifyDocSigners(docId: string): void
   openAddDoc(): void
@@ -228,6 +233,7 @@ const StoreCtx = createContext<Store | null>(null)
 /** The slice of state that syncs to the server per-org in api mode. */
 const BOARD_KEYS = [
   'sig',
+  'signatures',
   'docNotified',
   'tasks',
   'notes',
@@ -379,6 +385,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       ...defaultUi,
       // server board state overrides local; unset keys fall back to clean defaults
       sig: {},
+      signatures: {},
       docNotified: {},
       tasks: {},
       notes: [],
@@ -437,6 +444,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         sessionUserId: state.sessionUserId,
         screen: state.screen,
         sig: state.sig,
+        signatures: state.signatures,
         docNotified: state.docNotified,
         tasks: state.tasks,
         notes: state.notes,
@@ -714,18 +722,56 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       setState((s) => ({ ...s, sig: { ...s.sig, [docId]: cur } }))
       const nowAll = roster().every((m) => cur[m.id])
       if (nowAll) flash('All signatures collected — board notified by email')
-      else flash(memberId === state.sessionUserId ? 'You signed via DocuSeal' : 'Signature recorded')
+      else flash(memberId === state.sessionUserId ? 'You signed' : 'Signature recorded')
     },
     [state.modal, state.sessionUserId, sigFor, roster, flash, guard],
+  )
+
+  const applySignature = useCallback(
+    (memberId: string, sigRecord: { method: 'typed' | 'drawn'; value: string }) => {
+      const docId = state.modal
+      if (!docId || !guard()) return
+      const member = roster().find((m) => m.id === memberId)
+      if (!member) return
+      void services.signatures.sign(docId, memberId)
+      const record: SignatureRecord = {
+        memberId,
+        name: member.name,
+        method: sigRecord.method,
+        value: sigRecord.value,
+        signedAt: new Date().toISOString(),
+      }
+      const curSig = { ...sigFor(docId), [memberId]: true }
+      setState((s) => ({
+        ...s,
+        sig: { ...s.sig, [docId]: curSig },
+        signatures: {
+          ...s.signatures,
+          [docId]: { ...(s.signatures[docId] || {}), [memberId]: record },
+        },
+      }))
+      const nowAll = roster().every((m) => curSig[m.id])
+      flash(nowAll ? 'All signatures collected — document complete' : 'Signature applied')
+    },
+    [state.modal, sigFor, roster, flash, guard],
   )
 
   const signAll = useCallback(() => {
     const docId = state.modal
     if (!docId || !guard()) return
     const cur: Record<string, boolean> = {}
-    roster().forEach((m) => (cur[m.id] = true))
-    setState((s) => ({ ...s, sig: { ...s.sig, [docId]: cur } }))
-    flash('All signatures collected — board notified by email')
+    const now = new Date().toISOString()
+    const recs: Record<string, SignatureRecord> = {}
+    roster().forEach((m) => {
+      cur[m.id] = true
+      recs[m.id] = { memberId: m.id, name: m.name, method: 'typed', value: m.name, signedAt: now }
+    })
+    setState((s) => ({
+      ...s,
+      sig: { ...s.sig, [docId]: cur },
+      signatures: { ...s.signatures, [docId]: { ...(s.signatures[docId] || {}), ...recs } },
+    }))
+    flash('All signatures applied — document complete')
     setTimeout(() => setState((s) => ({ ...s, modal: null })), 900)
   }, [state.modal, roster, flash, guard])
 
@@ -750,7 +796,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         ...s,
         docNotified: { ...s.docNotified, [docId]: { at: fmtDate(), count: pending.length } },
       }))
-      flash('Emailed ' + pending.length + ' ' + entity.memberNounPlural + ' to sign via DocuSeal')
+      flash('Emailed ' + pending.length + ' ' + entity.memberNounPlural + ' to sign')
     },
     [state.emailConnected, state.accounts, state.sessionUserId, sigFor, roster, allDocs, flash, guard, mode, entity],
   )
@@ -771,7 +817,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       updated: fmtDate(),
       pages: Math.max(1, Math.round(f.body.length / 1800)),
       desc: f.desc.trim() || 'Document added by your organization.',
-      todo: 'Open it in DocuSeal to route it to the board for signatures.',
+      todo: 'Open it to route it to the board for electronic signature.',
       body: f.body,
     }
     setState((s) => ({ ...s, customDocs: [...s.customDocs, doc], docForm: null }))
@@ -1054,7 +1100,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
             motionTitle: mo.title,
             status: 'ready',
             title: mo.title,
-            body: 'The AI draft could not be generated right now. You can write the document here manually, then send it to DocuSeal for signing.',
+            body: 'The AI draft could not be generated right now. You can write the document here manually, then send it out for electronic signature.',
           },
         }))
       }
@@ -1073,7 +1119,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       updated: fmtDate(),
       pages: Math.max(1, Math.round(dr.body.length / 1800)),
       desc: 'AI-drafted document enacting a board motion. Review with counsel before it is relied upon.',
-      todo: "Each board member signs in DocuSeal. Once all have signed, it's complete and filed.",
+      todo: "Each board member signs electronically. Once all have signed, it's complete and filed.",
       body: dr.body,
     }
     void services.signatures.createSubmission(docId, roster())
@@ -1084,7 +1130,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       drafting: null,
       modal: docId,
     }))
-    flash('Document sent to DocuSeal for all board members to sign')
+    flash('Document sent to all board members for electronic signature')
   }, [state.drafting, roster, flash, guard])
 
   // ---------------------------------------------------------- team & access
@@ -1351,6 +1397,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     openModal,
     closeModal,
     signMember,
+    applySignature,
     signAll,
     notifyDocSigners,
     openAddDoc,

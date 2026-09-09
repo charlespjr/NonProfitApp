@@ -65,7 +65,7 @@ export function Dashboard() {
         <div style={kpiCard}>
           <div style={sx('font-size:12.5px;color:var(--muted)')}>Awaiting signature</div>
           <div style={sx('font-family:Spectral,serif;font-size:30px;font-weight:600;margin-top:6px;color:var(--warn)')}>{pendingSign}</div>
-          <div style={sx('font-size:12px;color:var(--muted);margin-top:2px')}>documents in DocuSeal</div>
+          <div style={sx('font-size:12px;color:var(--muted);margin-top:2px')}>awaiting e-signature</div>
         </div>
         <div style={kpiCard}>
           <div style={sx('font-size:12.5px;color:var(--muted)')}>Signed</div>

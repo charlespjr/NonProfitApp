@@ -48,7 +48,7 @@ export function Login() {
         <div style={sx('position:relative;max-width:440px')}>
           <div style={sx('font-size:12px;letter-spacing:.16em;text-transform:uppercase;opacity:.72;margin-bottom:20px')}>Founder &amp; Board Portal</div>
           <div style={sx('font-family:Spectral,serif;font-size:40px;line-height:1.14;font-weight:500;letter-spacing:-.01em')}>Everything to launch the foundation, in one place.</div>
-          <div style={sx('margin-top:22px;font-size:15px;line-height:1.6;opacity:.8')}>Track your formation checklist, sign governance documents through DocuSeal, schedule board meetings, and keep private notes — all secured to your organization's account.</div>
+          <div style={sx('margin-top:22px;font-size:15px;line-height:1.6;opacity:.8')}>Track your formation checklist, sign governance documents electronically, schedule board meetings, and keep private notes — all secured to your organization's account.</div>
         </div>
         <div style={sx('position:relative;display:flex;gap:26px;font-size:12.5px;opacity:.72')}>
           <span>Built for nonprofit boards</span>

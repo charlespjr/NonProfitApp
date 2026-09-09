@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useRef, useState, type PointerEvent as ReactPointerEvent } from 'react'
 import { sx } from '../lib/sx'
 import { useStore } from '../state/store'
 import { MEETINGS } from '../data/seed'
@@ -19,10 +19,152 @@ const cancelBtnStyle = sx('border:1px solid var(--line);background:var(--panel);
 const fieldLabel = sx('font-size:12.5px;font-weight:600')
 const fieldInput = sx('width:100%;padding:11px 13px;border:1px solid var(--line);border-radius:10px;background:var(--panel);font-size:14px;color:var(--ink);outline:none')
 
-// ------------------------------------------------------------- DocuSeal
+const SCRIPT_FONT = "'Snell Roundhand','Segoe Script','Brush Script MT',cursive"
+
+/** Renders a member's applied signature — cursive for typed, the image for
+ *  drawn. Used both in the signer list and on the completed document. */
+function SignatureMark({ sigRecord, size = 22 }: { sigRecord: { method: 'typed' | 'drawn'; value: string }; size?: number }) {
+  if (sigRecord.method === 'drawn') {
+    return <img src={sigRecord.value} alt="signature" style={{ height: size, maxWidth: 150, objectFit: 'contain' }} />
+  }
+  return <span style={{ fontFamily: SCRIPT_FONT, fontSize: size, lineHeight: 1, color: '#1a1a2e' }}>{sigRecord.value}</span>
+}
+
+/** Native electronic-signature capture: type or draw, with the intent-to-sign
+ *  consent that makes it valid under ESIGN/UETA. No external service. */
+function SignaturePad({
+  signerName,
+  onApply,
+  onCancel,
+}: {
+  signerName: string
+  onApply: (r: { method: 'typed' | 'drawn'; value: string }) => void
+  onCancel: () => void
+}) {
+  const [mode, setMode] = useState<'typed' | 'drawn'>('typed')
+  const [typed, setTyped] = useState(signerName)
+  const [consent, setConsent] = useState(false)
+  const [hasDrawing, setHasDrawing] = useState(false)
+  const canvasRef = useRef<HTMLCanvasElement>(null)
+  const drawing = useRef(false)
+
+  const at = (e: ReactPointerEvent<HTMLCanvasElement>) => {
+    const c = canvasRef.current!
+    const r = c.getBoundingClientRect()
+    return { x: (e.clientX - r.left) * (c.width / r.width), y: (e.clientY - r.top) * (c.height / r.height) }
+  }
+  const down = (e: ReactPointerEvent<HTMLCanvasElement>) => {
+    const c = canvasRef.current
+    if (!c) return
+    drawing.current = true
+    const ctx = c.getContext('2d')!
+    const p = at(e)
+    ctx.beginPath()
+    ctx.moveTo(p.x, p.y)
+    c.setPointerCapture(e.pointerId)
+  }
+  const draw = (e: ReactPointerEvent<HTMLCanvasElement>) => {
+    if (!drawing.current) return
+    const ctx = canvasRef.current!.getContext('2d')!
+    const p = at(e)
+    ctx.lineWidth = 2.4
+    ctx.lineCap = 'round'
+    ctx.strokeStyle = '#1a1a2e'
+    ctx.lineTo(p.x, p.y)
+    ctx.stroke()
+    setHasDrawing(true)
+  }
+  const up = () => (drawing.current = false)
+  const clear = () => {
+    const c = canvasRef.current
+    if (c) c.getContext('2d')!.clearRect(0, 0, c.width, c.height)
+    setHasDrawing(false)
+  }
+
+  const canApply = consent && (mode === 'typed' ? typed.trim().length > 1 : hasDrawing)
+  const apply = () => {
+    if (!canApply) return
+    if (mode === 'typed') onApply({ method: 'typed', value: typed.trim() })
+    else onApply({ method: 'drawn', value: canvasRef.current!.toDataURL('image/png') })
+  }
+
+  const tab = (m: 'typed' | 'drawn', label: string) => (
+    <button
+      onClick={() => setMode(m)}
+      style={{
+        ...sx('font-size:12.5px;font-weight:600;padding:7px 14px;border-radius:8px;cursor:pointer;border:1px solid'),
+        borderColor: mode === m ? 'var(--brand)' : 'var(--line)',
+        background: mode === m ? 'var(--accent-soft)' : 'var(--panel)',
+        color: mode === m ? 'var(--brand)' : 'var(--ink)',
+      }}
+    >
+      {label}
+    </button>
+  )
+
+  return (
+    <div style={sx('background:var(--panel);border:1.5px solid var(--brand);border-radius:12px;padding:15px 16px;margin-top:8px')}>
+      <div style={sx('font-size:13px;font-weight:700;color:var(--ink);margin-bottom:10px')}>Add your signature</div>
+      <div style={sx('display:flex;gap:8px;margin-bottom:12px')}>
+        {tab('typed', 'Type')}
+        {tab('drawn', 'Draw')}
+      </div>
+      {mode === 'typed' ? (
+        <>
+          <input
+            className="inp"
+            value={typed}
+            onChange={(e) => setTyped(e.target.value)}
+            placeholder="Type your full legal name"
+            style={sx('width:100%;padding:10px 13px;border:1px solid var(--line);border-radius:9px;background:var(--panel);font-size:14px;color:var(--ink);outline:none')}
+          />
+          <div style={sx('margin-top:10px;height:66px;border:1px dashed var(--line);border-radius:9px;display:flex;align-items:center;justify-content:center;background:var(--bg)')}>
+            <span style={{ fontFamily: SCRIPT_FONT, fontSize: 32, color: '#1a1a2e' }}>{typed || 'Your signature'}</span>
+          </div>
+        </>
+      ) : (
+        <div>
+          <canvas
+            ref={canvasRef}
+            width={520}
+            height={140}
+            onPointerDown={down}
+            onPointerMove={draw}
+            onPointerUp={up}
+            onPointerLeave={up}
+            style={sx('width:100%;height:140px;border:1px dashed var(--line);border-radius:9px;background:var(--bg);touch-action:none;cursor:crosshair')}
+          />
+          <button onClick={clear} style={sx('margin-top:6px;border:none;background:transparent;color:var(--muted);font-size:12px;font-weight:600;cursor:pointer;padding:2px')}>
+            Clear
+          </button>
+        </div>
+      )}
+      <label style={sx('display:flex;align-items:flex-start;gap:9px;margin-top:12px;font-size:12px;color:var(--muted);line-height:1.5;cursor:pointer')}>
+        <input type="checkbox" checked={consent} onChange={() => setConsent(!consent)} style={sx('margin-top:2px;width:15px;height:15px;accent-color:var(--brand);flex:none')} />
+        <span>I agree that signing electronically is the legal equivalent of my handwritten signature, and I intend to sign this document.</span>
+      </label>
+      <div style={sx('display:flex;gap:9px;justify-content:flex-end;margin-top:13px')}>
+        <button onClick={onCancel} style={cancelBtnStyle}>Cancel</button>
+        <button
+          onClick={apply}
+          style={{
+            ...sx('border:none;background:var(--brand);color:#fff;font-size:13px;font-weight:600;padding:9px 18px;border-radius:9px'),
+            cursor: canApply ? 'pointer' : 'not-allowed',
+            opacity: canApply ? 1 : 0.5,
+          }}
+        >
+          Apply signature
+        </button>
+      </div>
+    </div>
+  )
+}
+
+// --------------------------------------------------- Electronic signature
 export function DocuSealModal() {
   const store = useStore()
   const { state, currentUser } = store
+  const [signingOpen, setSigningOpen] = useState(false)
   const docId = state.modal
   if (!docId) return null
   const doc = store.allDocs().find((d) => d.id === docId)
@@ -35,18 +177,20 @@ export function DocuSealModal() {
   const bodyText = store.brand(doc.body || store.entity.docBodies[doc.id] || '')
   const roster = store.roster()
   const sig = store.sigFor(doc.id)
+  const sigRecords = state.signatures[doc.id] || {}
   const signedCount = roster.filter((m) => sig[m.id]).length
   const allSigned = signedCount >= roster.length
   const notified = state.docNotified[doc.id]
   const user = currentUser!
+  const meSigned = !!sig[user.member.id]
 
   return (
     <ModalShell onClose={store.closeModal} maxWidth={640}>
       <div style={sx('display:flex;align-items:center;gap:12px;padding:15px 20px;border-bottom:1px solid var(--line)')}>
-        <div style={sx('width:30px;height:30px;border-radius:8px;background:#1a73e8;color:#fff;display:grid;place-items:center;font-weight:700;font-size:14px;flex:none')}>D</div>
+        <div style={sx('width:30px;height:30px;border-radius:8px;background:var(--brand);color:#fff;display:grid;place-items:center;flex:none;font-size:16px')}>✒</div>
         <div style={{ flex: 1 }}>
-          <div style={sx('font-size:14px;font-weight:700')}>DocuSeal</div>
-          <div style={sx('font-size:11.5px;color:var(--muted)')}>Secure electronic signature</div>
+          <div style={sx('font-size:14px;font-weight:700')}>{store.orgName} e-Signature</div>
+          <div style={sx('font-size:11.5px;color:var(--muted)')}>Secure electronic signing — no third party</div>
         </div>
         <button className="hv-bg" onClick={store.closeModal} style={closeBtnStyle}><IconClose /></button>
       </div>
@@ -97,9 +241,9 @@ export function DocuSealModal() {
               </span>
             )}
             <button
-              className="hv-docuseal"
+              className="hv-border-accent"
               onClick={() => store.notifyDocSigners(doc.id)}
-              style={sx('border:1px solid #1a73e8;background:#eaf1fd;color:#1a73e8;font-size:11.5px;font-weight:600;padding:4px 11px;border-radius:7px;cursor:pointer')}
+              style={sx('border:1px solid var(--accent);background:var(--accent-soft);color:var(--brand);font-size:11.5px;font-weight:600;padding:4px 11px;border-radius:7px;cursor:pointer')}
             >
               {notified ? 'Resend email' : 'Email board to sign'}
             </button>
@@ -113,6 +257,8 @@ export function DocuSealModal() {
           {roster.map((m) => {
             const signed = !!sig[m.id]
             const isYou = m.id === user.member.id
+            const rec = sigRecords[m.id]
+            const signedAt = rec ? new Date(rec.signedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : ''
             return (
               <div key={m.id} style={sx('display:flex;align-items:center;gap:12px;background:var(--panel);border:1px solid var(--line);border-radius:11px;padding:10px 13px')}>
                 <Avatar initials={m.initials} bg={signed ? 'var(--good)' : 'var(--muted)'} />
@@ -121,24 +267,31 @@ export function DocuSealModal() {
                     {m.name}
                     <YouChip show={isYou} />
                   </div>
-                  <div style={sx('font-size:11.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis')}>{m.role}</div>
+                  {signed ? (
+                    <div style={sx('display:flex;align-items:center;gap:8px;margin-top:2px')}>
+                      {rec ? <SignatureMark sigRecord={rec} size={20} /> : <span style={{ fontFamily: SCRIPT_FONT, fontSize: 20, color: '#1a1a2e' }}>{m.name}</span>}
+                      <span style={sx('font-size:11px;color:var(--muted)')}>{signedAt ? 'Signed ' + signedAt : 'Signed'}</span>
+                    </div>
+                  ) : (
+                    <div style={sx('font-size:11.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis')}>{m.role}</div>
+                  )}
                 </div>
                 {signed ? (
-                  <span style={sx('display:inline-flex;align-items:center;gap:5px;font-size:11.5px;font-weight:600;color:var(--good);background:var(--good-soft);padding:4px 10px;border-radius:20px')}>
+                  <span style={sx('display:inline-flex;align-items:center;gap:5px;font-size:11.5px;font-weight:600;color:var(--good);flex:none')}>
                     <IconCheckSmall /> Signed
                   </span>
                 ) : isYou ? (
                   <button
                     className="hv-bright-sm"
-                    onClick={() => store.signMember(m.id)}
-                    style={sx('border:none;background:#1a73e8;color:#fff;font-size:12px;font-weight:600;padding:7px 14px;border-radius:8px;cursor:pointer;flex:none')}
+                    onClick={() => setSigningOpen(true)}
+                    style={sx('border:none;background:var(--brand);color:#fff;font-size:12px;font-weight:600;padding:7px 14px;border-radius:8px;cursor:pointer;flex:none')}
                   >
                     Sign now
                   </button>
                 ) : (
                   <button
                     className="hv-border-accent"
-                    onClick={() => store.flash('Reminder sent to ' + m.name)}
+                    onClick={() => store.notifyDocSigners(doc.id)}
                     style={sx('border:1px solid var(--line);background:var(--panel);color:var(--muted);font-size:12px;font-weight:600;padding:7px 12px;border-radius:8px;cursor:pointer;flex:none')}
                   >
                     Remind
@@ -148,33 +301,44 @@ export function DocuSealModal() {
             )
           })}
         </div>
+
+        {signingOpen && !meSigned && (
+          <SignaturePad
+            signerName={user.member.name}
+            onApply={(r) => {
+              store.applySignature(user.member.id, r)
+              setSigningOpen(false)
+            }}
+            onCancel={() => setSigningOpen(false)}
+          />
+        )}
       </div>
 
       <div style={sx('padding:15px 20px;border-top:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;gap:12px')}>
         <div style={sx('font-size:12px;color:var(--muted)')}>
           {allSigned
-            ? 'Completed · all board members have signed'
-            : `${signedCount} of ${roster.length} signatures collected via DocuSeal`}
+            ? 'Completed · all signatures collected'
+            : `${signedCount} of ${roster.length} signatures collected`}
         </div>
         <div style={sx('display:flex;gap:10px')}>
           <button className="hv-bg" onClick={store.closeModal} style={cancelBtnStyle}>Close</button>
           {!allSigned && user.isAdmin && (
-            <>
-              <button
-                className="hv-border-accent"
-                onClick={() => store.notifyDocSigners(doc.id)}
-                style={sx('border:1px solid var(--line);background:var(--panel);color:var(--brand);font-size:13px;font-weight:600;padding:9px 14px;border-radius:9px;cursor:pointer')}
-              >
-                Remind pending
-              </button>
-              <button
-                className="hv-bright"
-                onClick={store.signAll}
-                style={sx('border:none;background:#1a73e8;color:#fff;font-size:13px;font-weight:600;padding:9px 18px;border-radius:9px;cursor:pointer')}
-              >
-                Sign all (demo)
-              </button>
-            </>
+            <button
+              className="hv-border-accent"
+              onClick={() => store.notifyDocSigners(doc.id)}
+              style={sx('border:1px solid var(--line);background:var(--panel);color:var(--brand);font-size:13px;font-weight:600;padding:9px 14px;border-radius:9px;cursor:pointer')}
+            >
+              Remind pending
+            </button>
+          )}
+          {!allSigned && !meSigned && !signingOpen && (
+            <button
+              className="hv-bright"
+              onClick={() => setSigningOpen(true)}
+              style={sx('border:none;background:var(--brand);color:#fff;font-size:13px;font-weight:600;padding:9px 18px;border-radius:9px;cursor:pointer')}
+            >
+              Sign now
+            </button>
           )}
         </div>
       </div>
@@ -227,7 +391,7 @@ export function AIDraftModal() {
               />
             </div>
             <div style={sx('font-size:11.5px;color:var(--muted);margin-top:10px;line-height:1.5')}>
-              Review and edit this draft, then have a California nonprofit attorney check it before it's signed. Sending it routes it to DocuSeal for all board members to sign.
+              Review and edit this draft, then have an attorney check it before it's signed. Sending it routes it to all board members for electronic signature.
             </div>
           </>
         )}
@@ -251,10 +415,10 @@ export function AIDraftModal() {
             <button
               className="hv-bright"
               onClick={store.sendDraftToDocuSeal}
-              style={sx('display:flex;align-items:center;gap:8px;border:none;background:#1a73e8;color:#fff;font-size:13px;font-weight:600;padding:9px 16px;border-radius:9px;cursor:pointer')}
+              style={sx('display:flex;align-items:center;gap:8px;border:none;background:var(--brand);color:#fff;font-size:13px;font-weight:600;padding:9px 16px;border-radius:9px;cursor:pointer')}
             >
-              <span style={sx('width:18px;height:18px;border-radius:5px;background:rgba(255,255,255,.22);display:grid;place-items:center;font-size:11px;font-weight:800')}>D</span>
-              Send to DocuSeal
+              <span style={sx('width:18px;height:18px;border-radius:5px;background:rgba(255,255,255,.22);display:grid;place-items:center;font-size:11px;font-weight:800')}>✒</span>
+              Send for signature
             </button>
           )}
         </div>
@@ -399,7 +563,7 @@ export function AddDocumentModal() {
         <div style={sx('display:flex;align-items:flex-start;gap:9px;background:var(--accent-soft);border-radius:10px;padding:11px 13px')}>
           <IconInfo size={15} style={{ flex: 'none', marginTop: 1 }} />
           <div style={sx('font-size:12px;color:var(--brand);line-height:1.5')}>
-            Once added, open it in <strong>DocuSeal</strong> to route it to your whole board for signatures — exactly like the built-in documents. Have your attorney review anything legally binding.
+            Once added, open it and route it to your whole board for <strong>electronic signature</strong> — exactly like the built-in documents. Have your attorney review anything legally binding.
           </div>
         </div>
       </div>
@@ -470,7 +634,7 @@ export function ManageAccessModal() {
           />
         </div>
         <div style={sx('display:flex;flex-direction:column;gap:7px')}>
-          <label style={fieldLabel}>Personal email <span style={sx('color:var(--muted);font-weight:400')}>(where DocuSeal documents are sent)</span></label>
+          <label style={fieldLabel}>Personal email <span style={sx('color:var(--muted);font-weight:400')}>(where documents to sign are sent)</span></label>
           <input
             className="inp"
             value={ac.email}
@@ -521,7 +685,7 @@ export function ManageAccessModal() {
             <span style={permBox(ac.sign)}>{ac.sign && <IconCheck />}</span>
             <span style={{ flex: 1 }}>
               <span style={sx('font-size:13.5px;font-weight:600;display:block')}>Sign documents</span>
-              <span style={sx('font-size:12px;color:var(--muted)')}>Sign governance &amp; donor documents in DocuSeal</span>
+              <span style={sx('font-size:12px;color:var(--muted)')}>Sign governance &amp; donor documents electronically</span>
             </span>
           </button>
         </div>

@@ -453,7 +453,7 @@ function EmailCard() {
     <div style={sx('background:var(--panel);border:1px solid var(--line);border-radius:13px;padding:16px 18px;margin-bottom:18px')}>
       <div style={sx('font-size:14px;font-weight:600')}>Connect your foundation email to send documents</div>
       <div style={sx('font-size:12.5px;color:var(--muted);line-height:1.5;margin-top:2px')}>
-        DocuSeal invitations, signing reminders, and vote notifications are sent from your foundation's own address.
+        Signing invitations, reminders, and vote notifications are sent from your foundation's own address.
         Choose your email provider for setup instructions.
       </div>
       <div style={sx('display:flex;gap:8px;flex-wrap:wrap;margin-top:13px')}>
@@ -647,7 +647,7 @@ export function Team() {
       <div style={sx('display:flex;align-items:flex-start;gap:11px;background:var(--accent-soft);border-radius:12px;padding:13px 16px;margin-bottom:14px')}>
         <IconInfo style={{ flex: 'none', marginTop: 1 }} />
         <div style={sx('font-size:12.5px;color:var(--brand);line-height:1.55')}>
-          Each board member signs in with a <strong>username &amp; password</strong> you set — they don't need a foundation email. Their <strong>personal email</strong> is where DocuSeal sends documents to sign. Give <strong>Vote</strong> access to weigh in on motions; you keep <strong>Sign</strong>/admin rights.
+          Each board member signs in with a <strong>username &amp; password</strong> you set — they don't need a foundation email. Their <strong>personal email</strong> is where documents to sign are sent. Give <strong>Vote</strong> access to weigh in on motions; you keep <strong>Sign</strong>/admin rights.
         </div>
       </div>
 

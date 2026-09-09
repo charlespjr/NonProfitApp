@@ -94,7 +94,7 @@ export function Documents() {
                       : 'border:none;background:var(--brand);color:#fff;font-size:12.5px;font-weight:600;padding:8px 13px;border-radius:9px;cursor:pointer',
                   )}
                 >
-                  {isSigned ? 'View' : 'Open in DocuSeal'}
+                  {isSigned ? 'View' : 'Open to sign'}
                 </button>
                 {store.currentUser?.isAdmin && state.customDocs.some((c) => c.id === d.id) && (
                   <button
@@ -114,7 +114,7 @@ export function Documents() {
       </div>
       <div style={sx('display:flex;align-items:center;gap:8px;margin-top:14px;font-size:12px;color:var(--muted)')}>
         <IconInfo size={14} stroke="currentColor" />
-        Blue fields in each document are DocuSeal electronic-signature fields. Signing here updates the document's status.
+        Signatures are captured electronically in the portal — typed or drawn, with a timestamped audit trail. Signing here updates the document's status.
       </div>
     </div>
   )

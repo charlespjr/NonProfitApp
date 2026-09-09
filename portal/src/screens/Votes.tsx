@@ -46,7 +46,7 @@ function MotionCard({ mo }: { mo: Motion }) {
   })
 
   const docHint = mo.docId
-    ? 'Document drafted and sent to DocuSeal for signing.'
+    ? 'Document drafted and sent to the board for electronic signature.'
     : rLabel === 'Passed'
       ? 'Motion passed — draft the document for signing.'
       : 'Have AI draft the related document for signing.'

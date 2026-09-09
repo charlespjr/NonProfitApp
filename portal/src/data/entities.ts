@@ -125,10 +125,10 @@ const CCORP_DOCS: PortalDoc[] = [
 
 const CCORP_INFO: Record<string, DocInfo> = {
   bylaws: { desc: 'The internal rulebook for the corporation — board and shareholder meetings, quorum, voting, officer roles, and stock mechanics.', todo: 'Have corporate counsel review, then the board adopts and the Secretary certifies it. Keep it in the corporate records.' },
-  minutes: { desc: 'The official record of the first (organizational) board meeting — adopting bylaws, electing directors, appointing officers, and authorizing stock.', todo: 'Confirm the dates and decisions, then the Secretary and Chair sign, and route to all directors in DocuSeal.' },
-  boardconsent: { desc: 'A written consent the directors sign to approve an action (authorizing shares, opening banking, approving an equity plan) without holding a meeting.', todo: 'Describe the action, then route to all directors to sign in DocuSeal.' },
+  minutes: { desc: 'The official record of the first (organizational) board meeting — adopting bylaws, electing directors, appointing officers, and authorizing stock.', todo: 'Confirm the dates and decisions, then the Secretary and Chair sign, and route to all directors electronically.' },
+  boardconsent: { desc: 'A written consent the directors sign to approve an action (authorizing shares, opening banking, approving an equity plan) without holding a meeting.', todo: 'Describe the action, then route to all directors to sign electronically.' },
   stockpurchase: { desc: 'The agreement that issues founder shares — price, number of shares, and any vesting schedule and repurchase terms.', todo: 'Fill in each founder\'s shares, price, and vesting; the company and founder sign; remember the 83(b) election.' },
-  ipassign: { desc: 'Assigns each founder\'s and employee\'s work product and inventions to the company. Investors and acquirers require this for everyone.', todo: 'Every founder and early hire signs before doing company work. Route to each person in DocuSeal.' },
+  ipassign: { desc: 'Assigns each founder\'s and employee\'s work product and inventions to the company. Investors and acquirers require this for everyone.', todo: 'Every founder and early hire signs before doing company work. Route to each person electronically.' },
   captable: { desc: 'The ownership ledger — who holds how many shares and what percentage, including options and reserved pools.', todo: 'Update it every time shares or options are issued. Keep it as the single source of truth on ownership.' },
   boardvote: { desc: 'A reusable record of a board decision, approved either by vote at a meeting or by unanimous written consent.', todo: 'Describe the matter and how it was approved, then the directors sign to record the decision.' },
 }
@@ -340,8 +340,8 @@ const LLC_DOCS: PortalDoc[] = [
 ]
 
 const LLC_INFO: Record<string, DocInfo> = {
-  operating: { desc: "The LLC's core governing document — ownership percentages, management structure, voting, profit and loss allocation, distributions, and member transfer/exit rules.", todo: 'Have counsel review, then all members sign in DocuSeal. Keep it with the company records — banks and investors will ask for it.' },
-  consent: { desc: 'A written consent the members sign to adopt the Operating Agreement, authorize banking, admit members, and ratify organizational acts — without holding a formal meeting.', todo: 'Confirm the resolutions, then route to all members to sign in DocuSeal.' },
+  operating: { desc: "The LLC's core governing document — ownership percentages, management structure, voting, profit and loss allocation, distributions, and member transfer/exit rules.", todo: 'Have counsel review, then all members sign electronically. Keep it with the company records — banks and investors will ask for it.' },
+  consent: { desc: 'A written consent the members sign to adopt the Operating Agreement, authorize banking, admit members, and ratify organizational acts — without holding a formal meeting.', todo: 'Confirm the resolutions, then route to all members to sign electronically.' },
   ledger: { desc: 'The ownership record — each member, their membership interest (%), and the capital they contributed.', todo: 'Update it whenever a member is admitted, contributes capital, or transfers interest.' },
   memberaction: { desc: 'A reusable record of a member decision, approved by vote or by written consent per the Operating Agreement.', todo: 'Describe the matter and how it was approved, then the members sign to record the decision.' },
 }

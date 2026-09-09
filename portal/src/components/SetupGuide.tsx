@@ -37,7 +37,7 @@ export function SetupGuide() {
     {
       key: 'email',
       title: `Connect your ${entity.orgNoun} email`,
-      desc: 'Pick your provider (Google, Microsoft 365, Zoho…) so DocuSeal invitations and vote emails send from your address.',
+      desc: 'Pick your provider (Google, Microsoft 365, Zoho…) so signing invitations and vote emails send from your address.',
       done: state.emailConnected,
       cta: 'Set up email',
       go: () => store.go('team'),
@@ -77,7 +77,7 @@ export function SetupGuide() {
     {
       key: 'docuseal',
       title: 'Send your first document for signature',
-      desc: 'Open any document in the library and route it to the board through DocuSeal.',
+      desc: 'Open any document in the library and route it to the board for electronic signature.',
       done:
         Object.keys(state.sig).length > 0 ||
         Object.keys(state.docNotified).length > 0 ||
