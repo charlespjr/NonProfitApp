@@ -10,7 +10,16 @@ export type ScreenKey =
   | 'team'
 
 export type VoteChoice = 'for' | 'against' | 'abstain'
-export type DocCategory = 'Governance' | 'Fundraising' | 'Donor Letters'
+/** The kind of organization a portal serves — drives checklist, documents,
+ *  and terminology. */
+export type EntityType = 'nonprofit' | 'c_corp' | 'llc'
+export type DocCategory =
+  | 'Governance'
+  | 'Fundraising'
+  | 'Donor Letters'
+  | 'Equity'
+  | 'Compliance'
+  | 'Formation'
 export type DocStatus = 'draft' | 'sent' | 'signed'
 export type AccountStatus = 'active' | 'invited' | 'none'
 

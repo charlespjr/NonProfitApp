@@ -9,7 +9,8 @@ import {
   useState,
   type ReactNode,
 } from 'react'
-import { BASE_DOCS, MEETINGS, MEMBERS, SEED_ACCOUNTS } from '../data/seed'
+import { MEETINGS, MEMBERS, SEED_ACCOUNTS } from '../data/seed'
+import { entityConfig, type EntityConfig } from '../data/entities'
 import {
   mockAuth,
   mockCalendar,
@@ -26,6 +27,7 @@ import type {
   CurrentUser,
   DashboardLayout,
   DocStatus,
+  EntityType,
   Meeting,
   Member,
   Motion,
@@ -119,6 +121,10 @@ export interface Store {
   apiMe: ApiMember | null
   /** The signed-in organization's name (demo org in demo mode). */
   orgName: string
+  /** Which kind of organization this is (demo mode is always nonprofit). */
+  entityType: EntityType
+  /** Resolved checklist, document library, and terminology for entityType. */
+  entity: EntityConfig
   /** Re-brands demo-org text (org name, sample program, sample roster
    *  references) for the registered organization. Identity in demo mode. */
   brand(s: string): string
@@ -128,7 +134,7 @@ export interface Store {
   refreshPlan(): Promise<void>
 
   // auth (api mode)
-  register(input: { orgName: string; name: string; email: string; username: string; password: string }): Promise<void>
+  register(input: { orgName: string; name: string; email: string; username: string; password: string; entityType: EntityType }): Promise<void>
   changePassword(password: string): Promise<void>
 
   // billing (api mode)
@@ -259,6 +265,10 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   // their own name and generic program wording everywhere instead.
   const apiOrgName = mode === 'api' && apiOrg ? apiOrg.name : null
   const orgName = apiOrgName || 'Adams Infinite Legacy'
+  // Which entity type this org is, and its resolved checklist/docs/terminology.
+  // The demo (no backend) is always the original nonprofit content.
+  const entityType: EntityType = mode === 'api' && apiOrg ? apiOrg.entityType : 'nonprofit'
+  const entity = useMemo(() => entityConfig(entityType), [entityType])
   const brand = useCallback(
     (s: string): string => {
       if (!apiOrgName) return s
@@ -552,10 +562,11 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 
   const allDocs = useCallback(
     (): PortalDoc[] => {
-      const base = apiOrgName ? BASE_DOCS.map((d) => ({ ...d, name: brand(d.name) })) : BASE_DOCS
+      const src = entity.baseDocs
+      const base = apiOrgName ? src.map((d) => ({ ...d, name: brand(d.name) })) : src
       return base.concat(state.customDocs)
     },
-    [state.customDocs, apiOrgName, brand],
+    [state.customDocs, apiOrgName, brand, entity],
   )
 
   const sigFor = useCallback(
@@ -621,7 +632,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   )
 
   const register = useCallback(
-    async (input: { orgName: string; name: string; email: string; username: string; password: string }) => {
+    async (input: { orgName: string; name: string; email: string; username: string; password: string; entityType: EntityType }) => {
       if (mode !== 'api') {
         set({ loginError: 'Registration needs the backend — this static demo uses the seeded accounts.' })
         return
@@ -1210,6 +1221,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     apiOrg,
     apiMe,
     orgName,
+    entityType,
+    entity,
     brand,
     locked,
     refreshPlan,

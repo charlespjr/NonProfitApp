@@ -1,7 +1,6 @@
 import type { ReactNode } from 'react'
 import { sx } from '../lib/sx'
 import { useStore } from '../state/store'
-import { PHASES } from '../data/seed'
 import {
   IconCalendar,
   IconChecklist,
@@ -41,7 +40,7 @@ const PAGE_SUB: Record<ScreenKey, string> = {
 
 export function Shell({ children }: { children: ReactNode }) {
   const store = useStore()
-  const { state, currentUser } = store
+  const { state, currentUser, entity } = store
   const user = currentUser!
 
   // nav badges
@@ -49,7 +48,7 @@ export function Shell({ children }: { children: ReactNode }) {
   const pendingSign = docs.filter((d) => store.docStatusOf(d) === 'sent').length
   let total = 0
   let done = 0
-  PHASES.forEach((p) => p.items.forEach((t) => { total++; if (state.tasks[t.id]) done++ }))
+  entity.phases.forEach((p) => p.items.forEach((t) => { total++; if (state.tasks[t.id]) done++ }))
   const openTasks = total - done
   const openVotes = state.motions.filter((m) => !m.votes[user.member.id]).length
 
@@ -152,7 +151,11 @@ export function Shell({ children }: { children: ReactNode }) {
           <div data-m="htext" style={sx('flex:1;min-width:0')}>
             <div data-mt="title" style={sx('font-family:Spectral,serif;font-size:20px;font-weight:600;letter-spacing:-.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis')}>{PAGE_TITLE[state.screen]}</div>
             <div style={sx('font-size:12.5px;color:var(--muted);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis')}>
-              {state.screen === 'dashboard' && store.apiOrg ? `${store.apiOrg.name} · Founder workspace` : PAGE_SUB[state.screen]}
+              {state.screen === 'dashboard' && store.apiOrg
+                ? `${store.apiOrg.name} · Founder workspace`
+                : state.screen === 'checklist'
+                  ? `Steps to launch the ${entity.orgNoun}`
+                  : PAGE_SUB[state.screen]}
             </div>
           </div>
           <div style={sx('display:flex;align-items:center;gap:12px;flex:none')}>

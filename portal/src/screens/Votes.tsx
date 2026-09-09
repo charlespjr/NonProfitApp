@@ -76,7 +76,7 @@ function MotionCard({ mo }: { mo: Motion }) {
               )}
               {mo.notifiedAt && (
                 <span style={sx('display:inline-flex;align-items:center;gap:6px;background:var(--good-soft);color:var(--good);font-size:11.5px;font-weight:600;padding:4px 10px;border-radius:7px')}>
-                  <IconMail /> Board emailed · {mo.notifiedCount || 0} sent
+                  <IconMail /> {store.entity.key === 'llc' ? 'Members' : 'Board'} emailed · {mo.notifiedCount || 0} sent
                 </span>
               )}
               {user.isAdmin && (
@@ -86,7 +86,7 @@ function MotionCard({ mo }: { mo: Motion }) {
                     onClick={() => store.notifyBoard(mo.id)}
                     style={sx('border:1px solid var(--line);background:var(--panel);color:var(--brand);font-size:11.5px;font-weight:600;padding:4px 11px;border-radius:7px;cursor:pointer')}
                   >
-                    {mo.notifiedAt ? 'Resend email' : 'Email board to vote'}
+                    {mo.notifiedAt ? 'Resend email' : `Email ${store.entity.key === 'llc' ? 'members' : 'board'} to vote`}
                   </button>
                   <button
                     className="hv-border-accent-brand"
@@ -123,7 +123,7 @@ function MotionCard({ mo }: { mo: Motion }) {
           <span style={sx('display:flex;align-items:center;gap:6px')}><span style={sx('width:9px;height:9px;border-radius:50%;background:var(--good)')} />For {forN}</span>
           <span style={sx('display:flex;align-items:center;gap:6px')}><span style={sx('width:9px;height:9px;border-radius:50%;background:var(--danger)')} />Against {againstN}</span>
           <span style={sx('display:flex;align-items:center;gap:6px')}><span style={sx('width:9px;height:9px;border-radius:50%;background:var(--muted)')} />Abstain {abstainN}</span>
-          <span style={{ marginLeft: 'auto' }}>{castN} of {total} directors voted</span>
+          <span style={{ marginLeft: 'auto' }}>{castN} of {total} {store.entity.memberNounPlural} voted</span>
         </div>
       </div>
 
@@ -206,15 +206,16 @@ function MotionCard({ mo }: { mo: Motion }) {
 
 export function Votes() {
   const store = useStore()
-  const { state, currentUser } = store
+  const { state, currentUser, entity } = store
   const user = currentUser!
+  const gov = entity.key === 'llc' ? 'members' : 'board'
 
   return (
     <div style={sx('max-width:900px;margin:0 auto')}>
       <div style={sx('display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:18px')}>
         <div>
-          <div style={sx('font-family:Spectral,serif;font-size:22px;font-weight:600')}>Board votes &amp; motions</div>
-          <div style={sx("font-size:13.5px;color:var(--muted);margin-top:3px")}>Put a decision to the board, collect each director's vote, and record the result.</div>
+          <div style={sx('font-family:Spectral,serif;font-size:22px;font-weight:600')}>{entity.key === 'llc' ? 'Member' : 'Board'} votes &amp; motions</div>
+          <div style={sx("font-size:13.5px;color:var(--muted);margin-top:3px")}>Put a decision to the {gov}, collect each {entity.memberNoun}'s vote, and record the result.</div>
         </div>
         {user.isAdmin && (
           <button
@@ -234,7 +235,7 @@ export function Votes() {
           </div>
           <div style={sx('font-family:Spectral,serif;font-size:19px;font-weight:600')}>No motions yet</div>
           <div style={sx('font-size:13.5px;color:var(--muted);margin-top:8px;line-height:1.55')}>
-            When the board needs to decide something — adopting the bylaws, approving the budget, authorizing the bank account — create a motion here and each director casts their vote.
+            When the {gov} needs to decide something — adopting the bylaws, approving the budget, authorizing the bank account — create a motion here and each {entity.memberNoun} casts their vote.
           </div>
         </div>
       )}

@@ -48,6 +48,42 @@ async function main() {
   const reg = await j(res)
   check('register returns org + admin', reg.org?.name === 'Adams Infinite Legacy' && reg.me?.isAdmin === true)
   check('no password hash leaks', !('passwordHash' in (reg.me || {})))
+  check('register defaults entityType to nonprofit', reg.org?.entityType === 'nonprofit')
+
+  // 2b. register a C Corporation — entity type is stored and returned
+  res = await app.request('/api/auth/register', json({
+    orgName: 'Northwind Robotics',
+    name: 'Dana Ford',
+    email: 'dana@northwind.example',
+    username: 'danaford',
+    password: 'authorize-shares-7',
+    entityType: 'c_corp',
+  }))
+  check('register C Corp → 201', res.status === 201, await res.clone().text())
+  check('C Corp entityType returned', (await j(res)).org?.entityType === 'c_corp')
+
+  // 2c. register an LLC
+  res = await app.request('/api/auth/register', json({
+    orgName: 'Cedar Studio',
+    name: 'Rai Okafor',
+    email: 'rai@cedar.example',
+    username: 'raiokafor',
+    password: 'operating-agreement-4',
+    entityType: 'llc',
+  }))
+  check('register LLC → 201', res.status === 201)
+  check('LLC entityType returned', (await j(res)).org?.entityType === 'llc')
+
+  // 2d. an unknown entityType falls back to nonprofit
+  res = await app.request('/api/auth/register', json({
+    orgName: 'Fallback Org',
+    name: 'Sam Lin',
+    email: 'sam@fallback.example',
+    username: 'samlin',
+    password: 'safe-default-8',
+    entityType: 'partnership',
+  }))
+  check('bad entityType falls back to nonprofit', res.status === 201 && (await j(res)).org?.entityType === 'nonprofit')
 
   // 3. weak password rejected
   res = await app.request('/api/auth/register', json({ orgName: 'X', name: 'Y', email: 'y@x.com', username: 'y', password: 'short' }))

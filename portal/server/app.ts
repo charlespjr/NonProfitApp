@@ -120,7 +120,7 @@ export const app = new Hono<Env>().basePath('/api')
 app.get('/health', (c) =>
   c.json({
     ok: true,
-    build: 5,
+    build: 6,
     // Diagnostics: is a real database wired in, and which db-ish env var
     // NAMES exist (never values). Safe to expose; invaluable when a
     // marketplace integration injects credentials under a surprise name.
@@ -152,13 +152,16 @@ app.post('/auth/register', async (c) => {
   const email = (body?.email || '').trim().toLowerCase()
   const username = (body?.username || '').trim().toLowerCase()
   const password = body?.password || ''
+  const entityType = ['nonprofit', 'c_corp', 'llc'].includes(body?.entityType)
+    ? body.entityType
+    : 'nonprofit'
   if (!orgName || !name || !email || !username || password.length < 8) {
     return c.json({ error: 'orgName, name, email, username, and a password of 8+ characters are required' }, 400)
   }
   const db = await getDb()
   const orgId = id('org_')
   const userId = id('usr_')
-  await db.insert(orgs).values({ id: orgId, name: orgName })
+  await db.insert(orgs).values({ id: orgId, name: orgName, entityType })
   await db.insert(users).values({
     id: userId,
     orgId,
@@ -462,6 +465,7 @@ app.get('/admin/orgs', async (c) => {
       return {
         id: o.id,
         name: o.name,
+        entityType: o.entityType,
         createdAt: o.createdAt,
         plan: o.plan,
         planStatus: o.planStatus,

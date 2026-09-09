@@ -2,6 +2,8 @@ import { useState, type FormEvent } from 'react'
 import { sx } from '../lib/sx'
 import { useStore } from '../state/store'
 import { InstallApp } from '../components/InstallApp'
+import { ENTITY_CONFIG, ENTITY_TYPES } from '../data/entities'
+import type { EntityType } from '../types'
 
 const inputStyle = sx('width:100%;padding:12px 14px;border:1px solid var(--line);border-radius:10px;background:var(--panel);font-size:14px;color:var(--ink);outline:none')
 const labelStyle = sx('font-size:12.5px;font-weight:600;color:var(--ink)')
@@ -17,13 +19,14 @@ export function Login() {
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [username, setUsername] = useState('')
+  const [entityType, setEntityType] = useState<EntityType>('nonprofit')
   const { loginError } = store.state
   const apiMode = store.mode === 'api'
 
   const submit = (e: FormEvent) => {
     e.preventDefault()
     if (view === 'register') {
-      void store.register({ orgName, name, email, username, password })
+      void store.register({ orgName, name, email, username, password, entityType })
     } else {
       void store.login(identifier, password, remember)
     }
@@ -55,7 +58,7 @@ export function Login() {
       <div data-m="loginform" style={sx('display:flex;align-items:center;justify-content:center;padding:40px')}>
         <form onSubmit={submit} style={sx('width:100%;max-width:372px')}>
           <div style={sx('font-family:Spectral,serif;font-size:27px;font-weight:500;letter-spacing:-.01em')}>
-            {view === 'signin' ? 'Welcome back' : 'Create your foundation'}
+            {view === 'signin' ? 'Welcome back' : 'Create your organization'}
           </div>
           <div style={sx('color:var(--muted);font-size:14px;margin-top:7px')}>
             {view === 'signin'
@@ -66,6 +69,30 @@ export function Login() {
           {view === 'register' ? (
             <>
               <div style={{ ...fieldStyle, marginTop: 26 }}>
+                <label style={labelStyle}>What are you forming?</label>
+                <div style={sx('display:flex;gap:8px')}>
+                  {ENTITY_TYPES.map((t) => {
+                    const active = entityType === t
+                    return (
+                      <button
+                        key={t}
+                        type="button"
+                        onClick={() => setEntityType(t)}
+                        style={{
+                          ...sx('flex:1;padding:10px 6px;border-radius:10px;font-size:12.5px;font-weight:600;cursor:pointer;text-align:center'),
+                          border: '1px solid ' + (active ? 'var(--brand)' : 'var(--line)'),
+                          background: active ? 'var(--accent-soft)' : 'var(--panel)',
+                          color: active ? 'var(--brand)' : 'var(--ink)',
+                        }}
+                      >
+                        {ENTITY_CONFIG[t].shortLabel}
+                      </button>
+                    )
+                  })}
+                </div>
+                <div style={sx('font-size:11.5px;color:var(--muted);line-height:1.45')}>{ENTITY_CONFIG[entityType].blurb}</div>
+              </div>
+              <div style={fieldStyle}>
                 <label style={labelStyle}>Organization name</label>
                 <input className="inp" value={orgName} onChange={(e) => setOrgName(e.target.value)} placeholder="e.g. Adams Infinite Legacy" style={inputStyle} />
               </div>
@@ -123,7 +150,7 @@ export function Login() {
               {view === 'signin' ? (
                 <>New here?{' '}
                   <button type="button" onClick={() => switchView('register')} style={sx('border:none;background:transparent;color:var(--accent);font-weight:600;cursor:pointer;font-size:13px;padding:0')}>
-                    Create your foundation →
+                    Create your organization →
                   </button>
                 </>
               ) : (

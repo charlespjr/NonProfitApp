@@ -22,6 +22,9 @@ import {
 export const orgs = pgTable('orgs', {
   id: text('id').primaryKey(),
   name: text('name').notNull(),
+  /** Which kind of organization: 'nonprofit' | 'c_corp' | 'llc'. Drives the
+   *  checklist, document library, and terminology the portal shows. */
+  entityType: text('entity_type').notNull().default('nonprofit'),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   stripeCustomerId: text('stripe_customer_id'),
   /** 'none' | 'growth' | 'launch_partner' */
@@ -201,6 +204,7 @@ CREATE TABLE IF NOT EXISTS qbo_invoices (
   paid_at timestamptz
 );
 ALTER TABLE orgs ADD COLUMN IF NOT EXISTS anthropic_key text;
+ALTER TABLE orgs ADD COLUMN IF NOT EXISTS entity_type text NOT NULL DEFAULT 'nonprofit';
 CREATE TABLE IF NOT EXISTS outreach_leads (
   id text PRIMARY KEY,
   org_name text NOT NULL,
