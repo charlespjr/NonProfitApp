@@ -9,7 +9,7 @@ import {
   useState,
   type ReactNode,
 } from 'react'
-import { MEETINGS, MEMBERS, SEED_ACCOUNTS } from '../data/seed'
+import { MEETINGS, MEMBERS, SEED_ACCOUNTS, TEMPLATE_DOC_BODIES } from '../data/seed'
 import { entityConfig, type EntityConfig } from '../data/entities'
 import {
   mockAuth,
@@ -268,7 +268,17 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   // Which entity type this org is, and its resolved checklist/docs/terminology.
   // The demo (no backend) is always the original nonprofit content.
   const entityType: EntityType = mode === 'api' && apiOrg ? apiOrg.entityType : 'nonprofit'
-  const entity = useMemo(() => entityConfig(entityType), [entityType])
+  const entity = useMemo(() => {
+    const cfg = entityConfig(entityType)
+    // The authentic nonprofit document set is California-specific (AIL's real
+    // filings, with California statute citations). Registered organizations —
+    // which can be in any state — get the state-neutral [STATE]-placeholder
+    // templates instead; only the demo org showcases the California originals.
+    if (cfg.key === 'nonprofit' && apiOrgName) {
+      return { ...cfg, docBodies: TEMPLATE_DOC_BODIES }
+    }
+    return cfg
+  }, [entityType, apiOrgName])
   const brand = useCallback(
     (s: string): string => {
       if (!apiOrgName) return s
