@@ -48,9 +48,9 @@ export const DOC_INFO: Record<string, DocInfo> = {
   minutes: { desc: 'The official record of your first (organizational) board meeting and the resolutions that formally start the corporation.', todo: 'Confirm the details (dates, addresses, filing numbers), then the board approves and the Secretary & President sign.' },
   resolution: { desc: 'A written consent that authorizes banking, credit cards, signatories, and other corporate actions without holding a separate meeting.', todo: 'Fill in the institution / account details and authorized signatories, then all directors sign to authorize.' },
   boardvote: { desc: 'A reusable record of a board decision — approved either by a vote at a meeting or by unanimous written consent.', todo: 'Describe the matter and how it was approved, then have the directors sign to record the decision.' },
-  festivalresolution: { desc: 'The resolution that officially establishes the Get Well Soon Wellness Festival as a program of the foundation and approves the tiered sponsorship program.', todo: 'Adopt at a board meeting or by written consent, then route to all directors to sign in DocuSeal.' },
+  festivalresolution: { desc: 'The resolution that officially establishes the Get Well Soon Wellness Festival as a program of the foundation and approves the tiered sponsorship program.', todo: 'Adopt at a board meeting or by written consent, then route to all directors to sign electronically.' },
   prospectus: { desc: 'The sponsorship menu for the Get Well Soon Wellness Festival — the tiers, benefits, and recognition offered to sponsors.', todo: 'Set the tier prices, confirm the acknowledgment-vs-advertising wording with a tax advisor, then publish and share it with prospects.' },
-  sponsoragreement: { desc: 'The agreement completed for each individual sponsor — their details, level, and benefits — with a page explaining what each level means and a board-approval page. The board approves and both parties sign.', todo: "Fill in the sponsor's details, level, and amount; the board approves (vote), then the sponsor and an officer sign in DocuSeal." },
+  sponsoragreement: { desc: 'The agreement completed for each individual sponsor — their details, level, and benefits — with a page explaining what each level means and a board-approval page. The board approves and both parties sign.', todo: "Fill in the sponsor's details, level, and amount; the board approves (vote), then the sponsor and an officer sign electronically." },
   sponsorack: { desc: "A letter that formally acknowledges a sponsor's support and any benefits they received in return.", todo: 'Fill in the sponsor, amount, date, and recognition; note the value of any benefits provided; sign and send.' },
   cash: { desc: 'A tax-receipt letter thanking a donor for a cash gift, with the IRS wording they need to deduct it.', todo: 'Insert the amount, date, and EIN; confirm no goods or services were given; sign and send to the donor.' },
   inkind: { desc: 'A receipt for a donated item or service — it describes the gift but does not state a dollar value.', todo: 'Describe the donated item, add the date and EIN (no value), then sign and send.' },
@@ -59,7 +59,7 @@ export const DOC_INFO: Record<string, DocInfo> = {
 }
 
 /**
- * Starter template text for the built-in documents — what "Open in DocuSeal"
+ * Starter template text for the built-in documents — what "Open electronically"
  * shows as the document preview. Written against the demo org's name so the
  * store's brand() swaps in the registered organization automatically.
  * [BRACKETS] mark fields to fill in; every template should be reviewed by
