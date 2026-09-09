@@ -20,6 +20,20 @@ export interface ApiOrg {
   /** Whether the org has an Anthropic API key on file (the key itself
    *  never reaches the client). */
   aiConfigured?: boolean
+  /** Board-email sending address and whether its domain is verified in Resend
+   *  (only then do emails send FROM this address rather than the fallback). */
+  fromEmail?: string | null
+  emailDomain?: string | null
+  emailVerified?: boolean
+}
+
+/** A DNS record the org must add to verify its sending domain. */
+export interface DomainDnsRecord {
+  record: string
+  name: string
+  type: string
+  value: string
+  priority?: number
 }
 
 export interface ApiMember {
@@ -97,6 +111,16 @@ export const api = {
     req<{ ok: true; aiConfigured: boolean }>('/org/ai-key', { method: 'POST', body: JSON.stringify({ key }) }),
   setEntityType: (entityType: EntityType) =>
     req<{ org: ApiOrg }>('/org/entity-type', { method: 'POST', body: JSON.stringify({ entityType }) }),
+
+  // board-facing transactional email
+  notifyVote: (input: { motionTitle: string; motionDesc?: string; meetingTitle?: string }) =>
+    req<{ sent: number; dryRun: boolean; configured: boolean }>('/notify/vote', { method: 'POST', body: JSON.stringify(input) }),
+  notifySign: (input: { docName: string; memberIds?: string[] }) =>
+    req<{ sent: number; dryRun: boolean; configured: boolean }>('/notify/sign', { method: 'POST', body: JSON.stringify(input) }),
+  setOrgEmail: (fromEmail: string) =>
+    req<{ org: ApiOrg; records: DomainDnsRecord[]; status?: string; error?: string }>('/org/email', { method: 'POST', body: JSON.stringify({ fromEmail }) }),
+  verifyOrgEmail: () =>
+    req<{ org: ApiOrg; verified: boolean; records: DomainDnsRecord[]; status?: string; error?: string }>('/org/email/verify', { method: 'POST' }),
   aiDraft: (input: { motionTitle: string; motionDesc: string; meetingTitle?: string }) =>
     req<{ text: string }>('/ai/draft', { method: 'POST', body: JSON.stringify(input) }),
 

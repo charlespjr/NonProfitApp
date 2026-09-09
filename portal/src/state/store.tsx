@@ -19,7 +19,7 @@ import {
   mockSignatures,
   mockZoom,
 } from '../services'
-import { api, ApiError, type ApiMember, type ApiOrg, type ApiSession } from '../services/api'
+import { api, ApiError, type ApiMember, type ApiOrg, type ApiSession, type DomainDnsRecord } from '../services/api'
 import { fileToLogoDataUrl } from '../lib/image'
 import type {
   Account,
@@ -217,6 +217,10 @@ export interface Store {
   disconnectZoom(): void
   connectEmail(providerId: string, providerName: string, address: string): void
   disconnectEmail(): void
+
+  // real board-email sending address + domain verification (api mode)
+  setOrgEmail(fromEmail: string): Promise<{ records: DomainDnsRecord[]; status?: string; error?: string } | null>
+  verifyOrgEmail(): Promise<{ verified: boolean; records: DomainDnsRecord[]; error?: string } | null>
 }
 
 const StoreCtx = createContext<Store | null>(null)
@@ -381,15 +385,17 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       activeNoteId: null,
       calConnected: false,
       calProvider: '',
-      emailConnected: false,
-      emailProvider: '',
-      emailAddress: '',
       zoomConnected: false,
       motions: [],
       customDocs: [],
       setupDismissed: false,
       orgLogo: '',
       ...(data as Partial<BoardSlice>),
+      // The org's sending address is authoritative from the server, not the
+      // client board slice — reflect it so Team & Access shows the real state.
+      emailConnected: !!sess.org.fromEmail,
+      emailProvider: sess.org.fromEmail ? 'resend' : '',
+      emailAddress: sess.org.fromEmail || '',
       accounts: accountsFrom(members),
       extraMembers: [],
       sessionUserId: sess.me.id,
@@ -734,14 +740,19 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       const pending = roster().filter(
         (m) => state.accounts[m.id]?.email && !sig[m.id] && m.id !== state.sessionUserId,
       )
-      void services.mail.sendSignReminder(docId, pending)
+      const docName = allDocs().find((d) => d.id === docId)?.name || 'a document'
+      if (mode === 'api') {
+        void api.notifySign({ docName, memberIds: pending.map((m) => m.id) })
+      } else {
+        void services.mail.sendSignReminder(docId, pending)
+      }
       setState((s) => ({
         ...s,
         docNotified: { ...s.docNotified, [docId]: { at: fmtDate(), count: pending.length } },
       }))
-      flash('Emailed ' + pending.length + ' board members to sign via DocuSeal')
+      flash('Emailed ' + pending.length + ' ' + entity.memberNounPlural + ' to sign via DocuSeal')
     },
-    [state.emailConnected, state.accounts, state.sessionUserId, sigFor, roster, flash, guard],
+    [state.emailConnected, state.accounts, state.sessionUserId, sigFor, roster, allDocs, flash, guard, mode, entity],
   )
 
   // ---------------------------------------------------- custom documents
@@ -938,14 +949,21 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       voteTime,
     }
     void services.calendar.createEvent('Board vote: ' + motion.title, voteDay, voteTime)
-    if (notifiedAt) void services.mail.sendVoteRequest(motion, recipients)
+    if (notifiedAt) {
+      if (mode === 'api') {
+        const linkedMeeting = d.meeting ? MEETINGS.find((x) => x.id === d.meeting) : undefined
+        void api.notifyVote({ motionTitle: motion.title, motionDesc: motion.desc, meetingTitle: linkedMeeting?.title })
+      } else {
+        void services.mail.sendVoteRequest(motion, recipients)
+      }
+    }
     setState((s) => ({ ...s, motions: [motion, ...s.motions], draft: null, screen: 'votes' }))
     let msg = 'Motion created'
     if (zoomUrl) msg += ' · Zoom vote meeting added to calendar'
     if (notifiedAt) msg += ' · ' + recipients.length + ' board members emailed'
     else msg += ' · connect email to notify the board'
     flash(msg)
-  }, [state.draft, state.zoomConnected, state.emailConnected, notifiableVoters, allMeetings, flash, guard])
+  }, [state.draft, state.zoomConnected, state.emailConnected, notifiableVoters, allMeetings, flash, guard, mode])
 
   const removeMotion = useCallback((id: string) => {
     if (!guard()) return
@@ -961,16 +979,23 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       }
       const recipients = notifiableVoters()
       const motion = state.motions.find((m) => m.id === motionId)
-      if (motion) void services.mail.sendVoteRequest(motion, recipients)
+      if (motion) {
+        if (mode === 'api') {
+          const linked = motion.meeting ? MEETINGS.find((x) => x.id === motion.meeting) : undefined
+          void api.notifyVote({ motionTitle: motion.title, motionDesc: motion.desc, meetingTitle: linked?.title })
+        } else {
+          void services.mail.sendVoteRequest(motion, recipients)
+        }
+      }
       setState((s) => ({
         ...s,
         motions: s.motions.map((m) =>
           m.id === motionId ? { ...m, notifiedAt: fmtDate(), notifiedCount: recipients.length } : m,
         ),
       }))
-      flash('Emailed ' + recipients.length + ' board members to review & vote')
+      flash('Emailed ' + recipients.length + ' ' + entity.memberNounPlural + ' to review & vote')
     },
-    [state.emailConnected, state.motions, notifiableVoters, flash, guard],
+    [state.emailConnected, state.motions, notifiableVoters, flash, guard, mode, entity],
   )
 
   // ------------------------------------------------------------ AI drafting
@@ -1231,10 +1256,60 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     [set, flash, guard],
   )
   const disconnectEmail = useCallback(() => {
+    if (mode === 'api') {
+      void api.setOrgEmail('').then((r) => setApiOrg(r.org)).catch(() => {})
+      set({ emailConnected: false, emailProvider: '', emailAddress: '' })
+      flash('Sending address removed')
+      return
+    }
     void services.mail.disconnect()
     set({ emailConnected: false, emailProvider: '', emailAddress: '' })
     flash('Foundation email disconnected')
-  }, [set, flash])
+  }, [mode, set, flash])
+
+  const setOrgEmail = useCallback(
+    async (fromEmail: string) => {
+      if (mode !== 'api' || !guard()) return null
+      try {
+        const { org, records, status, error } = await api.setOrgEmail(fromEmail)
+        setApiOrg(org)
+        set({
+          emailConnected: !!org.fromEmail,
+          emailProvider: org.fromEmail ? 'resend' : '',
+          emailAddress: org.fromEmail || '',
+        })
+        flash(
+          org.emailVerified
+            ? 'Sending address saved & verified'
+            : fromEmail
+              ? 'Address saved — add the DNS records below to verify'
+              : 'Sending address cleared',
+        )
+        return { records, status, error }
+      } catch (e) {
+        flash(e instanceof ApiError ? e.message : 'Could not save the address — try again.')
+        return null
+      }
+    },
+    [mode, guard, set, flash],
+  )
+
+  const verifyOrgEmail = useCallback(async () => {
+    if (mode !== 'api') return null
+    try {
+      const { org, verified, records, error } = await api.verifyOrgEmail()
+      setApiOrg(org)
+      flash(
+        verified
+          ? 'Domain verified — board email now sends from your address'
+          : 'Not verified yet — DNS changes can take a while to propagate',
+      )
+      return { verified, records, error }
+    } catch (e) {
+      flash(e instanceof ApiError ? e.message : 'Could not check verification — try again.')
+      return null
+    }
+  }, [mode, flash])
 
   const setTheme = useCallback((theme: ThemeName) => set({ theme }), [set])
   const setDashboardLayout = useCallback(
@@ -1307,6 +1382,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     disconnectZoom,
     connectEmail,
     disconnectEmail,
+    setOrgEmail,
+    verifyOrgEmail,
   }
 
   return <StoreCtx.Provider value={store}>{children}</StoreCtx.Provider>

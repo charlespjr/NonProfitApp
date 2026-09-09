@@ -45,26 +45,125 @@ export interface SendResult {
   error?: string
 }
 
-/** Send one email via Resend, or record a dry-run when unconfigured. */
+/** The platform's own verified sender, used for outreach and as the
+ *  fallback for transactional email when an org has no verified domain. */
+export function defaultFrom(): string {
+  return process.env.OUTREACH_FROM || 'Quorum <hello@quorumsuite.com>'
+}
+
+/** Send one email via Resend, or record a dry-run when unconfigured.
+ *  `from` and `replyTo` let transactional callers send as an org's own
+ *  address (or fall back to the platform sender with the org as reply-to). */
 export async function sendEmail(input: {
   to: string
   subject: string
   html: string
+  from?: string
+  replyTo?: string
 }): Promise<SendResult> {
   const key = process.env.RESEND_API_KEY
   if (!key) return { ok: true, dryRun: true }
-  const from = process.env.OUTREACH_FROM || 'Quorum <hello@quorumsuite.com>'
+  const from = input.from || defaultFrom()
   try {
     const res = await fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: { authorization: `Bearer ${key}`, 'content-type': 'application/json' },
-      body: JSON.stringify({ from, to: input.to, subject: input.subject, html: input.html }),
+      body: JSON.stringify({
+        from,
+        to: input.to,
+        subject: input.subject,
+        html: input.html,
+        ...(input.replyTo ? { reply_to: input.replyTo } : {}),
+      }),
     })
     if (!res.ok) return { ok: false, dryRun: false, error: `Resend ${res.status}: ${(await res.text()).slice(0, 160)}` }
     return { ok: true, dryRun: false }
   } catch (e) {
     return { ok: false, dryRun: false, error: e instanceof Error ? e.message : 'send failed' }
   }
+}
+
+interface DomainDns {
+  record: string
+  name: string
+  type: string
+  value: string
+  priority?: number
+}
+interface DomainStatus {
+  ok: boolean
+  id?: string
+  status?: string
+  verified: boolean
+  records: DomainDns[]
+  error?: string
+}
+
+/** Register (idempotently) an org's sending domain with Resend and return the
+ *  DNS records they must add. Requires a RESEND_API_KEY with domain scope. */
+export async function registerDomain(domain: string): Promise<DomainStatus> {
+  const key = process.env.RESEND_API_KEY
+  if (!key) return { ok: true, verified: false, records: [], status: 'not_configured' }
+  try {
+    const res = await fetch('https://api.resend.com/domains', {
+      method: 'POST',
+      headers: { authorization: `Bearer ${key}`, 'content-type': 'application/json' },
+      body: JSON.stringify({ name: domain }),
+    })
+    const body = (await res.json().catch(() => ({}))) as Record<string, unknown>
+    // Resend returns 422 with an existing id when the domain is already added.
+    const id = (body?.id as string) || ''
+    if (!res.ok && !id) {
+      return { ok: false, verified: false, records: [], error: `Resend ${res.status}: ${JSON.stringify(body).slice(0, 160)}` }
+    }
+    return {
+      ok: true,
+      id,
+      status: (body?.status as string) || 'pending',
+      verified: body?.status === 'verified',
+      records: normalizeRecords(body?.records),
+    }
+  } catch (e) {
+    return { ok: false, verified: false, records: [], error: e instanceof Error ? e.message : 'domain add failed' }
+  }
+}
+
+/** Ask Resend to (re)check verification for a domain id and report status. */
+export async function checkDomain(domainId: string): Promise<DomainStatus> {
+  const key = process.env.RESEND_API_KEY
+  if (!key) return { ok: true, verified: false, records: [], status: 'not_configured' }
+  try {
+    // Trigger verification, then read current status + records.
+    await fetch(`https://api.resend.com/domains/${domainId}/verify`, {
+      method: 'POST',
+      headers: { authorization: `Bearer ${key}` },
+    }).catch(() => {})
+    const res = await fetch(`https://api.resend.com/domains/${domainId}`, {
+      headers: { authorization: `Bearer ${key}` },
+    })
+    const body = (await res.json().catch(() => ({}))) as Record<string, unknown>
+    if (!res.ok) return { ok: false, verified: false, records: [], error: `Resend ${res.status}` }
+    return {
+      ok: true,
+      id: domainId,
+      status: (body?.status as string) || 'pending',
+      verified: body?.status === 'verified',
+      records: normalizeRecords(body?.records),
+    }
+  } catch (e) {
+    return { ok: false, verified: false, records: [], error: e instanceof Error ? e.message : 'domain check failed' }
+  }
+}
+
+function normalizeRecords(raw: unknown): DomainDns[] {
+  if (!Array.isArray(raw)) return []
+  return raw.map((r) => ({
+    record: String(r?.record ?? ''),
+    name: String(r?.name ?? ''),
+    type: String(r?.type ?? ''),
+    value: String(r?.value ?? ''),
+    ...(r?.priority != null ? { priority: Number(r.priority) } : {}),
+  }))
 }
 
 function escapeHtml(s: string): string {

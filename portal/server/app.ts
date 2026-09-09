@@ -8,7 +8,8 @@ import { databaseUrl, getDb } from './db.js'
 import { orgs, orgState, outreachCampaigns, outreachDrip, outreachLeads, outreachSends, qboInvoices, users } from './schema.js'
 import { billing } from './billing.js'
 import { ACTORS, apifyConfigured, lastRawSample, runActor } from './apify.js'
-import { DEFAULT_TEMPLATE, renderEmail, resendConfigured, sendEmail } from './outreach.js'
+import { checkDomain, DEFAULT_TEMPLATE, registerDomain, renderEmail, resendConfigured, sendEmail } from './outreach.js'
+import { inviteEmail, sendOrgEmail, signEmail, voteEmail } from './mail.js'
 
 const JWT_SECRET = process.env.JWT_SECRET || 'dev-only-secret-change-in-production'
 const COOKIE = 'quorum_session'
@@ -305,6 +306,13 @@ app.post('/members', requireAuth, requireAdmin, requireActivePlan, async (c) => 
     mustChangePassword: !!password,
   })
   const [row] = await db.select().from(users).where(eq(users.id, userId))
+  // Email the new member their login details (best-effort; never blocks the
+  // create). Only when they were given a temporary password to sign in with.
+  if (password && row.email) {
+    const org = c.get('org')
+    const { subject, html } = inviteEmail(org, { name, username, tempPassword: password })
+    void sendOrgEmail(org, row.email, subject, html)
+  }
   return c.json({ member: publicUser(row) }, 201)
 })
 
@@ -368,6 +376,86 @@ app.post('/org/entity-type', requireAuth, requireAdmin, async (c) => {
   await db.update(orgs).set({ entityType }).where(eq(orgs.id, orgId))
   const [org] = await db.select().from(orgs).where(eq(orgs.id, orgId))
   return c.json({ org: publicOrg(org) })
+})
+
+// --------------------------------------------------------- board email send
+/** Email the voting members a request to review & vote on a motion. Recipients
+ *  come from the org's own roster (never arbitrary addresses); the sender is
+ *  excluded. Requires an active plan. */
+app.post('/notify/vote', requireAuth, requireActivePlan, async (c) => {
+  const body = await c.req.json().catch(() => ({}))
+  const motionTitle = String(body?.motionTitle || '').trim()
+  if (!motionTitle) return c.json({ error: 'motionTitle is required' }, 400)
+  const org = c.get('org')
+  const db = await getDb()
+  const roster = await db.select().from(users).where(eq(users.orgId, org.id))
+  const meId = c.get('me').id
+  const recipients = roster.filter((u) => u.canVote && u.email && u.id !== meId)
+  const { subject, html } = voteEmail(org, {
+    motionTitle,
+    motionDesc: body?.motionDesc ? String(body.motionDesc) : undefined,
+    meetingTitle: body?.meetingTitle ? String(body.meetingTitle) : undefined,
+  })
+  const results = await Promise.all(recipients.map((r) => sendOrgEmail(org, r.email, subject, html)))
+  const sent = results.filter((r) => r.ok).length
+  return c.json({ sent, dryRun: results.some((r) => r.dryRun), configured: resendConfigured() })
+})
+
+/** Email members a reminder to sign a document. Optional memberIds restricts
+ *  to those still pending; otherwise all signing members (minus the sender). */
+app.post('/notify/sign', requireAuth, requireActivePlan, async (c) => {
+  const body = await c.req.json().catch(() => ({}))
+  const docName = String(body?.docName || '').trim()
+  if (!docName) return c.json({ error: 'docName is required' }, 400)
+  const ids: string[] | null = Array.isArray(body?.memberIds) ? body.memberIds.map(String) : null
+  const org = c.get('org')
+  const db = await getDb()
+  const roster = await db.select().from(users).where(eq(users.orgId, org.id))
+  const meId = c.get('me').id
+  const recipients = roster.filter(
+    (u) => u.email && u.id !== meId && (ids ? ids.includes(u.id) : u.canSign),
+  )
+  const { subject, html } = signEmail(org, docName)
+  const results = await Promise.all(recipients.map((r) => sendOrgEmail(org, r.email, subject, html)))
+  const sent = results.filter((r) => r.ok).length
+  return c.json({ sent, dryRun: results.some((r) => r.dryRun), configured: resendConfigured() })
+})
+
+// -------------------------------------------------- sending address / domain
+/** Set (or clear, with an empty value) the org's board-email sending address,
+ *  and register its domain with Resend so it can be verified. Admin only. */
+app.post('/org/email', requireAuth, requireAdmin, async (c) => {
+  const body = await c.req.json().catch(() => ({}))
+  const fromEmail = String(body?.fromEmail || '').trim().toLowerCase()
+  const db = await getDb()
+  const orgId = c.get('session').orgId
+  if (!fromEmail) {
+    await db.update(orgs).set({ fromEmail: null, emailDomain: null, emailDomainId: null, emailVerified: false }).where(eq(orgs.id, orgId))
+    const [org] = await db.select().from(orgs).where(eq(orgs.id, orgId))
+    return c.json({ org: publicOrg(org), records: [] })
+  }
+  const m = fromEmail.match(/^[^@\s]+@([^@\s]+\.[^@\s]+)$/)
+  if (!m) return c.json({ error: 'Enter a valid email address, e.g. board@yourcompany.org' }, 400)
+  const domain = m[1]
+  const reg = await registerDomain(domain)
+  await db
+    .update(orgs)
+    .set({ fromEmail, emailDomain: domain, emailDomainId: reg.id || null, emailVerified: reg.verified })
+    .where(eq(orgs.id, orgId))
+  const [org] = await db.select().from(orgs).where(eq(orgs.id, orgId))
+  return c.json({ org: publicOrg(org), records: reg.records, status: reg.status, error: reg.error })
+})
+
+/** Re-check the org's sending domain verification with Resend. Admin only. */
+app.post('/org/email/verify', requireAuth, requireAdmin, async (c) => {
+  const db = await getDb()
+  const orgId = c.get('session').orgId
+  const [org0] = await db.select().from(orgs).where(eq(orgs.id, orgId))
+  if (!org0?.emailDomainId) return c.json({ error: 'No sending domain to verify — set your address first.' }, 400)
+  const status = await checkDomain(org0.emailDomainId)
+  await db.update(orgs).set({ emailVerified: status.verified }).where(eq(orgs.id, orgId))
+  const [org] = await db.select().from(orgs).where(eq(orgs.id, orgId))
+  return c.json({ org: publicOrg(org), verified: status.verified, records: status.records, status: status.status, error: status.error })
 })
 
 // ------------------------------------------------------------ AI drafting
