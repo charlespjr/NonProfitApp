@@ -182,6 +182,9 @@ export interface Store {
 
   // AI drafting key (api mode; stored server-side, never echoed back)
   setAiKey(key: string): Promise<void>
+  /** Change the org's entity type (admin, api mode). Checklist, documents,
+   *  and terminology switch to match. */
+  setEntityType(entityType: EntityType): Promise<void>
 
   // notes
   newNote(): void
@@ -822,6 +825,21 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     [mode, flash],
   )
 
+  const setEntityType = useCallback(
+    async (entityType: EntityType) => {
+      if (mode !== 'api' || !guard()) return
+      if (apiOrg?.entityType === entityType) return
+      try {
+        const { org } = await api.setEntityType(entityType)
+        setApiOrg(org)
+        flash(`Switched to ${entityConfig(entityType).label}`)
+      } catch (e) {
+        flash(e instanceof ApiError ? e.message : 'Could not change the type — try again.')
+      }
+    },
+    [mode, apiOrg, guard, flash],
+  )
+
   // ----------------------------------------------------------------- notes
   const newNote = useCallback(() => {
     if (!guard()) return
@@ -1266,6 +1284,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     uploadLogo,
     removeLogo,
     setAiKey,
+    setEntityType,
     newNote,
     updateNote,
     deleteNote,
