@@ -34,6 +34,14 @@ export const orgs = pgTable('orgs', {
   /** The org's own Anthropic API key for AI drafting. Never sent to clients —
    *  responses expose only aiConfigured: boolean. */
   anthropicKey: text('anthropic_key'),
+  /** The address board-facing email (vote/sign/invite) is sent from. */
+  fromEmail: text('from_email'),
+  /** The sending domain and its Resend domain id (for verification checks). */
+  emailDomain: text('email_domain'),
+  emailDomainId: text('email_domain_id'),
+  /** True once the sending domain is verified in Resend; only then do we send
+   *  FROM the org's address rather than the platform fallback. */
+  emailVerified: boolean('email_verified').notNull().default(false),
 })
 
 export const users = pgTable(
@@ -205,6 +213,10 @@ CREATE TABLE IF NOT EXISTS qbo_invoices (
 );
 ALTER TABLE orgs ADD COLUMN IF NOT EXISTS anthropic_key text;
 ALTER TABLE orgs ADD COLUMN IF NOT EXISTS entity_type text NOT NULL DEFAULT 'nonprofit';
+ALTER TABLE orgs ADD COLUMN IF NOT EXISTS from_email text;
+ALTER TABLE orgs ADD COLUMN IF NOT EXISTS email_domain text;
+ALTER TABLE orgs ADD COLUMN IF NOT EXISTS email_domain_id text;
+ALTER TABLE orgs ADD COLUMN IF NOT EXISTS email_verified boolean NOT NULL DEFAULT false;
 CREATE TABLE IF NOT EXISTS outreach_leads (
   id text PRIMARY KEY,
   org_name text NOT NULL,

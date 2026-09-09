@@ -103,6 +103,37 @@ async function main() {
   // restore nonprofit so later assertions about the seed org are unaffected
   await app.request('/api/org/entity-type', json({ entityType: 'nonprofit' }, admin))
 
+  // 4c. board email: notifications + sending address + domain verification
+  {
+    let r = await app.request('/api/auth/register', json({ orgName: 'Signal Corp', name: 'Ada Fox', email: 'ada@signal.example', username: 'adafox', password: 'quorum-signal-7', entityType: 'c_corp' }))
+    const sc = cookieOf(r)
+    const scOrgId = (await j(r)).org.id
+    // free preview blocks sending
+    r = await app.request('/api/notify/vote', json({ motionTitle: 'Adopt bylaws' }, sc))
+    check('notify blocked on free preview → 402', r.status === 402)
+    await activate(scOrgId, 'growth')
+    // a voting member to receive the email
+    await app.request('/api/members', json({ name: 'Ben Ito', username: 'benito', email: 'ben@signal.example', password: 'welcome-ben-9', canVote: true, canSign: true }, sc))
+    r = await app.request('/api/notify/vote', json({ motionTitle: 'Adopt bylaws', motionDesc: 'Please review' }, sc))
+    const vote = await j(r)
+    check('notify vote sends to voting members', r.status === 200 && vote.sent === 1, vote)
+    r = await app.request('/api/notify/vote', json({ motionTitle: '' }, sc))
+    check('notify vote requires a title → 400', r.status === 400)
+    r = await app.request('/api/notify/sign', json({ docName: 'Corporate Bylaws' }, sc))
+    check('notify sign → 200 sends to signers', r.status === 200 && (await j(r)).sent >= 1)
+    // sending address + domain
+    r = await app.request('/api/org/email', json({ fromEmail: 'not-an-email' }, sc))
+    check('bad sending address → 400', r.status === 400)
+    r = await app.request('/api/org/email', json({ fromEmail: 'board@signalcorp.example' }, sc))
+    const setr = await j(r)
+    check('set sending address → 200', r.status === 200 && setr.org.fromEmail === 'board@signalcorp.example' && setr.org.emailDomain === 'signalcorp.example')
+    check('domain starts unverified', setr.org.emailVerified === false)
+    r = await app.request('/api/org/email', json({ fromEmail: '' }, sc))
+    check('clear sending address → 200', r.status === 200 && !(await j(r)).org.fromEmail)
+    r = await app.request('/api/org/email', json({ fromEmail: 'x@y.com' }))
+    check('set sending address without auth → 401', r.status === 401)
+  }
+
   // 5. login with wrong password fails
   res = await app.request('/api/auth/login', json({ identifier: 'alitalia', password: 'wrong' }))
   check('bad login → 401', res.status === 401)
