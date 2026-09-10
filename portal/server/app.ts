@@ -614,6 +614,69 @@ app.post('/ai/draft', requireAuth, requireActivePlan, async (c) => {
   }
 })
 
+/** Analyze a portal document and produce a board motion (title + details) to
+ *  put it to a vote. Uses the org's Anthropic key; the client falls back to a
+ *  simple heuristic when no key is configured. */
+app.post('/ai/motion', requireAuth, requireActivePlan, async (c) => {
+  const org = c.get('org')
+  if (!org.anthropicKey) {
+    return c.json(
+      { error: 'Add your organization’s Anthropic API key in Team & Access to enable AI drafting.', code: 'no_ai_key' },
+      400,
+    )
+  }
+  const body = await c.req.json().catch(() => ({}))
+  const docName = String(body?.docName || '').slice(0, 300)
+  const docBody = String(body?.docBody || '').slice(0, 12000)
+  if (!docName || !docBody) return c.json({ error: 'docName and docBody are required' }, 400)
+  const noun = org.entityType === 'llc' ? 'members' : 'board of directors'
+  const prompt = [
+    `You are preparing a motion for the ${noun} of ${org.name} to formally approve/adopt the following document.`,
+    `Document title: "${docName}"`,
+    'Document text:',
+    '"""',
+    docBody,
+    '"""',
+    '',
+    'Return STRICT JSON (no markdown, no code fence) with exactly two keys:',
+    '  "title": a concise motion title (max ~90 chars), e.g. "Adopt the Corporate Bylaws" or "Approve the Banking & Business Credit Authorization".',
+    '  "details": 2–4 sentences a director can read before voting — what the document does, what approving it authorizes, and anything notable to fill in. Do not invent facts beyond the document.',
+    'Return ONLY the JSON object.',
+  ].join('\n')
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'x-api-key': org.anthropicKey, 'anthropic-version': '2023-06-01', 'content-type': 'application/json' },
+      body: JSON.stringify({ model: 'claude-sonnet-5', max_tokens: 700, messages: [{ role: 'user', content: prompt }] }),
+    })
+    if (!res.ok) {
+      console.error('anthropic motion failed:', res.status, (await res.text()).slice(0, 300))
+      return c.json(
+        { error: res.status === 401 ? 'Your Anthropic API key was rejected — check it in Team & Access.' : 'The AI service had a problem — try again.' },
+        502,
+      )
+    }
+    const data = (await res.json()) as { content?: Array<{ type: string; text?: string }> }
+    const raw = (data.content || []).filter((b) => b.type === 'text').map((b) => b.text || '').join('').trim()
+    const jsonText = raw.replace(/^```(?:json)?/i, '').replace(/```$/, '').trim()
+    let title = ''
+    let details = ''
+    try {
+      const parsed = JSON.parse(jsonText) as { title?: string; details?: string }
+      title = String(parsed.title || '').trim()
+      details = String(parsed.details || '').trim()
+    } catch {
+      title = `Approve ${docName}`
+      details = raw.slice(0, 600)
+    }
+    if (!title) title = `Approve ${docName}`
+    return c.json({ title, details })
+  } catch (e) {
+    console.error('anthropic motion unreachable:', e)
+    return c.json({ error: 'Could not reach the AI service — try again.' }, 502)
+  }
+})
+
 // ----------------------------------------------------- owner admin portal
 /** These endpoints power app.quorumsuite.com/admin — the business owner's
  *  view across ALL organizations. Gated by the ADMIN_KEY secret, never by

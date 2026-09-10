@@ -143,6 +143,10 @@ export interface MotionDraftForm {
   title: string
   desc: string
   meeting: string
+  /** When the motion is based on a portal document, the doc it enacts. */
+  docId?: string
+  /** True while AI is analyzing the selected document into a motion. */
+  analyzing?: boolean
 }
 
 /** Form state for adding an organization's own document to the library. */

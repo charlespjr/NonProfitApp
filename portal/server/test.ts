@@ -137,6 +137,9 @@ async function main() {
     r = await app.request('/api/notify/sign', json({ docName: 'Corporate Bylaws' }, sc))
     const signRes = await j(r)
     check('notify sign without SMTP → dryRun (no Resend)', r.status === 200 && signRes.dryRun === true && signRes.sent === 0)
+    // AI motion-from-document requires the org's Anthropic key
+    r = await app.request('/api/ai/motion', json({ docName: 'Corporate Bylaws', docBody: 'BYLAWS OF ...' }, sc))
+    check('ai motion without key → 400 no_ai_key', r.status === 400 && (await j(r)).code === 'no_ai_key')
   }
 
   // 4d. per-org SMTP relay (e.g. GoDaddy). Uses the admin cookie; admin-only,

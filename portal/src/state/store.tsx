@@ -202,6 +202,9 @@ export interface Store {
   castVote(motionId: string, memberId: string, choice: VoteChoice): void
   openNewMotion(): void
   createMotion(): Promise<void>
+  /** Analyze a portal document with AI (or a heuristic fallback) and fill the
+   *  in-progress motion draft's title + details from it. */
+  analyzeDocToMotion(docId: string): Promise<void>
   removeMotion(id: string): void
   notifyBoard(motionId: string): void
   notifiableVoters(): Member[]
@@ -989,6 +992,39 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     set({ draft: { title: '', desc: '', meeting: '' } })
   }, [guard, set])
 
+  const analyzeDocToMotion = useCallback(
+    async (docId: string) => {
+      if (!guard()) return
+      const doc = allDocs().find((x) => x.id === docId)
+      if (!doc) return
+      setState((s) => (s.draft ? { ...s, draft: { ...s.draft, docId, analyzing: true } } : s))
+      const docName = brand(doc.name)
+      const body = brand(doc.body || entity.docBodies[docId] || '')
+      let title = ''
+      let details = ''
+      if (mode === 'api' && apiOrg?.aiConfigured && body) {
+        try {
+          const r = await api.aiMotion({ docName, docBody: body })
+          title = r.title
+          details = r.details
+        } catch (e) {
+          flash(e instanceof ApiError ? e.message : 'AI unavailable — used a basic summary')
+        }
+      }
+      if (!title) {
+        const info = entity.docInfo[docId]
+        title = /agreement|policy|bylaws|resolution|authorization|consent|minutes|plan|ledger|table|prospectus/i.test(docName)
+          ? `Adopt the ${docName}`
+          : `Approve the ${docName}`
+        details = info ? brand(info.desc) : `Motion to approve the ${docName} as presented to the board.`
+      }
+      setState((s) =>
+        s.draft ? { ...s, draft: { ...s.draft, title, desc: details, docId, analyzing: false } } : s,
+      )
+    },
+    [guard, allDocs, brand, entity, mode, apiOrg, flash],
+  )
+
   const createMotion = useCallback(async () => {
     const d = state.draft
     if (!d || !d.title.trim() || !guard()) return
@@ -1023,6 +1059,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       notifiedCount: notifiedAt ? recipients.length : 0,
       voteDay,
       voteTime,
+      docId: d.docId,
     }
     void services.calendar.createEvent('Board vote: ' + motion.title, voteDay, voteTime)
     if (notifiedAt) {
@@ -1481,6 +1518,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     castVote,
     openNewMotion,
     createMotion,
+    analyzeDocToMotion,
     removeMotion,
     notifyBoard,
     notifiableVoters,

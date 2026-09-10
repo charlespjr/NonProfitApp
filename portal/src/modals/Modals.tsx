@@ -452,6 +452,40 @@ export function NewMotionModal() {
       </div>
       <div style={sx('padding:20px;display:flex;flex-direction:column;gap:16px')}>
         <div style={sx('display:flex;flex-direction:column;gap:7px')}>
+          <label style={fieldLabel}>Base on a document <span style={sx('color:var(--muted);font-weight:400')}>(optional)</span></label>
+          <select
+            className="inp-plain"
+            value={d.docId || ''}
+            onChange={(e) => store.set({ draft: { ...d, docId: e.target.value || undefined } })}
+            style={fieldInput}
+          >
+            <option value="">— None —</option>
+            {store.allDocs().map((doc) => (
+              <option key={doc.id} value={doc.id}>{doc.name}</option>
+            ))}
+          </select>
+          {d.docId && (
+            <button
+              onClick={() => void store.analyzeDocToMotion(d.docId!)}
+              disabled={d.analyzing}
+              style={{
+                ...sx('display:flex;align-items:center;justify-content:center;gap:8px;border:1px solid var(--accent);background:var(--accent-soft);color:var(--brand);font-size:12.5px;font-weight:600;padding:9px 12px;border-radius:9px;margin-top:2px'),
+                cursor: d.analyzing ? 'wait' : 'pointer',
+                opacity: d.analyzing ? 0.7 : 1,
+              }}
+            >
+              {d.analyzing
+                ? 'Analyzing the document…'
+                : store.apiOrg?.aiConfigured
+                  ? '✨ Draft this motion from the document with AI'
+                  : 'Draft this motion from the document'}
+            </button>
+          )}
+          <div style={sx('font-size:11.5px;color:var(--muted);line-height:1.45')}>
+            Pick a document to put it to a board vote. {store.apiOrg?.aiConfigured ? 'AI reads it and writes the motion below — edit as needed.' : 'The motion is drafted from the document below — add your AI key in Team & Access for a sharper summary.'}
+          </div>
+        </div>
+        <div style={sx('display:flex;flex-direction:column;gap:7px')}>
           <label style={fieldLabel}>Motion</label>
           <input
             className="inp"
