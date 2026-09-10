@@ -596,9 +596,13 @@ export function AddDocumentModal() {
 // -------------------------------------------------------- Manage access
 export function ManageAccessModal() {
   const store = useStore()
+  const [creds, setCreds] = useState<{ username: string; password: string } | null>(null)
   const ac = store.state.acct
   if (!ac) return null
-  const close = () => store.set({ acct: null })
+  const close = () => {
+    setCreds(null)
+    store.set({ acct: null })
+  }
   const member = store.roster().find((m) => m.id === ac.id)
   const canRevoke = ac.id !== 'alitalia' && (ac.status === 'active' || ac.status === 'invited')
 
@@ -698,6 +702,30 @@ export function ManageAccessModal() {
             </span>
           </button>
         </div>
+
+        {creds && (
+          <div style={sx('background:var(--accent-soft);border:1px solid var(--accent);border-radius:11px;padding:13px 15px')}>
+            <div style={sx('font-size:12.5px;font-weight:700;color:var(--brand);margin-bottom:8px')}>Sign-in details — share these directly if the email is slow to arrive</div>
+            <div style={sx('display:flex;flex-direction:column;gap:6px;font-size:13px')}>
+              <div style={sx('display:flex;justify-content:space-between;gap:10px')}>
+                <span style={sx('color:var(--muted)')}>Username</span>
+                <code style={sx('font-family:ui-monospace,monospace;color:var(--ink)')}>{creds.username}</code>
+              </div>
+              <div style={sx('display:flex;justify-content:space-between;gap:10px')}>
+                <span style={sx('color:var(--muted)')}>Temporary password</span>
+                <code style={sx('font-family:ui-monospace,monospace;color:var(--ink)')}>{creds.password}</code>
+              </div>
+            </div>
+            <button
+              onClick={() => {
+                void navigator.clipboard?.writeText(`Username: ${creds.username}\nTemporary password: ${creds.password}\nSign in at ${location.origin}`).then(() => store.flash('Copied'))
+              }}
+              style={sx('margin-top:10px;border:1px solid var(--line);background:var(--panel);color:var(--brand);font-size:12px;font-weight:600;padding:6px 12px;border-radius:8px;cursor:pointer')}
+            >
+              Copy to share
+            </button>
+          </div>
+        )}
       </div>
       <div style={sx('padding:15px 20px;border-top:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;gap:10px')}>
         {canRevoke ? (
@@ -712,7 +740,10 @@ export function ManageAccessModal() {
           {store.mode === 'api' && !ac.isNew && ac.email && (
             <button
               className="hv-border-accent"
-              onClick={() => void store.resendInvite(ac.id)}
+              onClick={async () => {
+                const r = await store.resendInvite(ac.id)
+                if (r?.tempPassword) setCreds({ username: ac.username, password: r.tempPassword })
+              }}
               style={sx('border:1px solid var(--line);background:var(--panel);color:var(--brand);font-size:13px;font-weight:600;padding:9px 14px;border-radius:9px;cursor:pointer')}
             >
               Resend invite

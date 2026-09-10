@@ -216,8 +216,9 @@ export interface Store {
   genPw(): void
   saveAcct(): void
   revokeAcct(): void
-  /** (Re)send a member's invite email with a fresh temp password (api mode). */
-  resendInvite(id: string): Promise<void>
+  /** (Re)send a member's invite email with a fresh temp password (api mode).
+   *  Returns the new temp password so the admin can also share it manually. */
+  resendInvite(id: string): Promise<{ ok: boolean; tempPassword?: string; error?: string } | null>
 
   // integrations
   connectCal(providerId: string, providerName: string): void
@@ -1289,14 +1290,16 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 
   const resendInvite = useCallback(
     async (id: string) => {
-      if (mode !== 'api' || !guard()) return
+      if (mode !== 'api' || !guard()) return null
       try {
         const r = await api.resendInvite(id)
-        if (r.ok) flash('Invite re-sent — a new temporary password was emailed')
-        else if (r.dryRun) flash('Email isn’t set up yet — configure Board email in Team & Access')
-        else flash('Could not send invite: ' + (r.error || 'send error'))
+        if (r.ok) flash('Invite re-sent — new temporary password issued')
+        else if (r.dryRun) flash('Email isn’t set up — share the credentials below, or configure Board email')
+        else flash('Email didn’t send (' + (r.error || 'error') + ') — share the credentials below instead')
+        return { ok: r.ok, tempPassword: r.tempPassword, error: r.error }
       } catch (e) {
         flash(e instanceof ApiError ? e.message : 'Could not send invite — try again')
+        return null
       }
     },
     [mode, guard, flash],
