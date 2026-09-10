@@ -594,6 +594,16 @@ export function AddDocumentModal() {
           />
         </div>
         <div style={sx('display:flex;flex-direction:column;gap:7px')}>
+          <label style={fieldLabel}>Details for AI <span style={sx('color:var(--muted);font-weight:400')}>(optional — the specifics to include)</span></label>
+          <textarea
+            className="inp"
+            value={f.aiDetails || ''}
+            onChange={(e) => store.set({ docForm: { ...f, aiDetails: e.target.value } })}
+            placeholder={'Give AI the facts so it fills them in instead of leaving blanks. e.g.\n• Subsidiary purpose: government contracting & consulting\n• Ownership: 100% wholly owned\n• Authorizing officer: Charles Pleasant, CEO\n• Effective date: today\n• Registered agent: same as the corporation'}
+            style={sx('width:100%;min-height:88px;resize:vertical;padding:11px 13px;border:1px solid var(--line);border-radius:10px;background:var(--panel);font-size:13px;line-height:1.55;color:var(--ink);outline:none')}
+          />
+        </div>
+        <div style={sx('display:flex;flex-direction:column;gap:7px')}>
           <div style={sx('display:flex;align-items:center;justify-content:space-between;gap:10px')}>
             <label style={fieldLabel}>Document text <span style={sx('color:var(--muted);font-weight:400')}>(paste it, or let AI write it)</span></label>
             <button

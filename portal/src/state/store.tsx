@@ -852,7 +852,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     }
     setState((s) => (s.docForm ? { ...s, docForm: { ...s.docForm, writing: true } } : s))
     try {
-      const { body } = await api.aiDocument({ name: f.name.trim(), desc: f.desc.trim(), category: f.cat })
+      const { body } = await api.aiDocument({ name: f.name.trim(), desc: f.desc.trim(), details: f.aiDetails?.trim() || undefined, category: f.cat })
       setState((s) => (s.docForm ? { ...s, docForm: { ...s.docForm, body, writing: false } } : s))
       flash('Draft written — review and edit before saving')
     } catch (e) {
