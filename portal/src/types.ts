@@ -155,6 +155,8 @@ export interface DocForm {
   cat: DocCategory
   desc: string
   body: string
+  /** True while AI is writing the document body. */
+  writing?: boolean
 }
 
 export interface DocNotifiedEntry {
