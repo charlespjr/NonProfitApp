@@ -647,6 +647,16 @@ export function ManageAccessModal() {
           />
         </div>
         <div style={sx('display:flex;flex-direction:column;gap:7px')}>
+          <label style={fieldLabel}>Role / title <span style={sx('color:var(--muted);font-weight:400')}>(shown on invites & documents)</span></label>
+          <input
+            className="inp"
+            value={ac.role || ''}
+            onChange={(e) => store.set({ acct: { ...ac, role: e.target.value } })}
+            placeholder="e.g. CEO, Treasurer, Director"
+            style={fieldInput}
+          />
+        </div>
+        <div style={sx('display:flex;flex-direction:column;gap:7px')}>
           <label style={fieldLabel}>Personal email <span style={sx('color:var(--muted);font-weight:400')}>(where documents to sign are sent)</span></label>
           <input
             className="inp"
