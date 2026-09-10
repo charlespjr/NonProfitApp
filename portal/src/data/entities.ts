@@ -57,6 +57,7 @@ const CCORP_PHASES: ChecklistPhase[] = [
       { id: 'office', label: "Set the corporation's principal office address" },
       { id: 'fiscalyear', label: 'Establish the fiscal year-end' },
       { id: 'minutes', label: 'Approve & sign the Organizational Board Minutes', doc: 'minutes' },
+      { id: 'omnibus', label: 'Adopt an omnibus board resolution (blanket authority)', doc: 'omnibus' },
     ],
   },
   {
@@ -72,7 +73,8 @@ const CCORP_PHASES: ChecklistPhase[] = [
   {
     name: 'Banking, Tax & Licenses',
     items: [
-      { id: 'bank', label: 'Open a corporate bank account & designate signatories' },
+      { id: 'bank', label: 'Open a corporate bank account & designate signatories', doc: 'bankingcredit' },
+      { id: 'businesscredit', label: 'Set up business credit & cards (Experian, D&B/D-U-N-S, Nav, credit & fuel cards)', doc: 'bankingcredit' },
       { id: 'statetax', label: 'Register for state taxes and employer accounts' },
       { id: 'licenses', label: 'Obtain required business licenses & permits' },
       { id: 'scorp', label: 'Discuss an S-corp election (Form 2553) with your accountant' },
@@ -99,12 +101,14 @@ const CCORP_HELP: Record<string, string> = {
   office: 'Record the principal office address in the bylaws and minutes.',
   fiscalyear: "Choose the corporation's fiscal year-end (December 31 is the common default). This sets when tax returns and reports are due.",
   minutes: 'Finish the organizational minutes with the real decisions and dates. The Secretary and Chair sign them; keep them in the corporate records.',
+  omnibus: 'Adopt a broad "omnibus" resolution that authorizes the officers to handle the corporation\'s ordinary business — banking, credit, contracts, filings. Banks and vendors often ask to see this general authority. All directors sign it.',
   authorize: 'By board resolution, authorize the total number of shares, set the par value, and approve any equity incentive plan before issuing any stock.',
   issue: 'Issue founder shares through Stock Purchase Agreements that state the price, number of shares, and any vesting. Founders pay for their shares (often par value) and the company records the issuance.',
   ip: "Every founder and early employee signs a Confidential Information & Invention Assignment Agreement so the company — not the individual — owns the work. Investors require this.",
   election83b: 'If founder stock is subject to vesting, each founder should file an 83(b) election with the IRS within 30 days of issuance. Missing this deadline can create a large future tax bill — talk to your accountant immediately.',
   captable: 'Maintain the capitalization table — who owns what, how many shares, and what percentage. Keep it current every time you issue stock or options.',
   bank: 'Take your stamped Articles, EIN letter, and signed board banking resolution to a bank and open the corporate account. Name who is authorized to sign.',
+  businesscredit: 'Sign the Banking & Business Credit Authorization, then use it to open a business credit card and a corporate fuel/gas card and to set up your business-credit profiles — Experian Business, a Dun & Bradstreet D-U-N-S Number, and a Nav account. Building business credit under the EIN keeps financing off personal credit over time.',
   statetax: 'Register with your state tax agency for income/franchise tax, sales tax (if you sell taxable goods), and employer withholding if you have employees.',
   licenses: 'Get the city, county, and state business licenses and permits your industry requires before you operate.',
   scorp: 'A C corp can elect S-corp tax treatment (Form 2553) to avoid double taxation in some cases — but it caps shareholders and share classes. Decide with your accountant; VC-backed startups usually stay C corp.',
@@ -121,6 +125,8 @@ const CCORP_DOCS: PortalDoc[] = [
   { id: 'ipassign', name: 'Invention & IP Assignment Agreement', cat: 'Equity', updated: 'Draft', pages: 5 },
   { id: 'captable', name: 'Capitalization Table', cat: 'Equity', updated: 'Draft', pages: 1 },
   { id: 'boardvote', name: 'Board Resolution & Vote', cat: 'Governance', updated: 'Draft', pages: 2 },
+  { id: 'omnibus', name: 'Omnibus Board Resolution (Blanket Authority)', cat: 'Governance', updated: 'Draft', pages: 3 },
+  { id: 'bankingcredit', name: 'Banking & Business Credit Authorization', cat: 'Governance', updated: 'Draft', pages: 4 },
 ]
 
 const CCORP_INFO: Record<string, DocInfo> = {
@@ -131,6 +137,8 @@ const CCORP_INFO: Record<string, DocInfo> = {
   ipassign: { desc: 'Assigns each founder\'s and employee\'s work product and inventions to the company. Investors and acquirers require this for everyone.', todo: 'Every founder and early hire signs before doing company work. Route to each person electronically.' },
   captable: { desc: 'The ownership ledger — who holds how many shares and what percentage, including options and reserved pools.', todo: 'Update it every time shares or options are issued. Keep it as the single source of truth on ownership.' },
   boardvote: { desc: 'A reusable record of a board decision, approved either by vote at a meeting or by unanimous written consent.', todo: 'Describe the matter and how it was approved, then the directors sign to record the decision.' },
+  omnibus: { desc: 'A broad, catch-all board resolution authorizing the officers to take any lawful action reasonably necessary to organize, fund, and operate the corporation — the general authority third parties often ask to see.', todo: 'Adopt at a meeting or by unanimous written consent; route to all directors to sign. Keep it in the corporate records to present to banks, vendors, and agencies.' },
+  bankingcredit: { desc: 'Authorizes opening the corporate bank account, obtaining a business credit card and a corporate fuel/gas card, and establishing the company’s business-credit profiles with Experian Business, Dun & Bradstreet (D-U-N-S), and Nav.', todo: 'Fill in the institution and authorized-officer details, then all directors sign — banks and credit issuers routinely require this resolution.' },
 }
 
 const CCORP_BODIES: Record<string, string> = {
@@ -271,6 +279,72 @@ Manner of approval (check one):
 
 RESOLVED, that the Board approves the matter above and authorizes the officers to implement it.
 [EACH DIRECTOR SIGNS]   Date: [____]`,
+
+  omnibus: `OMNIBUS RESOLUTION OF THE BOARD OF DIRECTORS
+ADAMS INFINITE LEGACY — A [STATE] Corporation
+(Blanket / General Authority)
+
+DRAFT FOR REVIEW — to be reviewed by qualified corporate counsel before it is relied upon.
+
+The undersigned, being all of the directors of Adams Infinite Legacy (the "Corporation"), adopt the following resolutions by [unanimous written consent / vote at a meeting] effective [DATE]:
+
+1. GENERAL AUTHORITY. RESOLVED, that the officers of the Corporation, and each of them acting alone, are authorized and empowered to take any and all actions, and to negotiate, execute, and deliver any and all agreements, instruments, certificates, and documents, that they deem necessary, appropriate, or advisable to conduct, organize, fund, and carry on the ordinary business and affairs of the Corporation, in furtherance of its lawful purposes.
+
+2. BANKING & FINANCE. RESOLVED, that the officers are authorized to open, maintain, and close bank and financial accounts; to apply for and use credit cards, charge cards, fuel/fleet cards, and lines of credit; to borrow money and enter financing arrangements; and to designate authorized signatories, in each case on the terms they approve.
+
+3. BUSINESS CREDIT & IDENTITY. RESOLVED, that the officers are authorized to establish and maintain the Corporation's business-credit and business-identity profiles with the credit bureaus and services the Corporation uses (including, without limitation, Experian Business, Dun & Bradstreet, and Nav), to obtain identifiers such as a D-U-N-S Number, and to submit the Corporation's information for those purposes.
+
+4. CONTRACTS & OPERATIONS. RESOLVED, that the officers are authorized to enter contracts and leases, engage vendors and professional advisors, hire personnel, obtain insurance and licenses, and make tax and regulatory filings on the Corporation's behalf.
+
+5. DELEGATION. RESOLVED, that the officers may delegate any of the foregoing authority to one or more officers, employees, or agents as they deem appropriate.
+
+6. RELIANCE BY THIRD PARTIES. RESOLVED, that any bank, creditor, vendor, agency, or other third party may rely upon a copy of these resolutions, certified by the Secretary, as evidence of the officers' authority until it receives written notice of revocation from the Corporation.
+
+7. RATIFICATION. RESOLVED, that all lawful actions previously taken by the officers in furtherance of the foregoing are ratified, confirmed, and approved.
+
+This consent may be signed in counterparts. By signing below, each director votes for and adopts the foregoing resolutions.
+
+[EACH DIRECTOR SIGNS]   Date: [____]
+
+CERTIFICATE OF SECRETARY
+I certify that I am the Secretary of Adams Infinite Legacy and that the foregoing resolutions were duly adopted by its Board of Directors and remain in full force and effect.
+Secretary: ______________________   Date: [____]
+
+[TEMPLATE — a broad grant of authority. Have your attorney review and tailor it before use.]`,
+
+  bankingcredit: `BANKING & BUSINESS CREDIT AUTHORIZATION
+RESOLUTION OF THE BOARD OF DIRECTORS
+ADAMS INFINITE LEGACY — A [STATE] Corporation
+
+DRAFT FOR REVIEW — to be reviewed by qualified corporate counsel before it is relied upon.
+
+The undersigned, being all of the directors of Adams Infinite Legacy (the "Corporation"), adopt the following resolutions by [unanimous written consent / vote at a meeting] effective [DATE]. The Corporation's EIN is [EIN] and its principal address is [ADDRESS].
+
+1. CORPORATE BANK ACCOUNT. RESOLVED, that the Corporation open and maintain one or more deposit accounts at [BANK NAME]; that [NAME/TITLE] and [NAME/TITLE] are designated as authorized signatories; and that disbursements over $[AMOUNT] require [one/two] authorized signature(s). The bank is authorized to honor instructions from the authorized signatories and to accept the bank's standard account and resolution forms.
+
+2. BUSINESS CREDIT CARD. RESOLVED, that the officers are authorized to apply for and use one or more business credit or charge cards issued by [ISSUER], with an aggregate credit limit of approximately $[LIMIT], and to designate authorized cardholders and use limits.
+
+3. CORPORATE FUEL / GAS CARD. RESOLVED, that the officers are authorized to apply for and use a corporate fuel or fleet card (e.g., [FUEL CARD PROVIDER]) for the Corporation's vehicles and fuel purchases, and to set card and spending controls.
+
+4. EXPERIAN BUSINESS. RESOLVED, that the officers are authorized to establish and manage the Corporation's business-credit profile with Experian Business, and to submit the Corporation's identifying information for that purpose.
+
+5. DUN & BRADSTREET. RESOLVED, that the officers are authorized to register the Corporation with Dun & Bradstreet, obtain a D-U-N-S Number, and establish and manage the Corporation's D&B business-credit file.
+
+6. NAV BUSINESS. RESOLVED, that the officers are authorized to open and manage a Nav (Nav Technologies) business account to monitor and build the Corporation's business credit and to access financing options.
+
+7. AUTHORITY & PERSONAL GUARANTY. RESOLVED, that the officers may complete applications and agreements for the foregoing and provide the Corporation's information to these institutions. [If any issuer requires a personal guaranty, no director is obligated to provide one except as separately agreed in writing.]
+
+8. RELIANCE & RATIFICATION. RESOLVED, that any institution may rely on a Secretary-certified copy of these resolutions until it receives written notice of revocation; and that prior related acts of the officers are ratified.
+
+This consent may be signed in counterparts. By signing below, each director votes for and adopts the foregoing resolutions.
+
+[EACH DIRECTOR SIGNS]   Date: [____]
+
+CERTIFICATE OF SECRETARY
+I certify that I am the Secretary of Adams Infinite Legacy and that the foregoing resolutions were duly adopted by its Board of Directors and remain in full force and effect.
+Secretary: ______________________   Date: [____]
+
+[TEMPLATE — fill in the bracketed institution and officer details. Have your attorney review before use; some issuers require their own resolution or forms as well.]`,
 }
 
 // ─────────────────────────────────────────────────────────────────── LLC
