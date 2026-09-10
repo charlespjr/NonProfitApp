@@ -47,7 +47,19 @@ export async function sendViaSmtp(
       greetingTimeout: 8_000,
       socketTimeout: 12_000,
     })
-    await transport.sendMail({ from: msg.from, to: msg.to, subject: msg.subject, html: msg.html, replyTo: msg.replyTo })
+    // Align the SMTP envelope (return-path) with the authenticated mailbox so
+    // SPF passes even when the visible From address is a different alias —
+    // a common reason a message that works internally lands in spam externally.
+    const text = msg.html.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim()
+    await transport.sendMail({
+      from: msg.from,
+      to: msg.to,
+      subject: msg.subject,
+      html: msg.html,
+      text,
+      replyTo: msg.replyTo || cfg.user,
+      envelope: { from: cfg.user, to: msg.to },
+    })
     return { ok: true }
   } catch (e) {
     return { ok: false, error: e instanceof Error ? e.message : 'SMTP send failed' }
