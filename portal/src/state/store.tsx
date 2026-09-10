@@ -19,7 +19,7 @@ import {
   mockSignatures,
   mockZoom,
 } from '../services'
-import { api, ApiError, type ApiMember, type ApiOrg, type ApiSession, type DomainDnsRecord } from '../services/api'
+import { api, ApiError, type ApiMember, type ApiOrg, type ApiSession, type DomainDnsRecord, type SmtpSettings } from '../services/api'
 import { fileToLogoDataUrl } from '../lib/image'
 import type {
   Account,
@@ -228,6 +228,11 @@ export interface Store {
   // real board-email sending address + domain verification (api mode)
   setOrgEmail(fromEmail: string): Promise<{ records: DomainDnsRecord[]; status?: string; error?: string } | null>
   verifyOrgEmail(): Promise<{ verified: boolean; records: DomainDnsRecord[]; error?: string } | null>
+
+  // per-org SMTP relay (e.g. GoDaddy) — api mode
+  setOrgSmtp(settings: Partial<SmtpSettings> & { host: string }): Promise<boolean>
+  clearOrgSmtp(): Promise<void>
+  testOrgSmtp(): Promise<{ ok: boolean; error?: string } | null>
 }
 
 const StoreCtx = createContext<Store | null>(null)
@@ -1383,6 +1388,57 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     }
   }, [mode, flash])
 
+  const applyOrgFromSmtp = (org: ApiOrg) => {
+    setApiOrg(org)
+    set({
+      emailConnected: !!(org.smtpConfigured || org.fromEmail),
+      emailProvider: org.smtpConfigured ? 'smtp' : org.fromEmail ? 'resend' : '',
+      emailAddress: org.fromEmail || '',
+    })
+  }
+
+  const setOrgSmtp = useCallback(
+    async (settings: Partial<SmtpSettings> & { host: string }) => {
+      if (mode !== 'api' || !guard()) return false
+      try {
+        const { org } = await api.setOrgSmtp(settings)
+        applyOrgFromSmtp(org)
+        flash('Email server settings saved')
+        return true
+      } catch (e) {
+        flash(e instanceof ApiError ? e.message : 'Could not save the settings — try again.')
+        return false
+      }
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [mode, guard, set, flash],
+  )
+
+  const clearOrgSmtp = useCallback(async () => {
+    if (mode !== 'api') return
+    try {
+      const { org } = await api.clearOrgSmtp()
+      applyOrgFromSmtp(org)
+      flash('Email server settings removed')
+    } catch (e) {
+      flash(e instanceof ApiError ? e.message : 'Could not remove — try again.')
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mode, set, flash])
+
+  const testOrgSmtp = useCallback(async () => {
+    if (mode !== 'api') return null
+    try {
+      const r = await api.testOrgSmtp()
+      flash(r.ok ? 'Test email sent to ' + (r.to || 'you') : 'Test failed')
+      return { ok: r.ok, error: r.error }
+    } catch (e) {
+      const msg = e instanceof ApiError ? e.message : 'Test failed'
+      flash(msg)
+      return { ok: false, error: msg }
+    }
+  }, [mode, flash])
+
   const setTheme = useCallback((theme: ThemeName) => set({ theme }), [set])
   const setDashboardLayout = useCallback(
     (dashboardLayout: DashboardLayout) => set({ dashboardLayout }),
@@ -1458,6 +1514,9 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     disconnectEmail,
     setOrgEmail,
     verifyOrgEmail,
+    setOrgSmtp,
+    clearOrgSmtp,
+    testOrgSmtp,
   }
 
   return <StoreCtx.Provider value={store}>{children}</StoreCtx.Provider>

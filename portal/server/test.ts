@@ -134,6 +134,23 @@ async function main() {
     check('set sending address without auth → 401', r.status === 401)
   }
 
+  // 4d. per-org SMTP relay (e.g. GoDaddy). Uses the admin cookie; admin-only,
+  // no active plan required. A bad/unreachable host makes the test send fail.
+  {
+    let r = await app.request('/api/org/smtp', json({ host: '127.0.0.1', port: 2, secure: false, user: 'board@smtp.example', pass: 'secret-pass', fromEmail: 'board@smtp.example' }, admin))
+    const set = await j(r)
+    check('set smtp → 200 configured', r.status === 200 && set.org?.smtpConfigured === true && set.org?.smtpUser === 'board@smtp.example')
+    check('smtp password never returned', !('smtpPass' in (set.org || {})))
+    r = await app.request('/api/org/smtp', json({ host: 'smtp.example', pass: 'x' }, admin))
+    check('smtp requires username → 400', r.status === 400)
+    r = await app.request('/api/org/smtp/test', json({}, admin))
+    check('smtp test reports failure for unreachable host → 400', r.status === 400)
+    r = await app.request('/api/org/smtp', json({ host: 'x', user: 'a@b.co', pass: 'p' }))
+    check('set smtp without auth → 401', r.status === 401)
+    r = await app.request('/api/org/smtp', json({ host: '' }, admin))
+    check('clear smtp → 200 not configured', r.status === 200 && (await j(r)).org?.smtpConfigured === false)
+  }
+
   // 5. login with wrong password fails
   res = await app.request('/api/auth/login', json({ identifier: 'alitalia', password: 'wrong' }))
   check('bad login → 401', res.status === 401)

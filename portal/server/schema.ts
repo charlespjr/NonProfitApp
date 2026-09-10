@@ -42,6 +42,15 @@ export const orgs = pgTable('orgs', {
   /** True once the sending domain is verified in Resend; only then do we send
    *  FROM the org's address rather than the platform fallback. */
   emailVerified: boolean('email_verified').notNull().default(false),
+  /** Per-org SMTP relay (e.g. GoDaddy) — when set, board email is sent through
+   *  the org's own mailbox instead of Resend. smtpPass is a secret and is
+   *  never returned to clients (publicOrg strips it). */
+  smtpHost: text('smtp_host'),
+  smtpPort: integer('smtp_port'),
+  /** true = implicit TLS (port 465); false = STARTTLS (port 587). */
+  smtpSecure: boolean('smtp_secure').notNull().default(true),
+  smtpUser: text('smtp_user'),
+  smtpPass: text('smtp_pass'),
 })
 
 export const users = pgTable(
@@ -217,6 +226,11 @@ ALTER TABLE orgs ADD COLUMN IF NOT EXISTS from_email text;
 ALTER TABLE orgs ADD COLUMN IF NOT EXISTS email_domain text;
 ALTER TABLE orgs ADD COLUMN IF NOT EXISTS email_domain_id text;
 ALTER TABLE orgs ADD COLUMN IF NOT EXISTS email_verified boolean NOT NULL DEFAULT false;
+ALTER TABLE orgs ADD COLUMN IF NOT EXISTS smtp_host text;
+ALTER TABLE orgs ADD COLUMN IF NOT EXISTS smtp_port integer;
+ALTER TABLE orgs ADD COLUMN IF NOT EXISTS smtp_secure boolean NOT NULL DEFAULT true;
+ALTER TABLE orgs ADD COLUMN IF NOT EXISTS smtp_user text;
+ALTER TABLE orgs ADD COLUMN IF NOT EXISTS smtp_pass text;
 CREATE TABLE IF NOT EXISTS outreach_leads (
   id text PRIMARY KEY,
   org_name text NOT NULL,
