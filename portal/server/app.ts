@@ -8,7 +8,7 @@ import { databaseUrl, getDb } from './db.js'
 import { orgs, orgState, outreachCampaigns, outreachDrip, outreachLeads, outreachSends, qboInvoices, users } from './schema.js'
 import { billing } from './billing.js'
 import { ACTORS, apifyConfigured, lastRawSample, runActor } from './apify.js'
-import { checkDomain, DEFAULT_TEMPLATE, registerDomain, renderEmail, resendConfigured, sendEmail } from './outreach.js'
+import { DEFAULT_TEMPLATE, renderEmail, resendConfigured, sendEmail } from './outreach.js'
 import { inviteEmail, sendOrgEmail, sendViaSmtp, signEmail, smtpOf, voteEmail } from './mail.js'
 
 const JWT_SECRET = process.env.JWT_SECRET || 'dev-only-secret-change-in-production'
@@ -437,7 +437,7 @@ app.post('/notify/vote', requireAuth, requireActivePlan, async (c) => {
   })
   const results = await Promise.all(recipients.map((r) => sendOrgEmail(org, r.email, subject, html)))
   const sent = results.filter((r) => r.ok).length
-  return c.json({ sent, dryRun: results.some((r) => r.dryRun), configured: resendConfigured() })
+  return c.json({ sent, dryRun: results.some((r) => r.dryRun), configured: !!smtpOf(org) })
 })
 
 /** Email members a reminder to sign a document. Optional memberIds restricts
@@ -457,48 +457,12 @@ app.post('/notify/sign', requireAuth, requireActivePlan, async (c) => {
   const { subject, html } = signEmail(org, docName)
   const results = await Promise.all(recipients.map((r) => sendOrgEmail(org, r.email, subject, html)))
   const sent = results.filter((r) => r.ok).length
-  return c.json({ sent, dryRun: results.some((r) => r.dryRun), configured: resendConfigured() })
+  return c.json({ sent, dryRun: results.some((r) => r.dryRun), configured: !!smtpOf(org) })
 })
 
-// -------------------------------------------------- sending address / domain
-/** Set (or clear, with an empty value) the org's board-email sending address,
- *  and register its domain with Resend so it can be verified. Admin only. */
-app.post('/org/email', requireAuth, requireAdmin, async (c) => {
-  const body = await c.req.json().catch(() => ({}))
-  const fromEmail = String(body?.fromEmail || '').trim().toLowerCase()
-  const db = await getDb()
-  const orgId = c.get('session').orgId
-  if (!fromEmail) {
-    await db.update(orgs).set({ fromEmail: null, emailDomain: null, emailDomainId: null, emailVerified: false }).where(eq(orgs.id, orgId))
-    const [org] = await db.select().from(orgs).where(eq(orgs.id, orgId))
-    return c.json({ org: publicOrg(org), records: [] })
-  }
-  const m = fromEmail.match(/^[^@\s]+@([^@\s]+\.[^@\s]+)$/)
-  if (!m) return c.json({ error: 'Enter a valid email address, e.g. board@yourcompany.org' }, 400)
-  const domain = m[1]
-  const reg = await registerDomain(domain)
-  await db
-    .update(orgs)
-    .set({ fromEmail, emailDomain: domain, emailDomainId: reg.id || null, emailVerified: reg.verified })
-    .where(eq(orgs.id, orgId))
-  const [org] = await db.select().from(orgs).where(eq(orgs.id, orgId))
-  return c.json({ org: publicOrg(org), records: reg.records, status: reg.status, error: reg.error })
-})
-
-/** Re-check the org's sending domain verification with Resend. Admin only. */
-app.post('/org/email/verify', requireAuth, requireAdmin, async (c) => {
-  const db = await getDb()
-  const orgId = c.get('session').orgId
-  const [org0] = await db.select().from(orgs).where(eq(orgs.id, orgId))
-  if (!org0?.emailDomainId) return c.json({ error: 'No sending domain to verify — set your address first.' }, 400)
-  const status = await checkDomain(org0.emailDomainId)
-  await db.update(orgs).set({ emailVerified: status.verified }).where(eq(orgs.id, orgId))
-  const [org] = await db.select().from(orgs).where(eq(orgs.id, orgId))
-  return c.json({ org: publicOrg(org), verified: status.verified, records: status.records, status: status.status, error: status.error })
-})
-
+// -------------------------------------------------- sending address / server
 /** Configure the org's SMTP relay (e.g. GoDaddy) for board email. When set,
- *  mail sends through the org's own mailbox instead of Resend. Admin only.
+ *  mail sends through the org's own mailbox. Admin only.
  *  An empty host clears the configuration. The password is write-only:
  *  omit it to keep the stored one when editing other fields. */
 app.post('/org/smtp', requireAuth, requireAdmin, async (c) => {

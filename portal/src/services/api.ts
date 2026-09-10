@@ -20,11 +20,9 @@ export interface ApiOrg {
   /** Whether the org has an Anthropic API key on file (the key itself
    *  never reaches the client). */
   aiConfigured?: boolean
-  /** Board-email sending address and whether its domain is verified in Resend
-   *  (only then do emails send FROM this address rather than the fallback). */
+  /** The From address board email is sent from (the org's own mailbox). */
   fromEmail?: string | null
   emailDomain?: string | null
-  emailVerified?: boolean
   /** Per-org SMTP relay (e.g. GoDaddy). Password is never returned — only
    *  these display fields plus the smtpConfigured flag. */
   smtpConfigured?: boolean
@@ -42,15 +40,6 @@ export interface SmtpSettings {
   /** Sent only when setting/changing; never returned by the server. */
   pass?: string
   fromEmail: string
-}
-
-/** A DNS record the org must add to verify its sending domain. */
-export interface DomainDnsRecord {
-  record: string
-  name: string
-  type: string
-  value: string
-  priority?: number
 }
 
 export interface ApiMember {
@@ -136,10 +125,6 @@ export const api = {
     req<{ sent: number; dryRun: boolean; configured: boolean }>('/notify/vote', { method: 'POST', body: JSON.stringify(input) }),
   notifySign: (input: { docName: string; memberIds?: string[] }) =>
     req<{ sent: number; dryRun: boolean; configured: boolean }>('/notify/sign', { method: 'POST', body: JSON.stringify(input) }),
-  setOrgEmail: (fromEmail: string) =>
-    req<{ org: ApiOrg; records: DomainDnsRecord[]; status?: string; error?: string }>('/org/email', { method: 'POST', body: JSON.stringify({ fromEmail }) }),
-  verifyOrgEmail: () =>
-    req<{ org: ApiOrg; verified: boolean; records: DomainDnsRecord[]; status?: string; error?: string }>('/org/email/verify', { method: 'POST' }),
   setOrgSmtp: (settings: Partial<SmtpSettings> & { host: string }) =>
     req<{ org: ApiOrg }>('/org/smtp', { method: 'POST', body: JSON.stringify(settings) }),
   clearOrgSmtp: () =>
