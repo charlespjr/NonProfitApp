@@ -133,6 +133,8 @@ export const api = {
     req<{ ok: boolean; to?: string; error?: string }>('/org/smtp/test', { method: 'POST' }),
   aiDraft: (input: { motionTitle: string; motionDesc: string; meetingTitle?: string }) =>
     req<{ text: string }>('/ai/draft', { method: 'POST', body: JSON.stringify(input) }),
+  aiMotion: (input: { docName: string; docBody: string }) =>
+    req<{ title: string; details: string }>('/ai/motion', { method: 'POST', body: JSON.stringify(input) }),
 
   billingPlan: () =>
     req<{ plan: string; planStatus: string; configured: boolean; mode: 'stripe' | 'links' | 'none' }>('/billing/plan'),
