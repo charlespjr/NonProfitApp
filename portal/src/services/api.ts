@@ -119,7 +119,9 @@ export const api = {
 
   members: () => req<{ members: ApiMember[] }>('/members'),
   createMember: (input: Partial<ApiMember> & { name: string; username: string; email: string; password?: string }) =>
-    req<{ member: ApiMember }>('/members', { method: 'POST', body: JSON.stringify(input) }),
+    req<{ member: ApiMember; invite?: { ok: boolean; dryRun: boolean; error?: string }; tempPassword?: string }>('/members', { method: 'POST', body: JSON.stringify(input) }),
+  resendInvite: (id: string) =>
+    req<{ ok: boolean; dryRun: boolean; error?: string; tempPassword: string }>(`/members/${id}/invite`, { method: 'POST' }),
   updateMember: (id: string, patch: Partial<ApiMember> & { password?: string }) =>
     req<{ member: ApiMember }>(`/members/${id}`, { method: 'PATCH', body: JSON.stringify(patch) }),
   deleteMember: (id: string) => req<{ ok: true }>(`/members/${id}`, { method: 'DELETE' }),

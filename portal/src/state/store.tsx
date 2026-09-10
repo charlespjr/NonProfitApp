@@ -216,6 +216,8 @@ export interface Store {
   genPw(): void
   saveAcct(): void
   revokeAcct(): void
+  /** (Re)send a member's invite email with a fresh temp password (api mode). */
+  resendInvite(id: string): Promise<void>
 
   // integrations
   connectCal(providerId: string, providerName: string): void
@@ -1215,12 +1217,13 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     if (!ac || !guard()) return
     if (mode === 'api') {
       try {
+        let inviteMsg = 'Access updated'
         if (ac.isNew) {
           if (!(ac.name || '').trim()) {
             flash('Enter the member’s name')
             return
           }
-          await api.createMember({
+          const res = await api.createMember({
             name: ac.name!.trim(),
             username: ac.username,
             email: ac.email,
@@ -1228,6 +1231,13 @@ export function StoreProvider({ children }: { children: ReactNode }) {
             canVote: ac.vote,
             canSign: ac.sign,
           })
+          if (res.invite && !res.invite.ok && !res.invite.dryRun) {
+            inviteMsg = `Member added, but the invite email failed: ${res.invite.error || 'send error'}. Check Board email in Team & Access, then Resend.`
+          } else if (res.invite?.dryRun) {
+            inviteMsg = 'Member added. Email isn’t configured yet — set up Board email, then Resend the invite.'
+          } else {
+            inviteMsg = `Invite emailed to ${ac.email}`
+          }
         } else {
           await api.updateMember(ac.id, {
             username: ac.username,
@@ -1239,7 +1249,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         }
         await refreshMembers()
         set({ acct: null })
-        flash(ac.isNew ? 'Invite sent — login details ready to share' : 'Access updated')
+        flash(inviteMsg)
       } catch (e) {
         flash(e instanceof ApiError ? e.message : 'Could not save — try again')
       }
@@ -1280,6 +1290,21 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     })
     flash('Access revoked')
   }, [mode, state.acct, flash, set, refreshMembers, guard])
+
+  const resendInvite = useCallback(
+    async (id: string) => {
+      if (mode !== 'api' || !guard()) return
+      try {
+        const r = await api.resendInvite(id)
+        if (r.ok) flash('Invite re-sent — a new temporary password was emailed')
+        else if (r.dryRun) flash('Email isn’t set up yet — configure Board email in Team & Access')
+        else flash('Could not send invite: ' + (r.error || 'send error'))
+      } catch (e) {
+        flash(e instanceof ApiError ? e.message : 'Could not send invite — try again')
+      }
+    },
+    [mode, guard, flash],
+  )
 
   // -------------------------------------------------------------- billing
   const checkout = useCallback(
@@ -1506,6 +1531,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     genPw,
     saveAcct,
     revokeAcct,
+    resendInvite,
     connectCal,
     disconnectCal,
     connectZoom,

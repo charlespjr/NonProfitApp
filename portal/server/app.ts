@@ -96,6 +96,14 @@ async function requireActivePlan(c: Context<Env>, next: Next) {
 
 const id = (prefix: string) => prefix + crypto.randomUUID().replace(/-/g, '').slice(0, 20)
 
+/** A shareable temporary password (unambiguous characters). */
+function tempPw(): string {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789'
+  let p = ''
+  for (let i = 0; i < 10; i++) p += chars[Math.floor(Math.random() * chars.length)]
+  return p
+}
+
 const initials = (name: string) =>
   name
     .trim()
@@ -290,6 +298,10 @@ app.post('/members', requireAuth, requireAdmin, requireActivePlan, async (c) => 
   }
   if (existing.some((u) => u.username === username)) return c.json({ error: 'username already in use' }, 409)
   if (existing.some((u) => u.email === email)) return c.json({ error: 'email already in use' }, 409)
+  // Always give the member sign-in credentials so an invite can go out — if
+  // the admin didn't set a password, generate one and return it to them.
+  const generated = !password
+  const pw = password || tempPw()
   const userId = id('usr_')
   await db.insert(users).values({
     id: userId,
@@ -299,22 +311,48 @@ app.post('/members', requireAuth, requireAdmin, requireActivePlan, async (c) => 
     initials: initials(name),
     username,
     email,
-    passwordHash: password ? await bcrypt.hash(password, 10) : null,
+    passwordHash: await bcrypt.hash(pw, 10),
     isAdmin: false,
     canVote: body?.canVote !== false,
     canSign: !!body?.canSign,
-    status: password ? 'invited' : 'none',
-    mustChangePassword: !!password,
+    status: 'invited',
+    mustChangePassword: true,
   })
   const [row] = await db.select().from(users).where(eq(users.id, userId))
-  // Email the new member their login details (best-effort; never blocks the
-  // create). Only when they were given a temporary password to sign in with.
-  if (password && row.email) {
-    const org = c.get('org')
-    const { subject, html } = inviteEmail(org, { name, username, tempPassword: password })
-    void sendOrgEmail(org, row.email, subject, html)
-  }
-  return c.json({ member: publicUser(row) }, 201)
+  // Email the member their login details and report whether it actually sent,
+  // so the admin isn't left thinking an invite went out when it didn't.
+  const org = c.get('org')
+  const { subject, html } = inviteEmail(org, { name, username, tempPassword: pw })
+  const send = await sendOrgEmail(org, row.email, subject, html)
+  return c.json(
+    {
+      member: publicUser(row),
+      invite: { ok: send.ok, dryRun: send.dryRun, error: send.error },
+      // Only surfaced when we generated the password, so the admin can share it.
+      tempPassword: generated ? pw : undefined,
+    },
+    201,
+  )
+})
+
+/** (Re)send a member's invite. Issues a fresh temporary password (the stored
+ *  one is hashed and can't be recovered), emails it, and reports the result. */
+app.post('/members/:id/invite', requireAuth, requireAdmin, requireActivePlan, async (c) => {
+  const db = await getDb()
+  const orgId = c.get('session').orgId
+  const targetId = c.req.param('id') || ''
+  const [target] = await db.select().from(users).where(and(eq(users.id, targetId), eq(users.orgId, orgId)))
+  if (!target) return c.json({ error: 'not found' }, 404)
+  if (!target.email) return c.json({ error: 'This member has no email address on file.' }, 400)
+  const pw = tempPw()
+  await db
+    .update(users)
+    .set({ passwordHash: await bcrypt.hash(pw, 10), mustChangePassword: true, status: 'invited' })
+    .where(eq(users.id, targetId))
+  const org = c.get('org')
+  const { subject, html } = inviteEmail(org, { name: target.name, username: target.username, tempPassword: pw })
+  const send = await sendOrgEmail(org, target.email, subject, html)
+  return c.json({ ok: send.ok, dryRun: send.dryRun, error: send.error, tempPassword: pw })
 })
 
 app.patch('/members/:id', requireAuth, requireAdmin, requireActivePlan, async (c) => {
