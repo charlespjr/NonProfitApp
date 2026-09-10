@@ -709,6 +709,15 @@ export function ManageAccessModal() {
         )}
         <div style={sx('display:flex;gap:10px')}>
           <button className="hv-bg" onClick={close} style={cancelBtnStyle}>Cancel</button>
+          {store.mode === 'api' && !ac.isNew && ac.email && (
+            <button
+              className="hv-border-accent"
+              onClick={() => void store.resendInvite(ac.id)}
+              style={sx('border:1px solid var(--line);background:var(--panel);color:var(--brand);font-size:13px;font-weight:600;padding:9px 14px;border-radius:9px;cursor:pointer')}
+            >
+              Resend invite
+            </button>
+          )}
           <button
             className="hv-bright"
             onClick={store.saveAcct}

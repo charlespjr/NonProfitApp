@@ -112,8 +112,21 @@ async function main() {
     r = await app.request('/api/notify/vote', json({ motionTitle: 'Adopt bylaws' }, sc))
     check('notify blocked on free preview → 402', r.status === 402)
     await activate(scOrgId, 'growth')
-    // a voting member to receive the email
-    await app.request('/api/members', json({ name: 'Ben Ito', username: 'benito', email: 'ben@signal.example', password: 'welcome-ben-9', canVote: true, canSign: true }, sc))
+    // a voting member to receive the email — invite result is reported back
+    r = await app.request('/api/members', json({ name: 'Ben Ito', username: 'benito', email: 'ben@signal.example', password: 'welcome-ben-9', canVote: true, canSign: true }, sc))
+    const created = await j(r)
+    check('create member returns invite result', r.status === 201 && created.invite && typeof created.invite.ok === 'boolean')
+    check('member created as invited', created.member.status === 'invited' && created.member.mustChangePassword === true)
+    // create without a password still invites (server generates one, returns it)
+    r = await app.request('/api/members', json({ name: 'Cy Noh', username: 'cynoh', email: 'cy@signal.example', canVote: false }, sc))
+    const created2 = await j(r)
+    check('create without password auto-generates + returns tempPassword', r.status === 201 && typeof created2.tempPassword === 'string' && created2.tempPassword.length >= 8)
+    // resend invite issues a fresh temp password
+    r = await app.request('/api/members/' + created.member.id + '/invite', json({}, sc))
+    const resent = await j(r)
+    check('resend invite → 200 with fresh temp password', r.status === 200 && typeof resent.tempPassword === 'string' && resent.tempPassword.length >= 8)
+    r = await app.request('/api/members/nope/invite', json({}, sc))
+    check('resend invite for unknown member → 404', r.status === 404)
     r = await app.request('/api/notify/vote', json({ motionTitle: 'Adopt bylaws', motionDesc: 'Please review' }, sc))
     const vote = await j(r)
     check('notify vote sends to voting members', r.status === 200 && vote.sent === 1, vote)
