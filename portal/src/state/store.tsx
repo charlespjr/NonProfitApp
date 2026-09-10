@@ -308,10 +308,12 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const brand = useCallback(
     (s: string): string => {
       if (!apiOrgName) return s
-      return (
+      const p = (apiOrg?.profile || {}) as Record<string, string | undefined>
+      const brandName = p.legalName || apiOrgName
+      let out = (
         s
-          .split('Adams Infinite Legacy').join(apiOrgName)
-          .split('ADAMS INFINITE LEGACY').join(apiOrgName.toUpperCase())
+          .split('Adams Infinite Legacy').join(brandName)
+          .split('ADAMS INFINITE LEGACY').join(brandName.toUpperCase())
           // Mission-specific wording from the real AIL documents → neutral
           // template language (longest phrases first).
           .split('to provide direct financial assistance by funding medical, treatment, and related expenses for individuals who are experiencing, or surviving, chronic illness, and to engage in charitable, educational, and community health activities that further that mission, including public wellness programming and community health education')
@@ -346,8 +348,21 @@ export function StoreProvider({ children }: { children: ReactNode }) {
           .split('Festival Planning Kickoff').join('Fundraising event planning kickoff')
           .split('Gather all seven directors').join('Gather all of your directors')
       )
+      // Fill saved company-profile facts into the built-in template tokens, so
+      // every document shows real values where the profile provides them.
+      const tokens: Record<string, string | undefined> = {
+        '[STATE]': p.state,
+        '[ADDRESS]': p.address,
+        '[EIN]': p.ein,
+        '[PHONE]': p.phone,
+        '[WEBSITE]': p.website,
+      }
+      for (const [token, value] of Object.entries(tokens)) {
+        if (value) out = out.split(token).join(value)
+      }
+      return out
     },
-    [apiOrgName],
+    [apiOrgName, apiOrg],
   )
 
   /** Seed meetings name the demo board; real orgs see roles instead. */
