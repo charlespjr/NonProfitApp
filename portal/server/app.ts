@@ -125,6 +125,24 @@ function publicOrg(o: typeof orgs.$inferSelect) {
   return { ...rest, aiConfigured: !!o.anthropicKey, smtpConfigured: !!(o.smtpHost && o.smtpUser && o.smtpPass) }
 }
 
+/** The profile fields AI drafting is allowed to fill in. */
+const PROFILE_FIELDS = ['legalName', 'address', 'phone', 'state', 'ein', 'website'] as const
+
+/** Known company facts, formatted for an AI prompt so drafts use real values
+ *  instead of [BRACKETED] placeholders. */
+function orgFacts(o: typeof orgs.$inferSelect): string {
+  const p = (o.profile || {}) as Record<string, string>
+  const lines = [
+    `Legal name: ${p.legalName || o.name}`,
+    p.state && `State of incorporation/formation: ${p.state}`,
+    p.address && `Principal / business office address: ${p.address}`,
+    p.phone && `Business phone: ${p.phone}`,
+    p.ein && `EIN: ${p.ein}`,
+    p.website && `Website: ${p.website}`,
+  ].filter(Boolean)
+  return lines.join('\n')
+}
+
 export const app = new Hono<Env>().basePath('/api')
 
 app.get('/health', (c) =>
@@ -431,6 +449,26 @@ app.post('/org/entity-type', requireAuth, requireAdmin, async (c) => {
   return c.json({ org: publicOrg(org) })
 })
 
+/** Save the company profile (address, phone, state, EIN, website, legal name)
+ *  used to fill AI-drafted documents. Admin only. Merges provided fields. */
+app.post('/org/profile', requireAuth, requireAdmin, async (c) => {
+  const body = await c.req.json().catch(() => ({}))
+  const db = await getDb()
+  const orgId = c.get('session').orgId
+  const [current] = await db.select().from(orgs).where(eq(orgs.id, orgId))
+  const profile: Record<string, string> = { ...((current?.profile as Record<string, string>) || {}) }
+  for (const f of PROFILE_FIELDS) {
+    if (typeof body?.[f] === 'string') {
+      const v = body[f].trim()
+      if (v) profile[f] = v.slice(0, 500)
+      else delete profile[f]
+    }
+  }
+  await db.update(orgs).set({ profile }).where(eq(orgs.id, orgId))
+  const [org] = await db.select().from(orgs).where(eq(orgs.id, orgId))
+  return c.json({ org: publicOrg(org) })
+})
+
 // --------------------------------------------------------- board email send
 /** Email the voting members a request to review & vote on a motion. Recipients
  *  come from the org's own roster (never arbitrary addresses); the sender is
@@ -562,6 +600,10 @@ app.post('/ai/draft', requireAuth, requireActivePlan, async (c) => {
   const signers = roster.map((u) => `- ${u.name}, ${u.roleTitle}`).join('\n')
   const prompt = [
     `Write a formal board resolution for ${org.name}, a nonprofit corporation, enacting this board motion:`,
+    '',
+    'Known details about the organization (use these real values; only use [BRACKETS] for facts NOT listed here):',
+    orgFacts(org),
+    '',
     `Motion: ${motionTitle}`,
     motionDesc ? `Details: ${motionDesc}` : '',
     meetingTitle ? `Discussed at the meeting: "${meetingTitle}".` : '',
@@ -632,6 +674,7 @@ app.post('/ai/motion', requireAuth, requireActivePlan, async (c) => {
   const noun = org.entityType === 'llc' ? 'members' : 'board of directors'
   const prompt = [
     `You are preparing a motion for the ${noun} of ${org.name} to formally approve/adopt the following document.`,
+    `Known organization details: ${orgFacts(org).replace(/\n/g, '; ')}`,
     `Document title: "${docName}"`,
     'Document text:',
     '"""',
@@ -702,6 +745,9 @@ app.post('/ai/document', requireAuth, requireActivePlan, async (c) => {
   const prompt = [
     `Write a complete, professional ${category || 'governance'} document titled "${name}" for ${org.name}, a ${entityLabel}.`,
     desc ? `What it needs to do / cover: ${desc}` : '',
+    '',
+    'Known details about the organization (use these real values; only use [BRACKETS] for facts NOT listed here):',
+    orgFacts(org),
     '',
     'Requirements:',
     `- Write it so the ${bodyNoun} can adopt and sign it.`,

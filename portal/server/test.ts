@@ -161,6 +161,20 @@ async function main() {
     check('clear smtp → 200 not configured', r.status === 200 && (await j(r)).org?.smtpConfigured === false)
   }
 
+  // 4e. company profile (used by AI drafting)
+  {
+    let r = await app.request('/api/org/profile', json({ address: '7918 Jones Branch Drive, McLean, VA 22102', phone: '(703) 543-0111', state: 'Virginia' }, admin))
+    const prof = await j(r)
+    check('set profile → 200 persisted', r.status === 200 && prof.org?.profile?.address?.includes('Jones Branch') && prof.org?.profile?.state === 'Virginia')
+    // merge: setting phone only keeps the address
+    r = await app.request('/api/org/profile', json({ phone: '(703) 000-0000' }, admin))
+    check('profile merges (address retained)', (await j(r)).org?.profile?.address?.includes('Jones Branch'))
+    r = await app.request('/api/org/profile', json({ address: 'x' }))
+    check('set profile without auth → 401', r.status === 401)
+    // clear the profile so later seed-org assertions are unaffected
+    await app.request('/api/org/profile', json({ address: '', phone: '', state: '' }, admin))
+  }
+
   // 5. login with wrong password fails
   res = await app.request('/api/auth/login', json({ identifier: 'alitalia', password: 'wrong' }))
   check('bad login → 401', res.status === 401)

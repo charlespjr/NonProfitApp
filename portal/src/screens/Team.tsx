@@ -203,6 +203,72 @@ function EntityTypeCard() {
   )
 }
 
+/** Company profile — real facts (address, phone, state, EIN, website) that AI
+ *  drafting fills into documents instead of leaving [BRACKETED] blanks. */
+function CompanyProfileCard() {
+  const store = useStore()
+  if (store.mode !== 'api') return null
+  const p = store.apiOrg?.profile || {}
+  const [legalName, setLegalName] = useState(p.legalName || '')
+  const [address, setAddress] = useState(p.address || '')
+  const [phone, setPhone] = useState(p.phone || '')
+  const [stateInc, setStateInc] = useState(p.state || '')
+  const [ein, setEin] = useState(p.ein || '')
+  const [website, setWebsite] = useState(p.website || '')
+  const [busy, setBusy] = useState(false)
+
+  const save = async () => {
+    setBusy(true)
+    await store.setOrgProfile({ legalName, address, phone, state: stateInc, ein, website })
+    setBusy(false)
+  }
+
+  return (
+    <div style={sx('background:var(--panel);border:1px solid var(--line);border-radius:13px;padding:16px 18px;margin-bottom:14px')}>
+      <div style={sx('font-size:14px;font-weight:600')}>Company profile</div>
+      <div style={sx('font-size:12.5px;color:var(--muted);line-height:1.5;margin-top:2px')}>
+        These facts are filled into AI-drafted documents and resolutions automatically — so you stop seeing <code>[BRACKETED]</code> blanks for them.
+      </div>
+      <div style={sx('display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:14px')}>
+        <div style={sx('grid-column:1 / -1')}>
+          <label style={smtpLabelStyle}>Legal name <span style={sx('color:var(--muted);font-weight:400')}>(as filed)</span></label>
+          <input className="inp" value={legalName} onChange={(e) => setLegalName(e.target.value)} placeholder={store.orgName} style={smtpFieldStyle} />
+        </div>
+        <div style={sx('grid-column:1 / -1')}>
+          <label style={smtpLabelStyle}>Business office address</label>
+          <input className="inp" value={address} onChange={(e) => setAddress(e.target.value)} placeholder="Street, city, state ZIP" style={smtpFieldStyle} />
+        </div>
+        <div>
+          <label style={smtpLabelStyle}>Business phone</label>
+          <input className="inp" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="(703) 543-0111" style={smtpFieldStyle} />
+        </div>
+        <div>
+          <label style={smtpLabelStyle}>State of incorporation</label>
+          <input className="inp" value={stateInc} onChange={(e) => setStateInc(e.target.value)} placeholder="e.g. Delaware" style={smtpFieldStyle} />
+        </div>
+        <div>
+          <label style={smtpLabelStyle}>EIN <span style={sx('color:var(--muted);font-weight:400')}>(optional)</span></label>
+          <input className="inp" value={ein} onChange={(e) => setEin(e.target.value)} placeholder="XX-XXXXXXX" style={smtpFieldStyle} />
+        </div>
+        <div>
+          <label style={smtpLabelStyle}>Website <span style={sx('color:var(--muted);font-weight:400')}>(optional)</span></label>
+          <input className="inp" value={website} onChange={(e) => setWebsite(e.target.value)} placeholder="https://…" style={smtpFieldStyle} />
+        </div>
+      </div>
+      <div style={sx('display:flex;justify-content:flex-end;margin-top:14px')}>
+        <button
+          className="hv-bright"
+          disabled={busy}
+          onClick={() => void save()}
+          style={{ ...sx('border:none;background:var(--brand);color:#fff;font-size:13px;font-weight:600;padding:9px 18px;border-radius:9px'), cursor: busy ? 'wait' : 'pointer', opacity: busy ? 0.7 : 1 }}
+        >
+          {busy ? 'Saving…' : 'Save profile'}
+        </button>
+      </div>
+    </div>
+  )
+}
+
 /** The org's own Anthropic API key powers AI-drafted motions & resolutions.
  *  Stored server-side only; the client sees a connected/not-connected flag. */
 function AiKeyCard() {
@@ -673,6 +739,8 @@ export function Team() {
       </div>
 
       <EntityTypeCard />
+
+      <CompanyProfileCard />
 
       <LogoCard />
 
