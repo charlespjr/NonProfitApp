@@ -134,11 +134,29 @@ export function signEmail(org: Org, docName: string): { subject: string; html: s
   }
 }
 
+/** The governance noun for who a member is, by entity type. */
+function memberNoun(org: Org): string {
+  return org.entityType === 'llc' ? 'member' : 'board member'
+}
+
 export function inviteEmail(
   org: Org,
-  m: { name: string; username: string; tempPassword: string },
+  m: {
+    name: string
+    username: string
+    tempPassword: string
+    /** The admin who sent the invite — named in the email. */
+    inviterName?: string
+    inviterTitle?: string
+  },
 ): { subject: string; html: string } {
-  const body = `<p style="margin:0 0 14px">Hi ${escapeHtml(m.name.split(' ')[0] || m.name)}, you've been added to the ${escapeHtml(org.name)} board portal.</p>
+  const first = m.name.split(' ')[0] || m.name
+  const role = memberNoun(org)
+  const inviter = m.inviterName
+    ? `${escapeHtml(m.inviterName)}${m.inviterTitle ? `, ${escapeHtml(m.inviterTitle)} of ${escapeHtml(org.name)},` : ` of ${escapeHtml(org.name)}`}`
+    : escapeHtml(org.name)
+  const body = `<p style="margin:0 0 14px">Hi ${escapeHtml(first)},</p>
+    <p style="margin:0 0 14px">${inviter} is requesting that you sign up for the ${escapeHtml(org.name)} board portal. You've been added as a <strong>${role}</strong>, so you can <strong>vote on motions</strong> and <strong>sign documents electronically</strong>.</p>
     <p style="margin:0 0 6px">Your sign-in details:</p>
     <table role="presentation" cellpadding="0" cellspacing="0" style="margin:6px 0 16px;font-size:15px">
       <tr><td style="color:#8b8074;padding:2px 14px 2px 0">Username</td><td style="font-weight:bold;color:#271c15">${escapeHtml(m.username)}</td></tr>
@@ -146,8 +164,8 @@ export function inviteEmail(
     </table>
     <p style="margin:0 0 6px">You'll be asked to set your own password the first time you sign in.</p>`
   return {
-    subject: `You've been invited to ${org.name}'s board portal`,
-    html: layout(org.name, 'Your board portal access is ready', body, { text: 'Sign in', url: appUrl() }),
+    subject: `${m.inviterName ? `${m.inviterName} has ` : ''}invited you to join ${org.name}'s board`,
+    html: layout(org.name, `You're invited to the ${org.name} board`, body, { text: 'Sign up & get started', url: appUrl() }),
   }
 }
 

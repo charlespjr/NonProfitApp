@@ -322,7 +322,14 @@ app.post('/members', requireAuth, requireAdmin, requireActivePlan, async (c) => 
   // Email the member their login details and report whether it actually sent,
   // so the admin isn't left thinking an invite went out when it didn't.
   const org = c.get('org')
-  const { subject, html } = inviteEmail(org, { name, username, tempPassword: pw })
+  const me = c.get('me')
+  const { subject, html } = inviteEmail(org, {
+    name,
+    username,
+    tempPassword: pw,
+    inviterName: me.name,
+    inviterTitle: me.roleTitle,
+  })
   const send = await sendOrgEmail(org, row.email, subject, html)
   return c.json(
     {
@@ -350,7 +357,14 @@ app.post('/members/:id/invite', requireAuth, requireAdmin, requireActivePlan, as
     .set({ passwordHash: await bcrypt.hash(pw, 10), mustChangePassword: true, status: 'invited' })
     .where(eq(users.id, targetId))
   const org = c.get('org')
-  const { subject, html } = inviteEmail(org, { name: target.name, username: target.username, tempPassword: pw })
+  const me = c.get('me')
+  const { subject, html } = inviteEmail(org, {
+    name: target.name,
+    username: target.username,
+    tempPassword: pw,
+    inviterName: me.name,
+    inviterTitle: me.roleTitle,
+  })
   const send = await sendOrgEmail(org, target.email, subject, html)
   return c.json({ ok: send.ok, dryRun: send.dryRun, error: send.error, tempPassword: pw })
 })

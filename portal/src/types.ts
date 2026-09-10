@@ -128,6 +128,8 @@ export interface AcctForm {
   id: string
   /** Editable only when creating a new member in api mode. */
   name?: string
+  /** The member's role / title (e.g. "CEO", "Treasurer"). */
+  role?: string
   username: string
   email: string
   pw: string

@@ -1167,9 +1167,11 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const manageMember = useCallback(
     (id: string) => {
       const a = state.accounts[id]
+      const m = roster().find((x) => x.id === id)
       set({
         acct: {
           id,
+          role: m?.role || '',
           email: a?.email || '',
           username: a?.username || '',
           pw: '',
@@ -1179,20 +1181,20 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         },
       })
     },
-    [state.accounts, set],
+    [state.accounts, roster, set],
   )
 
   const addMember = useCallback(() => {
     if (!guard()) return
     if (mode === 'api') {
-      set({ acct: { id: '', name: '', email: '', username: '', pw: '', status: 'none', vote: true, sign: false, isNew: true } })
+      set({ acct: { id: '', name: '', role: 'Director', email: '', username: '', pw: '', status: 'none', vote: true, sign: false, isNew: true } })
       return
     }
     const id = 'mem' + Date.now()
     setState((s) => ({
       ...s,
       extraMembers: [...s.extraMembers, { id, name: 'New board member', role: 'Director', initials: 'NM' }],
-      acct: { id, email: '', username: '', pw: '', status: 'none', vote: true, sign: true, isNew: true },
+      acct: { id, role: 'Director', email: '', username: '', pw: '', status: 'none', vote: true, sign: true, isNew: true },
     }))
   }, [mode, set, guard])
 
@@ -1222,6 +1224,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
           }
           const res = await api.createMember({
             name: ac.name!.trim(),
+            roleTitle: ac.role?.trim() || undefined,
             username: ac.username,
             email: ac.email,
             password: ac.pw || undefined,
@@ -1239,6 +1242,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
           await api.updateMember(ac.id, {
             username: ac.username,
             email: ac.email,
+            roleTitle: ac.role?.trim() || undefined,
             canVote: ac.vote,
             canSign: ac.sign,
             ...(ac.pw ? { password: ac.pw } : {}),
