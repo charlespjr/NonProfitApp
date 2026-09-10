@@ -148,7 +148,7 @@ export const api = {
     req<{ text: string }>('/ai/draft', { method: 'POST', body: JSON.stringify(input) }),
   aiMotion: (input: { docName: string; docBody: string }) =>
     req<{ title: string; details: string }>('/ai/motion', { method: 'POST', body: JSON.stringify(input) }),
-  aiDocument: (input: { name: string; desc?: string; category?: string }) =>
+  aiDocument: (input: { name: string; desc?: string; details?: string; category?: string }) =>
     req<{ body: string }>('/ai/document', { method: 'POST', body: JSON.stringify(input) }),
 
   billingPlan: () =>

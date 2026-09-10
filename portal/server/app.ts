@@ -734,6 +734,7 @@ app.post('/ai/document', requireAuth, requireActivePlan, async (c) => {
   const body = await c.req.json().catch(() => ({}))
   const name = String(body?.name || '').slice(0, 300)
   const desc = String(body?.desc || '').slice(0, 3000)
+  const details = String(body?.details || '').slice(0, 6000)
   const category = String(body?.category || '').slice(0, 60)
   if (!name) return c.json({ error: 'A document name is required' }, 400)
   const entityLabel =
@@ -742,16 +743,27 @@ app.post('/ai/document', requireAuth, requireActivePlan, async (c) => {
   const db = await getDb()
   const roster = await db.select().from(users).where(eq(users.orgId, org.id))
   const signers = roster.map((u) => `- ${u.name}, ${u.roleTitle}`).join('\n') || '- [DIRECTOR NAME], [TITLE]'
+  const me = c.get('me')
+  const today = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
   const prompt = [
     `Write a complete, professional ${category || 'governance'} document titled "${name}" for ${org.name}, a ${entityLabel}.`,
     desc ? `What it needs to do / cover: ${desc}` : '',
+    details ? `Specific facts to use in this document (authoritative — use them, do not bracket them):\n${details}` : '',
     '',
-    'Known details about the organization (use these real values; only use [BRACKETS] for facts NOT listed here):',
+    'Known details about the organization (use these real values, and PARSE them for parts — e.g. derive city, state, and ZIP from the address; only use [BRACKETS] for facts NOT provided anywhere):',
     orgFacts(org),
+    `Today's date is ${today}.`,
+    `The board members / officers are:\n${signers}`,
+    `The person preparing and authorizing this document is ${me.name}, ${me.roleTitle}.`,
     '',
-    'Requirements:',
+    'MINIMIZE PLACEHOLDERS. This is the most important rule:',
+    '- Only use a [BRACKETED] placeholder when a fact is genuinely unknown AND cannot be reasonably inferred or defaulted.',
+    '- Do NOT bracket anything provided above. Parse the address into city/state/ZIP rather than leaving [CITY]/[ZIP]. Use the officers list for names/titles (default the authorizing/signing officer to the CEO or President, or to the preparer above).',
+    '- Use sensible defaults instead of brackets: effective date and meeting date = today unless told otherwise; a wholly-owned subsidiary = 100% ownership; a subsidiary/DBA principal office = the corporation\'s address; registered agent = the corporation at its address unless told otherwise; state of formation = the corporation\'s state unless told otherwise.',
+    '- Only genuinely deal-specific unknowns (e.g. a counterparty name, a dollar amount, a bank name that was not provided) may remain bracketed.',
+    '',
+    'Other requirements:',
     `- Write it so the ${bodyNoun} can adopt and sign it.`,
-    '- Use [BRACKETED] placeholders for any specific facts (dates, amounts, names, addresses) you do not know — do not invent them.',
     '- Plain text only, no markdown.',
     '- End with a signature block listing each of these signers with a signature and date line:',
     signers,

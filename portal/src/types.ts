@@ -155,6 +155,8 @@ export interface DocForm {
   cat: DocCategory
   desc: string
   body: string
+  /** Extra facts for the AI writer to use (dates, amounts, names, purpose). */
+  aiDetails?: string
   /** True while AI is writing the document body. */
   writing?: boolean
 }
