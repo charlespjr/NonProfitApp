@@ -5,10 +5,54 @@
  * otherwise from the platform sender with the org set as reply-to, so mail
  * still reaches the board while the org's domain is pending verification.
  */
+import nodemailer from 'nodemailer'
 import { sendEmail, defaultFrom } from './outreach.js'
 import type { orgs } from './schema.js'
 
 type Org = typeof orgs.$inferSelect
+
+export interface SmtpConfig {
+  host: string
+  port: number
+  secure: boolean
+  user: string
+  pass: string
+}
+
+/** True when the org has a complete SMTP relay configured (e.g. GoDaddy). */
+function smtpOf(org: Org): SmtpConfig | null {
+  if (!org.smtpHost || !org.smtpUser || !org.smtpPass) return null
+  return {
+    host: org.smtpHost,
+    port: org.smtpPort || (org.smtpSecure ? 465 : 587),
+    secure: org.smtpSecure,
+    user: org.smtpUser,
+    pass: org.smtpPass,
+  }
+}
+
+/** Send one message through an SMTP relay (the org's own mailbox). Timeouts
+ *  are short so a bad host can't hang a serverless invocation. */
+export async function sendViaSmtp(
+  cfg: SmtpConfig,
+  msg: { from: string; to: string; subject: string; html: string; replyTo?: string },
+): Promise<{ ok: boolean; error?: string }> {
+  try {
+    const transport = nodemailer.createTransport({
+      host: cfg.host,
+      port: cfg.port,
+      secure: cfg.secure,
+      auth: { user: cfg.user, pass: cfg.pass },
+      connectionTimeout: 10_000,
+      greetingTimeout: 8_000,
+      socketTimeout: 12_000,
+    })
+    await transport.sendMail({ from: msg.from, to: msg.to, subject: msg.subject, html: msg.html, replyTo: msg.replyTo })
+    return { ok: true }
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : 'SMTP send failed' }
+  }
+}
 
 function appUrl(): string {
   return (process.env.APP_URL || 'https://app.quorumsuite.com').replace(/\/+$/, '')
@@ -18,11 +62,19 @@ function escapeHtml(s: string): string {
   return s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c] as string))
 }
 
-/** How this org's mail is addressed. Once the sending domain is verified we
- *  send truly FROM the org's address; until then we use the platform sender
- *  (a verified domain, so it actually delivers) with the org as reply-to. */
+export { smtpOf }
+
+/** How this org's mail is addressed. When SMTP is configured we send FROM the
+ *  org's own mailbox (fromEmail, or the SMTP username). Otherwise: once a
+ *  Resend sending domain is verified we send truly FROM the org's address;
+ *  until then we use the platform sender (a verified domain, so it delivers)
+ *  with the org as reply-to. */
 function fromFor(org: Org): { from: string; replyTo?: string } {
   const name = org.name.replace(/[<>]/g, '').trim() || 'Quorum'
+  const smtp = smtpOf(org)
+  if (smtp) {
+    return { from: `${name} <${org.fromEmail || smtp.user}>` }
+  }
   if (org.emailVerified && org.fromEmail) {
     return { from: `${name} <${org.fromEmail}>` }
   }
@@ -100,8 +152,15 @@ export function inviteEmail(
   }
 }
 
-/** Send one transactional email as the org (verified domain or fallback). */
+/** Send one transactional email as the org. Prefers the org's own SMTP relay
+ *  (GoDaddy, etc.); otherwise falls back to Resend (verified domain or
+ *  platform sender with reply-to). Returns a Resend-style result shape. */
 export async function sendOrgEmail(org: Org, to: string, subject: string, html: string) {
   const { from, replyTo } = fromFor(org)
+  const smtp = smtpOf(org)
+  if (smtp) {
+    const r = await sendViaSmtp(smtp, { from, to, subject, html, replyTo })
+    return { ok: r.ok, dryRun: false, error: r.error }
+  }
   return sendEmail({ to, subject, html, from, replyTo })
 }

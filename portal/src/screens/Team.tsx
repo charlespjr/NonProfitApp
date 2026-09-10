@@ -4,7 +4,6 @@ import { useStore } from '../state/store'
 import { IconInfo, IconPlus } from '../components/icons'
 import { Avatar, YouChip } from '../components/shared'
 import { ENTITY_CONFIG, ENTITY_TYPES } from '../data/entities'
-import type { DomainDnsRecord } from '../services/api'
 import type { AccountStatus } from '../types'
 
 const PLAN_LABELS: Record<string, string> = {
@@ -287,127 +286,149 @@ function AiKeyCard() {
   )
 }
 
-/** API mode: set the real board-email sending address and verify its domain
- *  with Resend. Until verified, mail still sends (from Quorum, with this
- *  address as reply-to); once verified it sends truly FROM this address. */
+const smtpFieldStyle = sx('width:100%;padding:9px 12px;border:1px solid var(--line);border-radius:9px;background:var(--panel);font-size:13.5px;color:var(--ink);outline:none')
+const smtpLabelStyle = sx('font-size:12px;font-weight:600;color:var(--ink);margin-bottom:5px;display:block')
+
+/** API mode: board email through the org's own mail server (e.g. GoDaddy SMTP).
+ *  When configured, vote/sign/invite emails send from the org's mailbox; with
+ *  nothing configured they fall back to Quorum's default sender. */
 function OrgEmailCard() {
   const store = useStore()
   const org = store.apiOrg
-  const verified = !!org?.emailVerified
-  const fromEmail = org?.fromEmail || ''
-  const [address, setAddress] = useState('')
-  const [records, setRecords] = useState<DomainDnsRecord[]>([])
+  const configured = !!org?.smtpConfigured
+  const [editing, setEditing] = useState(false)
   const [busy, setBusy] = useState(false)
-  const addressOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(address.trim())
+  const [host, setHost] = useState(org?.smtpHost || 'smtpout.secureserver.net')
+  const [port, setPort] = useState(String(org?.smtpPort || 465))
+  const [secure, setSecure] = useState(org?.smtpSecure ?? true)
+  const [user, setUser] = useState(org?.smtpUser || '')
+  const [pass, setPass] = useState('')
+  const [from, setFrom] = useState(org?.fromEmail || '')
+
+  const emailOk = (v: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim())
+  const canSave = host.trim() && emailOk(user) && (configured || pass) && (from.trim() === '' || emailOk(from))
 
   const save = async () => {
-    if (!addressOk) return store.flash('Enter the address you’ll send from')
+    if (!canSave) return store.flash('Fill in the host, your email, and password')
     setBusy(true)
-    const r = await store.setOrgEmail(address.trim().toLowerCase())
+    const ok = await store.setOrgSmtp({
+      host: host.trim(),
+      port: Number(port) || (secure ? 465 : 587),
+      secure,
+      user: user.trim(),
+      ...(pass ? { pass } : {}),
+      fromEmail: (from.trim() || user.trim()).toLowerCase(),
+    })
     setBusy(false)
-    if (r) setRecords(r.records || [])
+    if (ok) {
+      setPass('')
+      setEditing(false)
+    }
   }
-  const recheck = async () => {
+  const test = async () => {
     setBusy(true)
-    const r = await store.verifyOrgEmail()
+    await store.testOrgSmtp()
     setBusy(false)
-    if (r) setRecords(r.records || [])
   }
-  const remove = () => {
-    setRecords([])
-    setAddress('')
-    store.disconnectEmail()
+  const remove = async () => {
+    setBusy(true)
+    await store.clearOrgSmtp()
+    setBusy(false)
+    setHost('smtpout.secureserver.net'); setPort('465'); setSecure(true); setUser(''); setPass(''); setFrom(''); setEditing(false)
   }
 
-  // Not configured yet — collect the sending address.
-  if (!fromEmail) {
+  // Configured & not editing — status + actions.
+  if (configured && !editing) {
     return (
-      <div style={sx('background:var(--panel);border:1px solid var(--line);border-radius:13px;padding:16px 18px;margin-bottom:18px')}>
-        <div style={sx('font-size:14px;font-weight:600')}>Board email — sending address</div>
-        <div style={sx('font-size:12.5px;color:var(--muted);line-height:1.5;margin-top:2px')}>
-          Vote requests, signing reminders, and member invites are emailed to your board. Enter the address they should come from (e.g. <strong>board@yourcompany.org</strong>). We’ll give you DNS records to verify your domain so mail sends truly from you.
-        </div>
-        <div style={sx('display:flex;gap:8px;margin-top:12px;flex-wrap:wrap')}>
-          <input
-            className="inp"
-            value={address}
-            onChange={(e) => setAddress(e.target.value)}
-            placeholder="board@yourcompany.org"
-            style={sx('flex:1;min-width:220px;padding:10px 13px;border:1px solid var(--line);border-radius:10px;background:var(--panel);font-size:13.5px;color:var(--ink);outline:none')}
-          />
-          <button
-            className="hv-bright"
-            disabled={busy}
-            onClick={() => void save()}
-            style={{ ...sx('border:none;background:var(--brand);color:#fff;font-size:13px;font-weight:600;padding:10px 18px;border-radius:10px'), cursor: addressOk && !busy ? 'pointer' : 'not-allowed', opacity: addressOk && !busy ? 1 : 0.55 }}
-          >
-            {busy ? 'Saving…' : 'Save address'}
-          </button>
+      <div style={sx('border-radius:13px;padding:14px 18px;margin-bottom:18px;border:1px solid var(--good);background:var(--good-soft)')}>
+        <div style={sx('display:flex;align-items:center;gap:12px;flex-wrap:wrap')}>
+          <div style={sx('flex:1;min-width:220px')}>
+            <div style={sx('font-size:13.5px;font-weight:600;color:var(--good)')}>Board email connected</div>
+            <div style={sx('font-size:12px;color:var(--muted);margin-top:1px')}>
+              Sends from <strong>{org?.fromEmail || org?.smtpUser}</strong> via {org?.smtpHost}.
+            </div>
+          </div>
+          <div style={sx('display:flex;gap:8px;flex:none;flex-wrap:wrap')}>
+            <button className="hv-border-accent" disabled={busy} onClick={() => void test()} style={sx('border:1px solid var(--line);background:var(--panel);color:var(--brand);font-size:12.5px;font-weight:600;padding:8px 14px;border-radius:9px;cursor:pointer')}>
+              {busy ? 'Sending…' : 'Send test'}
+            </button>
+            <button className="hv-border-accent" onClick={() => setEditing(true)} style={sx('border:1px solid var(--line);background:var(--panel);color:var(--brand);font-size:12.5px;font-weight:600;padding:8px 14px;border-radius:9px;cursor:pointer')}>
+              Edit
+            </button>
+            <button className="hv-border-danger" disabled={busy} onClick={() => void remove()} style={sx('border:1px solid var(--line);background:var(--panel);color:var(--muted);font-size:12.5px;font-weight:600;padding:8px 14px;border-radius:9px;cursor:pointer')}>
+              Remove
+            </button>
+          </div>
         </div>
       </div>
     )
   }
 
-  // Configured. Show verified state, or pending with DNS records.
+  // Setup / edit form.
   return (
-    <div style={{ ...sx('border-radius:13px;padding:14px 18px;margin-bottom:18px;border:1px solid'), borderColor: verified ? 'var(--good)' : 'var(--warn)', background: verified ? 'var(--good-soft)' : 'var(--warn-soft)' }}>
-      <div style={sx('display:flex;align-items:center;gap:12px;flex-wrap:wrap')}>
-        <div style={sx('flex:1;min-width:220px')}>
-          <div style={{ ...sx('font-size:13.5px;font-weight:600'), color: verified ? 'var(--good)' : 'var(--warn)' }}>
-            {verified ? 'Sending address verified' : 'Sending address pending verification'}
-          </div>
-          <div style={sx('font-size:12px;color:var(--muted);margin-top:1px')}>
-            {verified
-              ? `Board email sends from ${fromEmail}.`
-              : `Saved ${fromEmail}. Until your domain is verified, email sends from Quorum with ${fromEmail} as reply-to.`}
-          </div>
+    <div style={sx('background:var(--panel);border:1px solid var(--line);border-radius:13px;padding:16px 18px;margin-bottom:18px')}>
+      <div style={sx('font-size:14px;font-weight:600')}>Board email — your mail server (SMTP)</div>
+      <div style={sx('font-size:12.5px;color:var(--muted);line-height:1.5;margin-top:2px')}>
+        Send vote requests, signing reminders, and member invites from your own mailbox. Enter your email provider's SMTP settings.
+        <br /><strong>GoDaddy:</strong> host <code>smtpout.secureserver.net</code>, port <code>465</code> (SSL) or <code>587</code> (TLS). Microsoft 365-based GoDaddy: <code>smtp.office365.com</code>, port <code>587</code>. Username is your full email address.
+      </div>
+
+      <div style={sx('display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:14px')}>
+        <div style={sx('grid-column:1 / -1')}>
+          <label style={smtpLabelStyle}>From address <span style={sx('color:var(--muted);font-weight:400')}>(what the board sees)</span></label>
+          <input className="inp" value={from} onChange={(e) => setFrom(e.target.value)} placeholder="board@yourcompany.org" style={smtpFieldStyle} />
         </div>
-        <div style={sx('display:flex;gap:8px;flex:none')}>
-          {!verified && (
-            <button className="hv-border-accent" disabled={busy} onClick={() => void recheck()} style={sx('border:1px solid var(--line);background:var(--panel);color:var(--brand);font-size:12.5px;font-weight:600;padding:8px 14px;border-radius:9px;cursor:pointer')}>
-              {busy ? 'Checking…' : 'Check verification'}
-            </button>
-          )}
-          <button className="hv-border-danger" onClick={remove} style={sx('border:1px solid var(--line);background:var(--panel);color:var(--muted);font-size:12.5px;font-weight:600;padding:8px 14px;border-radius:9px;cursor:pointer')}>
-            Remove
-          </button>
+        <div style={sx('grid-column:1 / -1')}>
+          <label style={smtpLabelStyle}>SMTP host</label>
+          <input className="inp" value={host} onChange={(e) => setHost(e.target.value)} placeholder="smtpout.secureserver.net" style={smtpFieldStyle} />
+        </div>
+        <div>
+          <label style={smtpLabelStyle}>Port</label>
+          <input className="inp" value={port} onChange={(e) => setPort(e.target.value.replace(/[^0-9]/g, ''))} placeholder="465" style={smtpFieldStyle} />
+        </div>
+        <div>
+          <label style={smtpLabelStyle}>Security</label>
+          <select
+            value={secure ? 'ssl' : 'tls'}
+            onChange={(e) => {
+              const s = e.target.value === 'ssl'
+              setSecure(s)
+              setPort(s ? '465' : '587')
+            }}
+            style={smtpFieldStyle}
+          >
+            <option value="ssl">SSL (465)</option>
+            <option value="tls">STARTTLS (587)</option>
+          </select>
+        </div>
+        <div>
+          <label style={smtpLabelStyle}>Username <span style={sx('color:var(--muted);font-weight:400')}>(full email)</span></label>
+          <input className="inp" value={user} onChange={(e) => setUser(e.target.value)} placeholder="board@yourcompany.org" style={smtpFieldStyle} />
+        </div>
+        <div>
+          <label style={smtpLabelStyle}>Password {configured && <span style={sx('color:var(--muted);font-weight:400')}>(leave blank to keep)</span>}</label>
+          <input className="inp" type="password" value={pass} onChange={(e) => setPass(e.target.value)} placeholder="mailbox password" style={smtpFieldStyle} />
         </div>
       </div>
-      {!verified && records.length > 0 && (
-        <div style={sx('margin-top:12px;background:var(--panel);border:1px solid var(--line);border-radius:11px;padding:12px 14px')}>
-          <div style={sx('font-size:12px;font-weight:700;color:var(--brand);letter-spacing:.04em;text-transform:uppercase;margin-bottom:8px')}>
-            Add these DNS records at your domain host
-          </div>
-          <div style={sx('overflow-x:auto')}>
-            <table style={sx('border-collapse:collapse;font-size:11.5px;font-family:ui-monospace,monospace;min-width:100%')}>
-              <thead>
-                <tr style={sx('text-align:left;color:var(--muted)')}>
-                  <th style={sx('padding:4px 12px 4px 0;font-weight:600')}>Type</th>
-                  <th style={sx('padding:4px 12px 4px 0;font-weight:600')}>Name</th>
-                  <th style={sx('padding:4px 0;font-weight:600')}>Value</th>
-                </tr>
-              </thead>
-              <tbody>
-                {records.map((r, i) => (
-                  <tr key={i} style={sx('border-top:1px solid var(--line);color:var(--ink)')}>
-                    <td style={sx('padding:5px 12px 5px 0;white-space:nowrap')}>{r.type}{r.priority != null ? ` (pri ${r.priority})` : ''}</td>
-                    <td style={sx('padding:5px 12px 5px 0;word-break:break-all')}>{r.name}</td>
-                    <td style={sx('padding:5px 0;word-break:break-all')}>{r.value}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-          <div style={sx('font-size:11.5px;color:var(--muted);margin-top:9px;line-height:1.5')}>
-            Add these at your DNS provider, then click <strong>Check verification</strong>. Propagation can take from a few minutes to a few hours.
-          </div>
-        </div>
-      )}
-      {!verified && records.length === 0 && (
-        <div style={sx('font-size:11.5px;color:var(--muted);margin-top:9px')}>
-          Click <strong>Check verification</strong> to fetch the DNS records for {org?.emailDomain || 'your domain'}.
-        </div>
-      )}
+
+      <div style={sx('display:flex;gap:8px;justify-content:flex-end;margin-top:14px')}>
+        {(configured || editing) && (
+          <button onClick={() => setEditing(false)} disabled={!configured} style={{ ...sx('border:1px solid var(--line);background:var(--panel);color:var(--ink);font-size:13px;font-weight:600;padding:9px 16px;border-radius:9px'), cursor: configured ? 'pointer' : 'not-allowed', opacity: configured ? 1 : 0.5 }}>
+            Cancel
+          </button>
+        )}
+        <button
+          className="hv-bright"
+          disabled={busy || !canSave}
+          onClick={() => void save()}
+          style={{ ...sx('border:none;background:var(--brand);color:#fff;font-size:13px;font-weight:600;padding:9px 18px;border-radius:9px'), cursor: canSave && !busy ? 'pointer' : 'not-allowed', opacity: canSave && !busy ? 1 : 0.55 }}
+        >
+          {busy ? 'Saving…' : 'Save & connect'}
+        </button>
+      </div>
+      <div style={sx('font-size:11.5px;color:var(--muted);margin-top:10px;line-height:1.5')}>
+        Your password is stored securely on the server and never shown again. Leave this blank to use Quorum's default sender instead.
+      </div>
     </div>
   )
 }

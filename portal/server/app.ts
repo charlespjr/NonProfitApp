@@ -9,7 +9,7 @@ import { orgs, orgState, outreachCampaigns, outreachDrip, outreachLeads, outreac
 import { billing } from './billing.js'
 import { ACTORS, apifyConfigured, lastRawSample, runActor } from './apify.js'
 import { checkDomain, DEFAULT_TEMPLATE, registerDomain, renderEmail, resendConfigured, sendEmail } from './outreach.js'
-import { inviteEmail, sendOrgEmail, signEmail, voteEmail } from './mail.js'
+import { inviteEmail, sendOrgEmail, sendViaSmtp, signEmail, smtpOf, voteEmail } from './mail.js'
 
 const JWT_SECRET = process.env.JWT_SECRET || 'dev-only-secret-change-in-production'
 const COOKIE = 'quorum_session'
@@ -110,10 +110,11 @@ function publicUser(u: typeof users.$inferSelect) {
   return rest
 }
 
-/** Orgs go to the client without the Anthropic key — only a boolean. */
+/** Orgs go to the client without secrets (Anthropic key, SMTP password) —
+ *  only booleans / non-secret fields for display. */
 function publicOrg(o: typeof orgs.$inferSelect) {
-  const { anthropicKey: _drop, ...rest } = o
-  return { ...rest, aiConfigured: !!o.anthropicKey }
+  const { anthropicKey: _drop, smtpPass: _drop2, ...rest } = o
+  return { ...rest, aiConfigured: !!o.anthropicKey, smtpConfigured: !!(o.smtpHost && o.smtpUser && o.smtpPass) }
 }
 
 export const app = new Hono<Env>().basePath('/api')
@@ -456,6 +457,59 @@ app.post('/org/email/verify', requireAuth, requireAdmin, async (c) => {
   await db.update(orgs).set({ emailVerified: status.verified }).where(eq(orgs.id, orgId))
   const [org] = await db.select().from(orgs).where(eq(orgs.id, orgId))
   return c.json({ org: publicOrg(org), verified: status.verified, records: status.records, status: status.status, error: status.error })
+})
+
+/** Configure the org's SMTP relay (e.g. GoDaddy) for board email. When set,
+ *  mail sends through the org's own mailbox instead of Resend. Admin only.
+ *  An empty host clears the configuration. The password is write-only:
+ *  omit it to keep the stored one when editing other fields. */
+app.post('/org/smtp', requireAuth, requireAdmin, async (c) => {
+  const body = await c.req.json().catch(() => ({}))
+  const db = await getDb()
+  const orgId = c.get('session').orgId
+  const host = String(body?.host || '').trim()
+  if (!host) {
+    await db.update(orgs).set({ smtpHost: null, smtpPort: null, smtpUser: null, smtpPass: null }).where(eq(orgs.id, orgId))
+    const [org] = await db.select().from(orgs).where(eq(orgs.id, orgId))
+    return c.json({ org: publicOrg(org) })
+  }
+  const user = String(body?.user || '').trim()
+  if (!user) return c.json({ error: 'SMTP username (your full email address) is required' }, 400)
+  const secure = body?.secure !== false
+  const port = Number(body?.port) || (secure ? 465 : 587)
+  const fromEmailRaw = String(body?.fromEmail || '').trim().toLowerCase()
+  const fromEmail = fromEmailRaw || user.toLowerCase()
+  if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(fromEmail)) {
+    return c.json({ error: 'Enter a valid From address, e.g. board@yourcompany.org' }, 400)
+  }
+  const [existing] = await db.select().from(orgs).where(eq(orgs.id, orgId))
+  const pass = typeof body?.pass === 'string' && body.pass ? body.pass : existing?.smtpPass || ''
+  if (!pass) return c.json({ error: 'SMTP password is required' }, 400)
+  await db
+    .update(orgs)
+    .set({ smtpHost: host, smtpPort: port, smtpSecure: secure, smtpUser: user, smtpPass: pass, fromEmail, emailDomain: fromEmail.split('@')[1] })
+    .where(eq(orgs.id, orgId))
+  const [org] = await db.select().from(orgs).where(eq(orgs.id, orgId))
+  return c.json({ org: publicOrg(org) })
+})
+
+/** Send a test email through the org's configured SMTP relay to the admin,
+ *  so they can confirm the credentials work. Admin only. */
+app.post('/org/smtp/test', requireAuth, requireAdmin, async (c) => {
+  const db = await getDb()
+  const [org] = await db.select().from(orgs).where(eq(orgs.id, c.get('session').orgId))
+  const cfg = org ? smtpOf(org) : null
+  if (!cfg) return c.json({ error: 'Configure your SMTP settings first.' }, 400)
+  const to = c.get('me').email
+  const from = `${org.name.replace(/[<>]/g, '').trim() || 'Quorum'} <${org.fromEmail || cfg.user}>`
+  const r = await sendViaSmtp(cfg, {
+    from,
+    to,
+    subject: `Test email from ${org.name} via Quorum`,
+    html: `<p>This is a test from your ${org.name} board portal. If you received it, your SMTP settings are working and board email will send from ${org.fromEmail || cfg.user}.</p>`,
+  })
+  if (!r.ok) return c.json({ ok: false, error: r.error || 'SMTP test failed' }, 400)
+  return c.json({ ok: true, to })
 })
 
 // ------------------------------------------------------------ AI drafting

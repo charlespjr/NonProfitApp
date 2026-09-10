@@ -25,6 +25,23 @@ export interface ApiOrg {
   fromEmail?: string | null
   emailDomain?: string | null
   emailVerified?: boolean
+  /** Per-org SMTP relay (e.g. GoDaddy). Password is never returned — only
+   *  these display fields plus the smtpConfigured flag. */
+  smtpConfigured?: boolean
+  smtpHost?: string | null
+  smtpPort?: number | null
+  smtpSecure?: boolean
+  smtpUser?: string | null
+}
+
+export interface SmtpSettings {
+  host: string
+  port: number
+  secure: boolean
+  user: string
+  /** Sent only when setting/changing; never returned by the server. */
+  pass?: string
+  fromEmail: string
 }
 
 /** A DNS record the org must add to verify its sending domain. */
@@ -121,6 +138,12 @@ export const api = {
     req<{ org: ApiOrg; records: DomainDnsRecord[]; status?: string; error?: string }>('/org/email', { method: 'POST', body: JSON.stringify({ fromEmail }) }),
   verifyOrgEmail: () =>
     req<{ org: ApiOrg; verified: boolean; records: DomainDnsRecord[]; status?: string; error?: string }>('/org/email/verify', { method: 'POST' }),
+  setOrgSmtp: (settings: Partial<SmtpSettings> & { host: string }) =>
+    req<{ org: ApiOrg }>('/org/smtp', { method: 'POST', body: JSON.stringify(settings) }),
+  clearOrgSmtp: () =>
+    req<{ org: ApiOrg }>('/org/smtp', { method: 'POST', body: JSON.stringify({ host: '' }) }),
+  testOrgSmtp: () =>
+    req<{ ok: boolean; to?: string; error?: string }>('/org/smtp/test', { method: 'POST' }),
   aiDraft: (input: { motionTitle: string; motionDesc: string; meetingTitle?: string }) =>
     req<{ text: string }>('/ai/draft', { method: 'POST', body: JSON.stringify(input) }),
 
