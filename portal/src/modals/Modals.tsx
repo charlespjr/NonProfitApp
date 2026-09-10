@@ -578,9 +578,9 @@ export function AddDocumentModal() {
             onChange={(e) => store.set({ docForm: { ...f, cat: e.target.value as typeof f.cat } })}
             style={fieldInput}
           >
-            <option value="Governance">Governance</option>
-            <option value="Fundraising">Fundraising</option>
-            <option value="Donor Letters">Donor Letters</option>
+            {store.entity.docCategories.map((c) => (
+              <option key={c} value={c}>{c}</option>
+            ))}
           </select>
         </div>
         <div style={sx('display:flex;flex-direction:column;gap:7px')}>
