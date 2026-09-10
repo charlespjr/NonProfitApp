@@ -6,7 +6,7 @@
  * All document bodies are starter templates with [BRACKETED] fill-ins and an
  * attorney-review reminder — the store's brand() swaps the org name in.
  */
-import type { ChecklistPhase, DocInfo, EntityType, PortalDoc } from '../types'
+import type { ChecklistPhase, DocCategory, DocInfo, EntityType, PortalDoc } from '../types'
 import {
   BASE_DOCS as NP_DOCS,
   DOC_BODIES as NP_BODIES,
@@ -35,6 +35,8 @@ export interface EntityConfig {
   baseDocs: PortalDoc[]
   docInfo: Record<string, DocInfo>
   docBodies: Record<string, string>
+  /** Categories offered when adding a custom document (entity-appropriate). */
+  docCategories: DocCategory[]
 }
 
 // ─────────────────────────────────────────────────────────── C CORPORATION
@@ -525,6 +527,7 @@ export const ENTITY_CONFIG: Record<EntityType, EntityConfig> = {
     baseDocs: NP_DOCS,
     docInfo: NP_INFO,
     docBodies: NP_BODIES,
+    docCategories: ['Governance', 'Fundraising', 'Donor Letters', 'Compliance'],
   },
   c_corp: {
     key: 'c_corp',
@@ -542,6 +545,7 @@ export const ENTITY_CONFIG: Record<EntityType, EntityConfig> = {
     baseDocs: CCORP_DOCS,
     docInfo: CCORP_INFO,
     docBodies: CCORP_BODIES,
+    docCategories: ['Governance', 'Equity', 'Compliance', 'Formation'],
   },
   llc: {
     key: 'llc',
@@ -559,6 +563,7 @@ export const ENTITY_CONFIG: Record<EntityType, EntityConfig> = {
     baseDocs: LLC_DOCS,
     docInfo: LLC_INFO,
     docBodies: LLC_BODIES,
+    docCategories: ['Governance', 'Equity', 'Compliance', 'Formation'],
   },
 }
 
