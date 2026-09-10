@@ -140,6 +140,8 @@ async function main() {
     // AI motion-from-document requires the org's Anthropic key
     r = await app.request('/api/ai/motion', json({ docName: 'Corporate Bylaws', docBody: 'BYLAWS OF ...' }, sc))
     check('ai motion without key → 400 no_ai_key', r.status === 400 && (await j(r)).code === 'no_ai_key')
+    r = await app.request('/api/ai/document', json({ name: 'Vendor NDA', desc: 'mutual NDA' }, sc))
+    check('ai document without key → 400 no_ai_key', r.status === 400 && (await j(r)).code === 'no_ai_key')
   }
 
   // 4d. per-org SMTP relay (e.g. GoDaddy). Uses the admin cookie; admin-only,

@@ -594,14 +594,31 @@ export function AddDocumentModal() {
           />
         </div>
         <div style={sx('display:flex;flex-direction:column;gap:7px')}>
-          <label style={fieldLabel}>Document text <span style={sx('color:var(--muted);font-weight:400')}>(optional — paste it here)</span></label>
+          <div style={sx('display:flex;align-items:center;justify-content:space-between;gap:10px')}>
+            <label style={fieldLabel}>Document text <span style={sx('color:var(--muted);font-weight:400')}>(paste it, or let AI write it)</span></label>
+            <button
+              onClick={() => void store.writeDocWithAi()}
+              disabled={f.writing}
+              title={store.apiOrg?.aiConfigured ? 'Write this document with AI from the name & description' : 'Add your Anthropic API key in Team & Access first'}
+              style={{
+                ...sx('display:flex;align-items:center;gap:6px;border:1px solid var(--accent);background:var(--accent-soft);color:var(--brand);font-size:12px;font-weight:600;padding:6px 11px;border-radius:8px'),
+                cursor: f.writing ? 'wait' : 'pointer',
+                opacity: f.writing ? 0.7 : 1,
+              }}
+            >
+              {f.writing ? 'Writing…' : '✨ Write with AI'}
+            </button>
+          </div>
           <textarea
             className="inp"
             value={f.body}
             onChange={(e) => store.set({ docForm: { ...f, body: e.target.value } })}
-            placeholder="Paste the document's text so the board can read it before signing. You can leave this empty and track an externally-held file."
+            placeholder="Paste the document's text, or name it above and click ✨ Write with AI. The board reads this before signing; you can leave it empty to track an externally-held file."
             style={sx('width:100%;min-height:140px;resize:vertical;padding:11px 13px;border:1px solid var(--line);border-radius:10px;background:var(--panel);font-size:13px;line-height:1.6;color:var(--ink);outline:none;font-family:ui-monospace,monospace')}
           />
+          <div style={sx('font-size:11.5px;color:var(--muted);line-height:1.45')}>
+            AI uses the document name and description above. Review and edit anything it writes — and have your attorney check anything legally binding.
+          </div>
         </div>
         <div style={sx('display:flex;align-items:flex-start;gap:9px;background:var(--accent-soft);border-radius:10px;padding:11px 13px')}>
           <IconInfo size={15} style={{ flex: 'none', marginTop: 1 }} />

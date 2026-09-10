@@ -677,6 +677,65 @@ app.post('/ai/motion', requireAuth, requireActivePlan, async (c) => {
   }
 })
 
+/** Write a full document body from a name + description. Uses the org's
+ *  Anthropic key; entity-aware; returns plain text with [BRACKETED] fill-ins
+ *  and a signature block for the board. */
+app.post('/ai/document', requireAuth, requireActivePlan, async (c) => {
+  const org = c.get('org')
+  if (!org.anthropicKey) {
+    return c.json(
+      { error: 'Add your organization’s Anthropic API key in Team & Access to enable AI drafting.', code: 'no_ai_key' },
+      400,
+    )
+  }
+  const body = await c.req.json().catch(() => ({}))
+  const name = String(body?.name || '').slice(0, 300)
+  const desc = String(body?.desc || '').slice(0, 3000)
+  const category = String(body?.category || '').slice(0, 60)
+  if (!name) return c.json({ error: 'A document name is required' }, 400)
+  const entityLabel =
+    org.entityType === 'c_corp' ? 'C corporation' : org.entityType === 'llc' ? 'limited liability company' : 'nonprofit corporation'
+  const bodyNoun = org.entityType === 'llc' ? 'members' : 'board of directors'
+  const db = await getDb()
+  const roster = await db.select().from(users).where(eq(users.orgId, org.id))
+  const signers = roster.map((u) => `- ${u.name}, ${u.roleTitle}`).join('\n') || '- [DIRECTOR NAME], [TITLE]'
+  const prompt = [
+    `Write a complete, professional ${category || 'governance'} document titled "${name}" for ${org.name}, a ${entityLabel}.`,
+    desc ? `What it needs to do / cover: ${desc}` : '',
+    '',
+    'Requirements:',
+    `- Write it so the ${bodyNoun} can adopt and sign it.`,
+    '- Use [BRACKETED] placeholders for any specific facts (dates, amounts, names, addresses) you do not know — do not invent them.',
+    '- Plain text only, no markdown.',
+    '- End with a signature block listing each of these signers with a signature and date line:',
+    signers,
+    '- Add a final line: "[TEMPLATE — have your attorney review before it is relied upon.]"',
+    '',
+    'Return ONLY the document text.',
+  ].filter(Boolean).join('\n')
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'x-api-key': org.anthropicKey, 'anthropic-version': '2023-06-01', 'content-type': 'application/json' },
+      body: JSON.stringify({ model: 'claude-sonnet-5', max_tokens: 2200, messages: [{ role: 'user', content: prompt }] }),
+    })
+    if (!res.ok) {
+      console.error('anthropic document failed:', res.status, (await res.text()).slice(0, 300))
+      return c.json(
+        { error: res.status === 401 ? 'Your Anthropic API key was rejected — check it in Team & Access.' : 'The AI service had a problem — try again.' },
+        502,
+      )
+    }
+    const data = (await res.json()) as { content?: Array<{ type: string; text?: string }> }
+    const text = (data.content || []).filter((b) => b.type === 'text').map((b) => b.text || '').join('\n').trim()
+    if (!text) return c.json({ error: 'The AI returned an empty document — try again.' }, 502)
+    return c.json({ body: text })
+  } catch (e) {
+    console.error('anthropic document unreachable:', e)
+    return c.json({ error: 'Could not reach the AI service — try again.' }, 502)
+  }
+})
+
 // ----------------------------------------------------- owner admin portal
 /** These endpoints power app.quorumsuite.com/admin — the business owner's
  *  view across ALL organizations. Gated by the ADMIN_KEY secret, never by

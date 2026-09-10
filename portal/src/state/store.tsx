@@ -179,6 +179,8 @@ export interface Store {
   notifyDocSigners(docId: string): void
   openAddDoc(): void
   saveDoc(): void
+  /** Write the document body with AI from the form's name + description. */
+  writeDocWithAi(): Promise<void>
   removeCustomDoc(docId: string): void
   /** Download the document + its e-signature block as a PDF (client-side). */
   exportDocPdf(docId: string): Promise<void>
@@ -815,6 +817,32 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     if (!guard()) return
     set({ docForm: { name: '', cat: 'Governance', desc: '', body: '' } })
   }, [guard, set])
+
+  const writeDocWithAi = useCallback(async () => {
+    const f = state.docForm
+    if (!f || !guard()) return
+    if (!f.name.trim()) {
+      flash('Name the document first, then AI can write it')
+      return
+    }
+    if (mode !== 'api') {
+      flash('AI drafting needs the backend')
+      return
+    }
+    if (!apiOrg?.aiConfigured) {
+      flash('Add your Anthropic API key in Team & Access to enable AI drafting')
+      return
+    }
+    setState((s) => (s.docForm ? { ...s, docForm: { ...s.docForm, writing: true } } : s))
+    try {
+      const { body } = await api.aiDocument({ name: f.name.trim(), desc: f.desc.trim(), category: f.cat })
+      setState((s) => (s.docForm ? { ...s, docForm: { ...s.docForm, body, writing: false } } : s))
+      flash('Draft written — review and edit before saving')
+    } catch (e) {
+      setState((s) => (s.docForm ? { ...s, docForm: { ...s.docForm, writing: false } } : s))
+      flash(e instanceof ApiError ? e.message : 'Could not write the document — try again')
+    }
+  }, [state.docForm, guard, mode, apiOrg, flash])
 
   const saveDoc = useCallback(() => {
     const f = state.docForm
@@ -1506,6 +1534,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     notifyDocSigners,
     openAddDoc,
     saveDoc,
+    writeDocWithAi,
     removeCustomDoc,
     exportDocPdf,
     uploadLogo,
