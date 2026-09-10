@@ -1,12 +1,12 @@
 /**
  * Board-facing transactional email (vote requests, signing reminders, member
- * invites). Sends through the same Resend integration the outreach engine
- * uses, but FROM the organization's own address once its domain is verified —
- * otherwise from the platform sender with the org set as reply-to, so mail
- * still reaches the board while the org's domain is pending verification.
+ * invites). Sent through the organization's OWN mail server (SMTP, e.g.
+ * GoDaddy) — never Resend. Resend stays reserved for the platform's own
+ * outreach CRM; board email that isn't configured simply reports that it
+ * needs setting up, so an org is never shown a Resend domain-verification
+ * message for a service it doesn't use.
  */
 import nodemailer from 'nodemailer'
-import { sendEmail, defaultFrom } from './outreach.js'
 import type { orgs } from './schema.js'
 
 type Org = typeof orgs.$inferSelect
@@ -64,23 +64,10 @@ function escapeHtml(s: string): string {
 
 export { smtpOf }
 
-/** How this org's mail is addressed. When SMTP is configured we send FROM the
- *  org's own mailbox (fromEmail, or the SMTP username). Otherwise: once a
- *  Resend sending domain is verified we send truly FROM the org's address;
- *  until then we use the platform sender (a verified domain, so it delivers)
- *  with the org as reply-to. */
-function fromFor(org: Org): { from: string; replyTo?: string } {
+/** The From line for the org's own mailbox. */
+function fromFor(org: Org, smtp: SmtpConfig): string {
   const name = org.name.replace(/[<>]/g, '').trim() || 'Quorum'
-  const smtp = smtpOf(org)
-  if (smtp) {
-    return { from: `${name} <${org.fromEmail || smtp.user}>` }
-  }
-  if (org.emailVerified && org.fromEmail) {
-    return { from: `${name} <${org.fromEmail}>` }
-  }
-  const def = defaultFrom()
-  const addr = def.match(/<([^>]+)>/)?.[1] || def
-  return { from: `${name} via Quorum <${addr}>`, replyTo: org.fromEmail || undefined }
+  return `${name} <${org.fromEmail || smtp.user}>`
 }
 
 /** Shared, email-client-safe layout (table + inline styles). */
@@ -152,15 +139,14 @@ export function inviteEmail(
   }
 }
 
-/** Send one transactional email as the org. Prefers the org's own SMTP relay
- *  (GoDaddy, etc.); otherwise falls back to Resend (verified domain or
- *  platform sender with reply-to). Returns a Resend-style result shape. */
+/** Send one transactional email through the org's own SMTP mailbox. If SMTP
+ *  isn't configured, board email is reported as not-set-up (dryRun) — we do
+ *  NOT fall back to Resend, so orgs never see a Resend domain message. */
 export async function sendOrgEmail(org: Org, to: string, subject: string, html: string) {
-  const { from, replyTo } = fromFor(org)
   const smtp = smtpOf(org)
-  if (smtp) {
-    const r = await sendViaSmtp(smtp, { from, to, subject, html, replyTo })
-    return { ok: r.ok, dryRun: false, error: r.error }
+  if (!smtp) {
+    return { ok: false, dryRun: true, error: 'Board email is not set up yet. Add your email server (SMTP) under Team & Access → Board email.' }
   }
-  return sendEmail({ to, subject, html, from, replyTo })
+  const r = await sendViaSmtp(smtp, { from: fromFor(org, smtp), to, subject, html })
+  return { ok: r.ok, dryRun: false, error: r.error }
 }

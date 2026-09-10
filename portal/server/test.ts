@@ -129,22 +129,14 @@ async function main() {
     check('resend invite for unknown member → 404', r.status === 404)
     r = await app.request('/api/notify/vote', json({ motionTitle: 'Adopt bylaws', motionDesc: 'Please review' }, sc))
     const vote = await j(r)
-    check('notify vote sends to voting members', r.status === 200 && vote.sent === 1, vote)
+    check('notify vote without SMTP → dryRun (no Resend)', r.status === 200 && vote.dryRun === true && vote.sent === 0, vote)
     r = await app.request('/api/notify/vote', json({ motionTitle: '' }, sc))
     check('notify vote requires a title → 400', r.status === 400)
+    // With no SMTP configured, board email is reported as not-set-up (dryRun),
+    // NOT sent through Resend — so no Resend domain message ever surfaces.
     r = await app.request('/api/notify/sign', json({ docName: 'Corporate Bylaws' }, sc))
-    check('notify sign → 200 sends to signers', r.status === 200 && (await j(r)).sent >= 1)
-    // sending address + domain
-    r = await app.request('/api/org/email', json({ fromEmail: 'not-an-email' }, sc))
-    check('bad sending address → 400', r.status === 400)
-    r = await app.request('/api/org/email', json({ fromEmail: 'board@signalcorp.example' }, sc))
-    const setr = await j(r)
-    check('set sending address → 200', r.status === 200 && setr.org.fromEmail === 'board@signalcorp.example' && setr.org.emailDomain === 'signalcorp.example')
-    check('domain starts unverified', setr.org.emailVerified === false)
-    r = await app.request('/api/org/email', json({ fromEmail: '' }, sc))
-    check('clear sending address → 200', r.status === 200 && !(await j(r)).org.fromEmail)
-    r = await app.request('/api/org/email', json({ fromEmail: 'x@y.com' }))
-    check('set sending address without auth → 401', r.status === 401)
+    const signRes = await j(r)
+    check('notify sign without SMTP → dryRun (no Resend)', r.status === 200 && signRes.dryRun === true && signRes.sent === 0)
   }
 
   // 4d. per-org SMTP relay (e.g. GoDaddy). Uses the admin cookie; admin-only,

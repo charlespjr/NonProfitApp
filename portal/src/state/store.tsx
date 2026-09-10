@@ -19,7 +19,7 @@ import {
   mockSignatures,
   mockZoom,
 } from '../services'
-import { api, ApiError, type ApiMember, type ApiOrg, type ApiSession, type DomainDnsRecord, type SmtpSettings } from '../services/api'
+import { api, ApiError, type ApiMember, type ApiOrg, type ApiSession, type SmtpSettings } from '../services/api'
 import { fileToLogoDataUrl } from '../lib/image'
 import type {
   Account,
@@ -227,10 +227,6 @@ export interface Store {
   connectEmail(providerId: string, providerName: string, address: string): void
   disconnectEmail(): void
 
-  // real board-email sending address + domain verification (api mode)
-  setOrgEmail(fromEmail: string): Promise<{ records: DomainDnsRecord[]; status?: string; error?: string } | null>
-  verifyOrgEmail(): Promise<{ verified: boolean; records: DomainDnsRecord[]; error?: string } | null>
-
   // per-org SMTP relay (e.g. GoDaddy) — api mode
   setOrgSmtp(settings: Partial<SmtpSettings> & { host: string }): Promise<boolean>
   clearOrgSmtp(): Promise<void>
@@ -409,8 +405,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       ...(data as Partial<BoardSlice>),
       // The org's sending address is authoritative from the server, not the
       // client board slice — reflect it so Team & Access shows the real state.
-      emailConnected: !!sess.org.fromEmail,
-      emailProvider: sess.org.fromEmail ? 'resend' : '',
+      emailConnected: !!sess.org.smtpConfigured,
+      emailProvider: sess.org.smtpConfigured ? 'smtp' : '',
       emailAddress: sess.org.fromEmail || '',
       accounts: accountsFrom(members),
       extraMembers: [],
@@ -1359,9 +1355,10 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   )
   const disconnectEmail = useCallback(() => {
     if (mode === 'api') {
-      void api.setOrgEmail('').then((r) => setApiOrg(r.org)).catch(() => {})
+      // In api mode board email is SMTP — clear it via clearOrgSmtp instead.
+      void api.clearOrgSmtp().then((r) => setApiOrg(r.org)).catch(() => {})
       set({ emailConnected: false, emailProvider: '', emailAddress: '' })
-      flash('Sending address removed')
+      flash('Email server settings removed')
       return
     }
     void services.mail.disconnect()
@@ -1369,55 +1366,11 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     flash('Foundation email disconnected')
   }, [mode, set, flash])
 
-  const setOrgEmail = useCallback(
-    async (fromEmail: string) => {
-      if (mode !== 'api' || !guard()) return null
-      try {
-        const { org, records, status, error } = await api.setOrgEmail(fromEmail)
-        setApiOrg(org)
-        set({
-          emailConnected: !!org.fromEmail,
-          emailProvider: org.fromEmail ? 'resend' : '',
-          emailAddress: org.fromEmail || '',
-        })
-        flash(
-          org.emailVerified
-            ? 'Sending address saved & verified'
-            : fromEmail
-              ? 'Address saved — add the DNS records below to verify'
-              : 'Sending address cleared',
-        )
-        return { records, status, error }
-      } catch (e) {
-        flash(e instanceof ApiError ? e.message : 'Could not save the address — try again.')
-        return null
-      }
-    },
-    [mode, guard, set, flash],
-  )
-
-  const verifyOrgEmail = useCallback(async () => {
-    if (mode !== 'api') return null
-    try {
-      const { org, verified, records, error } = await api.verifyOrgEmail()
-      setApiOrg(org)
-      flash(
-        verified
-          ? 'Domain verified — board email now sends from your address'
-          : 'Not verified yet — DNS changes can take a while to propagate',
-      )
-      return { verified, records, error }
-    } catch (e) {
-      flash(e instanceof ApiError ? e.message : 'Could not check verification — try again.')
-      return null
-    }
-  }, [mode, flash])
-
   const applyOrgFromSmtp = (org: ApiOrg) => {
     setApiOrg(org)
     set({
-      emailConnected: !!(org.smtpConfigured || org.fromEmail),
-      emailProvider: org.smtpConfigured ? 'smtp' : org.fromEmail ? 'resend' : '',
+      emailConnected: !!org.smtpConfigured,
+      emailProvider: org.smtpConfigured ? 'smtp' : '',
       emailAddress: org.fromEmail || '',
     })
   }
@@ -1538,8 +1491,6 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     disconnectZoom,
     connectEmail,
     disconnectEmail,
-    setOrgEmail,
-    verifyOrgEmail,
     setOrgSmtp,
     clearOrgSmtp,
     testOrgSmtp,
