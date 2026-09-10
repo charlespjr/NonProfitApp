@@ -51,6 +51,9 @@ export const orgs = pgTable('orgs', {
   smtpSecure: boolean('smtp_secure').notNull().default(true),
   smtpUser: text('smtp_user'),
   smtpPass: text('smtp_pass'),
+  /** Structured company facts (address, phone, state, EIN, website, …) that
+   *  AI drafting fills into documents instead of leaving [BRACKETED] blanks. */
+  profile: jsonb('profile').notNull().default({}),
 })
 
 export const users = pgTable(
@@ -231,6 +234,7 @@ ALTER TABLE orgs ADD COLUMN IF NOT EXISTS smtp_port integer;
 ALTER TABLE orgs ADD COLUMN IF NOT EXISTS smtp_secure boolean NOT NULL DEFAULT true;
 ALTER TABLE orgs ADD COLUMN IF NOT EXISTS smtp_user text;
 ALTER TABLE orgs ADD COLUMN IF NOT EXISTS smtp_pass text;
+ALTER TABLE orgs ADD COLUMN IF NOT EXISTS profile jsonb NOT NULL DEFAULT '{}'::jsonb;
 CREATE TABLE IF NOT EXISTS outreach_leads (
   id text PRIMARY KEY,
   org_name text NOT NULL,

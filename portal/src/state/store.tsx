@@ -194,6 +194,8 @@ export interface Store {
   /** Change the org's entity type (admin, api mode). Checklist, documents,
    *  and terminology switch to match. */
   setEntityType(entityType: EntityType): Promise<void>
+  /** Save the company profile (address, phone, state, EIN, …) used by AI. */
+  setOrgProfile(profile: import('../services/api').OrgProfile): Promise<boolean>
 
   // notes
   newNote(): void
@@ -958,6 +960,22 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     [mode, apiOrg, guard, flash],
   )
 
+  const setOrgProfile = useCallback(
+    async (profile: import('../services/api').OrgProfile) => {
+      if (mode !== 'api' || !guard()) return false
+      try {
+        const { org } = await api.setOrgProfile(profile)
+        setApiOrg(org)
+        flash('Company profile saved — AI will use it in drafts')
+        return true
+      } catch (e) {
+        flash(e instanceof ApiError ? e.message : 'Could not save the profile — try again.')
+        return false
+      }
+    },
+    [mode, guard, flash],
+  )
+
   // ----------------------------------------------------------------- notes
   const newNote = useCallback(() => {
     if (!guard()) return
@@ -1541,6 +1559,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     removeLogo,
     setAiKey,
     setEntityType,
+    setOrgProfile,
     newNote,
     updateNote,
     deleteNote,

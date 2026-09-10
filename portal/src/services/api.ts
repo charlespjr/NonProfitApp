@@ -30,6 +30,17 @@ export interface ApiOrg {
   smtpPort?: number | null
   smtpSecure?: boolean
   smtpUser?: string | null
+  /** Company facts AI drafting fills into documents. */
+  profile?: OrgProfile
+}
+
+export interface OrgProfile {
+  legalName?: string
+  address?: string
+  phone?: string
+  state?: string
+  ein?: string
+  website?: string
 }
 
 export interface SmtpSettings {
@@ -119,6 +130,8 @@ export const api = {
     req<{ ok: true; aiConfigured: boolean }>('/org/ai-key', { method: 'POST', body: JSON.stringify({ key }) }),
   setEntityType: (entityType: EntityType) =>
     req<{ org: ApiOrg }>('/org/entity-type', { method: 'POST', body: JSON.stringify({ entityType }) }),
+  setOrgProfile: (profile: OrgProfile) =>
+    req<{ org: ApiOrg }>('/org/profile', { method: 'POST', body: JSON.stringify(profile) }),
 
   // board-facing transactional email
   notifyVote: (input: { motionTitle: string; motionDesc?: string; meetingTitle?: string }) =>
