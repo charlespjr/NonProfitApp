@@ -37,6 +37,8 @@ export interface ApiOrg {
 export interface OrgProfile {
   legalName?: string
   address?: string
+  city?: string
+  zip?: string
   phone?: string
   state?: string
   ein?: string

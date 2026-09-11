@@ -353,6 +353,9 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       const tokens: Record<string, string | undefined> = {
         '[STATE]': p.state,
         '[ADDRESS]': p.address,
+        '[CITY]': p.city,
+        '[ZIP CODE]': p.zip,
+        '[ZIP]': p.zip,
         '[EIN]': p.ein,
         '[PHONE]': p.phone,
         '[WEBSITE]': p.website,

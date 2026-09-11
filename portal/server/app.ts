@@ -126,16 +126,20 @@ function publicOrg(o: typeof orgs.$inferSelect) {
 }
 
 /** The profile fields AI drafting is allowed to fill in. */
-const PROFILE_FIELDS = ['legalName', 'address', 'phone', 'state', 'ein', 'website'] as const
+const PROFILE_FIELDS = ['legalName', 'address', 'city', 'zip', 'phone', 'state', 'ein', 'website'] as const
 
 /** Known company facts, formatted for an AI prompt so drafts use real values
  *  instead of [BRACKETED] placeholders. */
 function orgFacts(o: typeof orgs.$inferSelect): string {
   const p = (o.profile || {}) as Record<string, string>
+  const fullAddress = [p.address, [p.city, p.state].filter(Boolean).join(', '), p.zip].filter(Boolean).join(', ')
   const lines = [
     `Legal name: ${p.legalName || o.name}`,
     p.state && `State of incorporation/formation: ${p.state}`,
-    p.address && `Principal / business office address: ${p.address}`,
+    p.address && `Street address: ${p.address}`,
+    p.city && `City: ${p.city}`,
+    p.zip && `ZIP code: ${p.zip}`,
+    fullAddress && `Full principal / business office address: ${fullAddress}`,
     p.phone && `Business phone: ${p.phone}`,
     p.ein && `EIN: ${p.ein}`,
     p.website && `Website: ${p.website}`,

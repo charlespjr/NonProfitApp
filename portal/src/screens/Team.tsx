@@ -211,6 +211,8 @@ function CompanyProfileCard() {
   const p = store.apiOrg?.profile || {}
   const [legalName, setLegalName] = useState(p.legalName || '')
   const [address, setAddress] = useState(p.address || '')
+  const [city, setCity] = useState(p.city || '')
+  const [zip, setZip] = useState(p.zip || '')
   const [phone, setPhone] = useState(p.phone || '')
   const [stateInc, setStateInc] = useState(p.state || '')
   const [ein, setEin] = useState(p.ein || '')
@@ -219,7 +221,7 @@ function CompanyProfileCard() {
 
   const save = async () => {
     setBusy(true)
-    await store.setOrgProfile({ legalName, address, phone, state: stateInc, ein, website })
+    await store.setOrgProfile({ legalName, address, city, zip, phone, state: stateInc, ein, website })
     setBusy(false)
   }
 
@@ -235,8 +237,16 @@ function CompanyProfileCard() {
           <input className="inp" value={legalName} onChange={(e) => setLegalName(e.target.value)} placeholder={store.orgName} style={smtpFieldStyle} />
         </div>
         <div style={sx('grid-column:1 / -1')}>
-          <label style={smtpLabelStyle}>Business office address</label>
-          <input className="inp" value={address} onChange={(e) => setAddress(e.target.value)} placeholder="Street, city, state ZIP" style={smtpFieldStyle} />
+          <label style={smtpLabelStyle}>Street address</label>
+          <input className="inp" value={address} onChange={(e) => setAddress(e.target.value)} placeholder="7918 Jones Branch Drive, 4th Fl" style={smtpFieldStyle} />
+        </div>
+        <div>
+          <label style={smtpLabelStyle}>City</label>
+          <input className="inp" value={city} onChange={(e) => setCity(e.target.value)} placeholder="McLean" style={smtpFieldStyle} />
+        </div>
+        <div>
+          <label style={smtpLabelStyle}>ZIP code</label>
+          <input className="inp" value={zip} onChange={(e) => setZip(e.target.value)} placeholder="22102" style={smtpFieldStyle} />
         </div>
         <div>
           <label style={smtpLabelStyle}>Business phone</label>
