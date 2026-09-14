@@ -138,6 +138,8 @@ export interface Store {
   // auth (api mode)
   register(input: { orgName: string; name: string; email: string; username: string; password: string; entityType: EntityType }): Promise<void>
   changePassword(password: string): Promise<void>
+  /** Request a password reset — emails a fresh temp password (api mode). */
+  forgotPassword(identifier: string): Promise<void>
 
   // billing (api mode)
   checkout(tier: 'starter' | 'growth' | 'scale' | 'launch_partner', period?: 'monthly' | 'yearly'): Promise<void>
@@ -285,6 +287,21 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const versionRef = useRef(0)
   const hydratingRef = useRef(false)
   const planCheckRef = useRef(0)
+  // Deep link from an email CTA (?go=votes | ?go=documents&doc=<id>). Captured
+  // once at boot and applied after the session hydrates, then cleared.
+  const deepLinkRef = useRef<{ screen?: ScreenKey; doc?: string }>(
+    (() => {
+      try {
+        const q = new URLSearchParams(window.location.search)
+        const go = q.get('go') || ''
+        const doc = q.get('doc') || undefined
+        const valid: ScreenKey[] = ['dashboard', 'documents', 'checklist', 'votes', 'calendar', 'notes', 'team']
+        return { screen: (valid as string[]).includes(go) ? (go as ScreenKey) : undefined, doc }
+      } catch {
+        return {}
+      }
+    })(),
+  )
 
   // ---- branding: the seed content was written for the demo org (Adams
   // Infinite Legacy and its sample festival). Registered organizations see
@@ -437,8 +454,19 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       accounts: accountsFrom(members),
       extraMembers: [],
       sessionUserId: sess.me.id,
-      screen: 'dashboard',
+      screen: deepLinkRef.current.screen || 'dashboard',
+      modal: deepLinkRef.current.doc || null,
     }))
+    // A deep link is one-shot: apply it, then clear it and tidy the URL so a
+    // refresh doesn't reopen the same document/vote.
+    if (deepLinkRef.current.screen || deepLinkRef.current.doc) {
+      deepLinkRef.current = {}
+      try {
+        window.history.replaceState(null, '', window.location.pathname)
+      } catch {
+        /* ignore */
+      }
+    }
     // allow the persist effect to run again after this render settles
     setTimeout(() => (hydratingRef.current = false), 0)
   }, [])
@@ -715,6 +743,29 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     [mode, flash],
   )
 
+  const forgotPassword = useCallback(
+    async (identifier: string) => {
+      if (mode !== 'api') {
+        set({ loginError: 'Password reset needs the backend.' })
+        return
+      }
+      const id = identifier.trim()
+      if (!id) {
+        set({ loginError: 'Enter your username or email first, then tap Forgot.' })
+        return
+      }
+      try {
+        await api.forgot(id)
+        set({ loginError: '' })
+        flash('If an account matches, a reset email with a temporary password is on its way.')
+      } catch {
+        // Still show the generic message — never reveal whether an account exists.
+        flash('If an account matches, a reset email with a temporary password is on its way.')
+      }
+    },
+    [mode, set, flash],
+  )
+
   const logout = useCallback(() => {
     if (mode === 'api') {
       void api.logout()
@@ -819,7 +870,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       )
       const docName = allDocs().find((d) => d.id === docId)?.name || 'a document'
       if (mode === 'api') {
-        void api.notifySign({ docName, memberIds: pending.map((m) => m.id) })
+        void api.notifySign({ docName, docId, memberIds: pending.map((m) => m.id) })
       } else {
         void services.mail.sendSignReminder(docId, pending)
       }
@@ -1545,6 +1596,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     refreshPlan,
     register,
     changePassword,
+    forgotPassword,
     checkout,
     openBillingPortal,
     roster,

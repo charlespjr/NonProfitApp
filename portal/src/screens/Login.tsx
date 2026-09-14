@@ -122,7 +122,12 @@ export function Login() {
               <div style={fieldStyle}>
                 <div style={sx('display:flex;justify-content:space-between;align-items:center')}>
                   <label style={labelStyle}>Password</label>
-                  <span style={sx('font-size:12px;color:var(--accent);cursor:pointer')}>Forgot?</span>
+                  <span
+                    onClick={() => void store.forgotPassword(identifier)}
+                    style={sx('font-size:12px;color:var(--accent);cursor:pointer')}
+                  >
+                    Forgot?
+                  </span>
                 </div>
                 <input className="inp" type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••••" style={inputStyle} />
               </div>

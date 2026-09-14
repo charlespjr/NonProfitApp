@@ -120,17 +120,18 @@ export function voteEmail(org: Org, m: VoteEmailInput): { subject: string; html:
     <p style="margin:0 0 6px">Sign in to review the details and cast your vote (for, against, or abstain).</p>`
   return {
     subject: `Board vote requested: ${m.motionTitle}`,
-    html: layout(org.name, 'A board vote needs your attention', body, { text: 'Review & vote', url: appUrl() }),
+    html: layout(org.name, 'A board vote needs your attention', body, { text: 'Review & vote', url: `${appUrl()}/?go=votes` }),
   }
 }
 
-export function signEmail(org: Org, docName: string): { subject: string; html: string } {
+export function signEmail(org: Org, docName: string, docId?: string): { subject: string; html: string } {
   const body = `<p style="margin:0 0 14px">A document is waiting for your electronic signature on the ${escapeHtml(org.name)} board portal:</p>
     <p style="margin:0 0 14px;font-size:16px;font-weight:bold;color:#271c15">${escapeHtml(docName)}</p>
     <p style="margin:0 0 6px">Sign in to review it and sign securely.</p>`
+  const url = docId ? `${appUrl()}/?go=documents&doc=${encodeURIComponent(docId)}` : `${appUrl()}/?go=documents`
   return {
     subject: `Signature requested: ${docName}`,
-    html: layout(org.name, 'A document needs your signature', body, { text: 'Review & sign', url: appUrl() }),
+    html: layout(org.name, 'A document needs your signature', body, { text: 'Review & sign', url }),
   }
 }
 
@@ -166,6 +167,24 @@ export function inviteEmail(
   return {
     subject: `${m.inviterName ? `${m.inviterName} has ` : ''}invited you to join ${org.name}'s board`,
     html: layout(org.name, `You're invited to the ${org.name} board`, body, { text: 'Sign up & get started', url: appUrl() }),
+  }
+}
+
+export function resetEmail(
+  org: Org,
+  m: { name: string; username: string; tempPassword: string },
+): { subject: string; html: string } {
+  const first = m.name.split(' ')[0] || m.name
+  const body = `<p style="margin:0 0 14px">Hi ${escapeHtml(first)},</p>
+    <p style="margin:0 0 14px">A password reset was requested for your ${escapeHtml(org.name)} board portal account. Use this temporary password to sign in:</p>
+    <table role="presentation" cellpadding="0" cellspacing="0" style="margin:6px 0 16px;font-size:15px">
+      <tr><td style="color:#8b8074;padding:2px 14px 2px 0">Username</td><td style="font-weight:bold;color:#271c15">${escapeHtml(m.username)}</td></tr>
+      <tr><td style="color:#8b8074;padding:2px 14px 2px 0">Temporary password</td><td style="font-weight:bold;color:#271c15;font-family:monospace">${escapeHtml(m.tempPassword)}</td></tr>
+    </table>
+    <p style="margin:0 0 6px">You'll be asked to set a new password right after you sign in. If you didn't request this, you can ignore this email — your old password no longer works, so contact your administrator if needed.</p>`
+  return {
+    subject: `Reset your ${org.name} portal password`,
+    html: layout(org.name, 'Password reset', body, { text: 'Sign in', url: appUrl() }),
   }
 }
 
