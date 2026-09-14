@@ -114,6 +114,8 @@ export const api = {
   logout: () => req<{ ok: true }>('/auth/logout', { method: 'POST' }),
   changePassword: (password: string) =>
     req<{ ok: true }>('/auth/change-password', { method: 'POST', body: JSON.stringify({ password }) }),
+  forgot: (identifier: string) =>
+    req<{ ok: true }>('/auth/forgot', { method: 'POST', body: JSON.stringify({ identifier }) }),
 
   getState: () => req<{ data: Record<string, unknown>; version: number }>('/state'),
   putState: (data: Record<string, unknown>, version: number) =>
@@ -138,7 +140,7 @@ export const api = {
   // board-facing transactional email
   notifyVote: (input: { motionTitle: string; motionDesc?: string; meetingTitle?: string }) =>
     req<{ sent: number; dryRun: boolean; configured: boolean }>('/notify/vote', { method: 'POST', body: JSON.stringify(input) }),
-  notifySign: (input: { docName: string; memberIds?: string[] }) =>
+  notifySign: (input: { docName: string; docId?: string; memberIds?: string[] }) =>
     req<{ sent: number; dryRun: boolean; configured: boolean }>('/notify/sign', { method: 'POST', body: JSON.stringify(input) }),
   setOrgSmtp: (settings: Partial<SmtpSettings> & { host: string }) =>
     req<{ org: ApiOrg }>('/org/smtp', { method: 'POST', body: JSON.stringify(settings) }),

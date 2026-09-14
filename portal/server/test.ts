@@ -233,6 +233,16 @@ async function main() {
   res = await app.request('/api/auth/login', json({ identifier: 'judy.adams', password: 'my-new-pass-1' }))
   check('new password works', res.status === 200)
 
+  // 11b. forgot password: generic ok; issues a fresh temp password for matches
+  res = await app.request('/api/auth/forgot', json({ identifier: 'judy.adams' }))
+  check('forgot password → 200 ok', res.status === 200 && (await j(res)).ok === true)
+  res = await app.request('/api/auth/login', json({ identifier: 'judy.adams', password: 'my-new-pass-1' }))
+  check('old password no longer works after reset', res.status === 401)
+  res = await app.request('/api/auth/forgot', json({ identifier: 'nobody@nowhere.example' }))
+  check('forgot for unknown identifier still → 200 (no enumeration)', res.status === 200)
+  res = await app.request('/api/auth/forgot', json({ identifier: '' }))
+  check('forgot without identifier → 400', res.status === 400)
+
   // 12b. AI drafting key: validated, admin-only, never echoed back
   res = await app.request('/api/org/ai-key', json({ key: 'not-a-key' }, admin))
   check('malformed anthropic key → 400', res.status === 400)

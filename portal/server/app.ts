@@ -9,7 +9,7 @@ import { orgs, orgState, outreachCampaigns, outreachDrip, outreachLeads, outreac
 import { billing } from './billing.js'
 import { ACTORS, apifyConfigured, lastRawSample, runActor } from './apify.js'
 import { DEFAULT_TEMPLATE, renderEmail, resendConfigured, sendEmail } from './outreach.js'
-import { inviteEmail, sendOrgEmail, sendViaSmtp, signEmail, smtpOf, voteEmail } from './mail.js'
+import { inviteEmail, resetEmail, sendOrgEmail, sendViaSmtp, signEmail, smtpOf, voteEmail } from './mail.js'
 
 const JWT_SECRET = process.env.JWT_SECRET || 'dev-only-secret-change-in-production'
 const COOKIE = 'quorum_session'
@@ -243,6 +243,31 @@ app.post('/auth/login', async (c) => {
 
 app.post('/auth/logout', (c) => {
   deleteCookie(c, COOKIE, { path: '/' })
+  return c.json({ ok: true })
+})
+
+/** Forgot password: email a fresh temporary password to any account matching
+ *  the identifier (username or email), sent to that account's own email via
+ *  its org's mail server. Always returns ok to avoid revealing which accounts
+ *  exist. Requires the org to have email configured for the reset to arrive. */
+app.post('/auth/forgot', async (c) => {
+  const body = await c.req.json().catch(() => null)
+  const identifier = (body?.identifier || '').trim().toLowerCase()
+  if (!identifier) return c.json({ error: 'enter your username or email' }, 400)
+  const db = await getDb()
+  const rows = await db.select().from(users)
+  const matches = rows.filter(
+    (u) => u.email && (u.username.toLowerCase() === identifier || u.email.toLowerCase() === identifier),
+  )
+  for (const u of matches) {
+    const pw = tempPw()
+    await db.update(users).set({ passwordHash: await bcrypt.hash(pw, 10), mustChangePassword: true, status: 'active' }).where(eq(users.id, u.id))
+    const [org] = await db.select().from(orgs).where(eq(orgs.id, u.orgId))
+    if (org) {
+      const { subject, html } = resetEmail(org, { name: u.name, username: u.username, tempPassword: pw })
+      void sendOrgEmail(org, u.email, subject, html)
+    }
+  }
   return c.json({ ok: true })
 })
 
@@ -502,6 +527,7 @@ app.post('/notify/sign', requireAuth, requireActivePlan, async (c) => {
   const body = await c.req.json().catch(() => ({}))
   const docName = String(body?.docName || '').trim()
   if (!docName) return c.json({ error: 'docName is required' }, 400)
+  const docId = body?.docId ? String(body.docId) : undefined
   const ids: string[] | null = Array.isArray(body?.memberIds) ? body.memberIds.map(String) : null
   const org = c.get('org')
   const db = await getDb()
@@ -510,7 +536,7 @@ app.post('/notify/sign', requireAuth, requireActivePlan, async (c) => {
   const recipients = roster.filter(
     (u) => u.email && u.id !== meId && (ids ? ids.includes(u.id) : u.canSign),
   )
-  const { subject, html } = signEmail(org, docName)
+  const { subject, html } = signEmail(org, docName, docId)
   const results = await Promise.all(recipients.map((r) => sendOrgEmail(org, r.email, subject, html)))
   const sent = results.filter((r) => r.ok).length
   return c.json({ sent, dryRun: results.some((r) => r.dryRun), configured: !!smtpOf(org) })
