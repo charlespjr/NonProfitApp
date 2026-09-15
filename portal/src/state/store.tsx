@@ -376,6 +376,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         '[EIN]': p.ein,
         '[PHONE]': p.phone,
         '[WEBSITE]': p.website,
+        '[CORPORATION ID]': p.entityId,
+        '[ENTITY ID]': p.entityId,
       }
       for (const [token, value] of Object.entries(tokens)) {
         if (value) out = out.split(token).join(value)

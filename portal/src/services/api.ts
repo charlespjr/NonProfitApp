@@ -43,6 +43,7 @@ export interface OrgProfile {
   state?: string
   ein?: string
   website?: string
+  entityId?: string
 }
 
 export interface SmtpSettings {
