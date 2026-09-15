@@ -216,12 +216,13 @@ function CompanyProfileCard() {
   const [phone, setPhone] = useState(p.phone || '')
   const [stateInc, setStateInc] = useState(p.state || '')
   const [ein, setEin] = useState(p.ein || '')
+  const [entityId, setEntityId] = useState(p.entityId || '')
   const [website, setWebsite] = useState(p.website || '')
   const [busy, setBusy] = useState(false)
 
   const save = async () => {
     setBusy(true)
-    await store.setOrgProfile({ legalName, address, city, zip, phone, state: stateInc, ein, website })
+    await store.setOrgProfile({ legalName, address, city, zip, phone, state: stateInc, ein, entityId, website })
     setBusy(false)
   }
 
@@ -259,6 +260,10 @@ function CompanyProfileCard() {
         <div>
           <label style={smtpLabelStyle}>EIN <span style={sx('color:var(--muted);font-weight:400')}>(optional)</span></label>
           <input className="inp" value={ein} onChange={(e) => setEin(e.target.value)} placeholder="XX-XXXXXXX" style={smtpFieldStyle} />
+        </div>
+        <div>
+          <label style={smtpLabelStyle}>Corporation ID <span style={sx('color:var(--muted);font-weight:400')}>(state file/entity #)</span></label>
+          <input className="inp" value={entityId} onChange={(e) => setEntityId(e.target.value)} placeholder="e.g. 1234567" style={smtpFieldStyle} />
         </div>
         <div>
           <label style={smtpLabelStyle}>Website <span style={sx('color:var(--muted);font-weight:400')}>(optional)</span></label>

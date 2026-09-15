@@ -126,7 +126,7 @@ function publicOrg(o: typeof orgs.$inferSelect) {
 }
 
 /** The profile fields AI drafting is allowed to fill in. */
-const PROFILE_FIELDS = ['legalName', 'address', 'city', 'zip', 'phone', 'state', 'ein', 'website'] as const
+const PROFILE_FIELDS = ['legalName', 'address', 'city', 'zip', 'phone', 'state', 'ein', 'website', 'entityId'] as const
 
 /** Known company facts, formatted for an AI prompt so drafts use real values
  *  instead of [BRACKETED] placeholders. */
@@ -142,6 +142,7 @@ function orgFacts(o: typeof orgs.$inferSelect): string {
     fullAddress && `Full principal / business office address: ${fullAddress}`,
     p.phone && `Business phone: ${p.phone}`,
     p.ein && `EIN: ${p.ein}`,
+    p.entityId && `Corporation / state entity (file) ID: ${p.entityId}`,
     p.website && `Website: ${p.website}`,
   ].filter(Boolean)
   return lines.join('\n')
@@ -775,10 +776,31 @@ app.post('/ai/document', requireAuth, requireActivePlan, async (c) => {
   const signers = roster.map((u) => `- ${u.name}, ${u.roleTitle}`).join('\n') || '- [DIRECTOR NAME], [TITLE]'
   const me = c.get('me')
   const today = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
+  // A "resolution" (or board vote / minutes) gets a specific corporate-resolution
+  // layout: title + corporation ID/"minutes" header, meeting details, attendees,
+  // statement of purpose, the resolution, and a for/against vote (majority rules).
+  const isResolution = /resolution|board vote|minutes|resolve/i.test(`${name} ${category} ${desc}`)
+  const resolutionFormat = isResolution
+    ? [
+        '',
+        'FORMAT — this is a corporate RESOLUTION written as meeting minutes. Follow this structure exactly:',
+        '- A header line with the word "RESOLUTION" at the top-left and "MINUTES" at the top-right; directly under "MINUTES" on the right put "Corporation ID: <the corporation/state entity ID>" (use the real ID if known).',
+        '- The corporation\'s legal name and state of incorporation, and its EIN if known.',
+        '- "Date of meeting and of this resolution:" with the date.',
+        '- MEETING DETAILS: the exact day of week, date, and start time the meeting was called to order, and the place (the corporation\'s address, or by video/teleconference). Note a quorum was present.',
+        '- DIRECTORS PRESENT: list every attendee by name (e.g. "John, Mary, and Harry"); then directors absent, and any guests/advisors also present.',
+        '- STATEMENT OF PURPOSE: state that the board determined it is in the best interest of the corporation to act on a specific matter, and describe that matter (e.g. whether to open a corporate bank account).',
+        '- RESOLUTION: "Upon motion duly made by [NAME] and seconded by [NAME]… RESOLVED, that …" stating the action approved and authorizing the officers to carry it out.',
+        '- VOTE: show votes in favor (Ayes), against (Noes), and abstentions, and state that a majority of directors present is required to pass; mark the result ADOPTED or REJECTED.',
+        '- Adjournment time, then a SIGNATURES block (each director signs, plus the Secretary) with date lines.',
+        '- An OPTIONAL notary acknowledgment block at the end (State/County, subscribed and sworn, Notary Public, commission expires).',
+      ]
+    : []
   const prompt = [
     `Write a complete, professional ${category || 'governance'} document titled "${name}" for ${org.name}, a ${entityLabel}.`,
     desc ? `What it needs to do / cover: ${desc}` : '',
     details ? `Specific facts to use in this document (authoritative — use them, do not bracket them):\n${details}` : '',
+    ...resolutionFormat,
     '',
     'Known details about the organization (use these real values, and PARSE them for parts — e.g. derive city, state, and ZIP from the address; only use [BRACKETS] for facts NOT provided anywhere):',
     orgFacts(org),
