@@ -138,7 +138,7 @@ const CCORP_INFO: Record<string, DocInfo> = {
   stockpurchase: { desc: 'The agreement that issues founder shares — price, number of shares, and any vesting schedule and repurchase terms.', todo: 'Fill in each founder\'s shares, price, and vesting; the company and founder sign; remember the 83(b) election.' },
   ipassign: { desc: 'Assigns each founder\'s and employee\'s work product and inventions to the company. Investors and acquirers require this for everyone.', todo: 'Every founder and early hire signs before doing company work. Route to each person electronically.' },
   captable: { desc: 'The ownership ledger — who holds how many shares and what percentage, including options and reserved pools.', todo: 'Update it every time shares or options are issued. Keep it as the single source of truth on ownership.' },
-  boardvote: { desc: 'A full board resolution written as meeting minutes — title, Corporation ID, date, meeting start day/time, attendees, statement of purpose, the resolution, and a for/against vote (majority rules), with an optional notary block.', todo: 'Fill in the meeting details, attendees, the specific matter, and the vote (Ayes/Noes); the directors sign to record the decision. Notarize if the recipient requires it.' },
+  boardvote: { desc: 'A full board resolution written as meeting minutes — title, Corporation ID, date, meeting start day/time, attendees, statement of purpose, the resolution, and a for/against vote (majority rules), with an optional notary block. Comes pre-filled with an example meeting; adjust the date, matter, and vote to your own.', todo: 'Review the pre-filled meeting details, matter, and vote and adjust them to match your meeting; the directors sign to record the decision. Notarize if the recipient requires it.' },
   omnibus: { desc: 'A broad, catch-all board resolution authorizing the officers to take any lawful action reasonably necessary to organize, fund, and operate the corporation — the general authority third parties often ask to see.', todo: 'Adopt at a meeting or by unanimous written consent; route to all directors to sign. Keep it in the corporate records to present to banks, vendors, and agencies.' },
   bankingcredit: { desc: 'Authorizes opening the corporate bank account, obtaining a business credit card and a corporate fuel/gas card, and establishing the company’s business-credit profiles with Experian Business, Dun & Bradstreet (D-U-N-S), and Nav.', todo: 'Fill in the institution and authorized-officer details, then all directors sign — banks and credit issuers routinely require this resolution.' },
 }
@@ -277,34 +277,34 @@ BOARD RESOLUTION AND MINUTES
 ADAMS INFINITE LEGACY — A [STATE] Corporation
 EIN: [EIN]
 
-Date of meeting and of this resolution: [DATE]
+Date of meeting and of this resolution: September 9, 2026
 
 MEETING DETAILS
-A meeting of the Board of Directors of Adams Infinite Legacy (the "Corporation") was duly called and held on [DAY OF WEEK], [DATE], at [START TIME], at [ADDRESS], [CITY], [STATE] [ZIP CODE] (or by video/teleconference). A quorum being present, the meeting was called to order.
+A meeting of the Board of Directors of Adams Infinite Legacy (the "Corporation") was duly called and held on Tuesday, September 9, 2026, at 10:00 a.m., at [ADDRESS], [CITY], [STATE] [ZIP CODE] (or by video/teleconference). A quorum being present, the meeting was called to order.
 
 DIRECTORS PRESENT
-The following directors were present, constituting a quorum: [LIST ALL DIRECTORS PRESENT — e.g., John, Mary, and Harry].
-Directors absent: [NONE, or LIST].
-Also present: [GUESTS / ADVISORS, if any].
+All directors of the Corporation were present, in person or by teleconference, constituting a quorum.
+Directors absent: None.
+Also present: None.
 
 STATEMENT OF PURPOSE
-The Board determined that it is in the best interest of the Corporation to consider and act upon the following matter: [DESCRIBE THE SPECIFIC ISSUE — e.g., whether to open a corporate bank account at [BANK]].
-Background: [ONE OR TWO SENTENCES OF CONTEXT].
+The Board determined that it is in the best interest of the Corporation to consider and act upon the following matter: whether to open a corporate bank account in the name of the Corporation and to designate the officers authorized to operate it.
+Background: The Corporation requires a dedicated bank account to receive funds, pay obligations, and keep corporate finances separate from personal finances.
 
 RESOLUTION
-Upon motion duly made by [NAME] and seconded by [NAME], and after discussion, it was:
-RESOLVED, that [STATE THE ACTION APPROVED], and that the officers of the Corporation are authorized and directed to take all actions and execute all documents reasonably necessary to carry it out.
+Upon motion duly made, seconded, and after discussion, it was:
+RESOLVED, that the officers of the Corporation are authorized and directed to open one or more bank accounts in the name of the Corporation, to designate authorized signatories, and to take all actions and execute all documents reasonably necessary to carry it out.
 
 VOTE (majority rules — the resolution passes only if the Ayes are a majority of the directors present)
-Votes in favor (Ayes): [__]        Votes against (Noes): [__]        Abstentions: [__]
-Result:   [ ] ADOPTED        [ ] REJECTED
+Votes in favor (Ayes): all directors present        Votes against (Noes): 0        Abstentions: 0
+Result:   [X] ADOPTED        [ ] REJECTED
 
-There being no further business, the meeting was adjourned at [TIME].
+There being no further business, the meeting was adjourned at 10:30 a.m.
 
 SIGNATURES
 The undersigned certify that the foregoing accurately records the action taken by the Board of Directors of the Corporation.
-[EACH DIRECTOR SIGNS]   Date: [____]
-Secretary: ______________________   Date: [____]
+Each director signs below.   Date: September 9, 2026
+Secretary: ______________________   Date: September 9, 2026
 
 NOTARY ACKNOWLEDGMENT (optional)
 State of [STATE]     County of [COUNTY]
