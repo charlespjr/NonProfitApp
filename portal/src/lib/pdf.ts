@@ -225,9 +225,13 @@ export async function exportSignedPdf(input: SignedPdfInput): Promise<void> {
   doc.setFont('helvetica', 'italic')
   doc.setFontSize(8.5)
   doc.setTextColor(130, 122, 110)
+  // Trailing period is stripped so a name like "FORCATA, INC." doesn't double
+  // up before the sentence period. No "generated today" stamp — the only dates
+  // shown are the actual per-signer signing dates above.
+  const orgClean = input.orgName.replace(/[.\s]+$/, '')
   doc.text(
     doc.splitTextToSize(
-      `Electronically signed through Quorum for ${input.orgName}. This record captures each signer's identity and the date and time they signed. Generated ${fmtDate(new Date().toISOString())}.`,
+      `Electronically signed through Quorum for ${orgClean}. This record captures each signer's identity and the date and time they signed.`,
       contentW,
     ),
     margin,
