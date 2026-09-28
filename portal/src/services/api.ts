@@ -41,6 +41,8 @@ export interface OrgProfile {
   zip?: string
   phone?: string
   state?: string
+  /** State where the entity is registered as a foreign corporation, if any. */
+  foreignState?: string
   ein?: string
   website?: string
   entityId?: string

@@ -32,6 +32,8 @@ export interface SignedPdfInput {
   footerAddress?: string
   /** Footer right — the company's website (e.g. "www.example.com"). */
   footerWebsite?: string
+  /** Italic subtitle under the title (e.g. foreign-registration note). */
+  subtitle?: string
 }
 
 function fmtDate(iso: string): string {
@@ -175,13 +177,15 @@ export async function exportSignedPdf(input: SignedPdfInput): Promise<void> {
       ? rawLines[idx].trim()
       : ''
   if (entityLine) idx++
-  // Optional italic subtitle: a following non-heading sentence line.
+  // Optional italic subtitle: passed in explicitly (foreign-registration note),
+  // or a "Registered…" line already present in the body.
   const maybeSub = rawLines[idx]?.trim() || ''
-  const subtitle =
+  const bodySub =
     maybeSub && /^[A-Z]/.test(maybeSub) && /[a-z]/.test(maybeSub) && !/^ARTICLE\b/i.test(maybeSub) && maybeSub.length < 110 && /^Registered|^A .*registered/i.test(maybeSub)
       ? maybeSub
       : ''
-  if (subtitle) idx++
+  if (bodySub) idx++
+  const subtitle = input.subtitle || bodySub
 
   const cx = pageW / 2
   y += 6
