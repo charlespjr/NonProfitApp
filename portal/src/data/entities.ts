@@ -3,8 +3,8 @@
  * document library, and terminology. The nonprofit set reuses the original
  * seed content; C Corp and LLC add their own.
  *
- * All document bodies are starter templates with [BRACKETED] fill-ins and an
- * attorney-review reminder — the store's brand() swaps the org name in.
+ * All document bodies are starter templates with [BRACKETED] fill-ins — the
+ * store's brand() swaps the org name and profile values in.
  */
 import type { ChecklistPhase, DocCategory, DocInfo, EntityType, PortalDoc } from '../types'
 import {
@@ -97,7 +97,7 @@ const CCORP_HELP: Record<string, string> = {
   regagent: 'Name a registered agent with a physical address in the state of incorporation to receive legal notices. You can be your own agent, or use a commercial service.',
   ein: "Apply for a free EIN (the company's tax ID) at IRS.gov — search 'apply for EIN online.' Takes about 10 minutes. You'll need it for the bank account, payroll, and taxes.",
   orgmeeting: 'Hold the first meeting (or written action) of the incorporator and initial board to adopt bylaws, elect directors, appoint officers, and authorize stock. Record everything in the minutes.',
-  bylaws: 'The bylaws are the internal rulebook — how the board and shareholders act, meeting and quorum rules, officer duties. Have counsel review, then the board adopts them.',
+  bylaws: 'The bylaws are the internal rulebook — how the board and shareholders act, meeting and quorum rules, officer duties. The board adopts them.',
   directors: 'Formally elect the people who will serve on the Board of Directors and record them in the minutes. Directors vote on major decisions and sign key documents.',
   officers: 'Appoint the officers who run day-to-day operations — typically a CEO/President, a CFO or Treasurer, and a Secretary — and record them in the minutes.',
   office: 'Record the principal office address in the bylaws and minutes.',
@@ -132,7 +132,7 @@ const CCORP_DOCS: PortalDoc[] = [
 ]
 
 const CCORP_INFO: Record<string, DocInfo> = {
-  bylaws: { desc: 'The internal rulebook for the corporation — board and shareholder meetings, quorum, voting, officer roles, and stock mechanics.', todo: 'Have corporate counsel review, then the board adopts and the Secretary certifies it. Keep it in the corporate records.' },
+  bylaws: { desc: 'The internal rulebook for the corporation — board and shareholder meetings, quorum, voting, officer roles, and stock mechanics.', todo: 'The board adopts these and the Secretary certifies them. Keep it in the corporate records.' },
   minutes: { desc: 'The official record of the first (organizational) board meeting — adopting bylaws, electing directors, appointing officers, and authorizing stock.', todo: 'Confirm the dates and decisions, then the Secretary and Chair sign, and route to all directors electronically.' },
   boardconsent: { desc: 'A written consent the directors sign to approve an action (authorizing shares, opening banking, approving an equity plan) without holding a meeting.', todo: 'Describe the action, then route to all directors to sign electronically.' },
   stockpurchase: { desc: 'The agreement that issues founder shares — price, number of shares, and any vesting schedule and repurchase terms.', todo: 'Fill in each founder\'s shares, price, and vesting; the company and founder sign; remember the 83(b) election.' },
@@ -146,8 +146,6 @@ const CCORP_INFO: Record<string, DocInfo> = {
 const CCORP_BODIES: Record<string, string> = {
   bylaws: `BYLAWS OF ADAMS INFINITE LEGACY
 A [STATE] Corporation
-
-DRAFT FOR REVIEW — to be reviewed by qualified corporate counsel prior to adoption.
 
 ARTICLE I — OFFICES
 1.1 Principal Office. The principal office of the corporation is located at [ADDRESS].
@@ -181,10 +179,8 @@ ARTICLE VII — AMENDMENTS
 7.1 These Bylaws may be adopted, amended, or repealed by the Board or the shareholders as permitted by law.
 
 CERTIFICATE OF SECRETARY
-I certify that these Bylaws were adopted by the Board of Directors of Adams Infinite Legacy on [DATE].
-Secretary: ______________________   Date: [____]
-
-[TEMPLATE — have your attorney review before adoption.]`,
+I certify that these Bylaws were adopted by the Board of Directors of Adams Infinite Legacy on September 9, 2026.
+Secretary: ______________________   Date: September 9, 2026`,
 
   minutes: `MINUTES OF THE ORGANIZATIONAL MEETING OF THE BOARD OF DIRECTORS
 ADAMS INFINITE LEGACY — A [STATE] Corporation
@@ -204,9 +200,7 @@ PRESENT: [LIST DIRECTORS PRESENT]. A quorum was present and the meeting was call
 10. RATIFICATION. RESOLVED, that prior acts of the incorporator and officers are ratified.
 
 There being no further business, the meeting adjourned.
-Secretary: ______________________   Chair: ______________________
-
-[TEMPLATE — confirm details and have counsel review.]`,
+Secretary: ______________________   Chair: ______________________`,
 
   boardconsent: `ACTION BY WRITTEN CONSENT OF THE BOARD OF DIRECTORS
 ADAMS INFINITE LEGACY
@@ -233,9 +227,7 @@ This Agreement is made on [DATE] between Adams Infinite Legacy (the "Company") a
 6. IP. The Purchaser has executed the Company's Invention & IP Assignment Agreement.
 
 COMPANY: ______________________   Date: [____]
-PURCHASER: ______________________   Date: [____]
-
-[TEMPLATE — securities-law sensitive; have your attorney review before use.]`,
+PURCHASER: ______________________   Date: [____]`,
 
   ipassign: `CONFIDENTIAL INFORMATION & INVENTION ASSIGNMENT AGREEMENT
 ADAMS INFINITE LEGACY
@@ -249,9 +241,7 @@ Between Adams Infinite Legacy (the "Company") and [NAME] ("I"/"me"), effective [
 5. NO CONFLICT. My work for the Company does not breach any agreement with a third party.
 
 SIGNED: ______________________   Date: [____]
-FOR THE COMPANY: ______________________   Date: [____]
-
-[TEMPLATE — have your attorney review before use.]`,
+FOR THE COMPANY: ______________________   Date: [____]`,
 
   captable: `CAPITALIZATION TABLE — ADAMS INFINITE LEGACY
 As of [DATE]
@@ -268,7 +258,7 @@ TOTAL ISSUED                   [#]           100%
 
 Fully-diluted total (incl. pool): [#]
 
-[TEMPLATE — update every time shares or options are issued. This is the single source of truth for ownership.]`,
+[Update every time shares or options are issued — this is the single source of truth for ownership.]`,
 
   boardvote: `RESOLUTION                                                    MINUTES
                                                               Corporation ID: [CORPORATION ID]
@@ -309,15 +299,11 @@ Secretary: ______________________   Date: September 9, 2026
 NOTARY ACKNOWLEDGMENT (optional)
 State of [STATE]     County of [COUNTY]
 Subscribed and sworn to before me this [__] day of [MONTH], [YEAR].
-Notary Public: ______________________     My commission expires: [____]
-
-[TEMPLATE — have your attorney review before it is relied upon.]`,
+Notary Public: ______________________     My commission expires: [____]`,
 
   omnibus: `OMNIBUS RESOLUTION OF THE BOARD OF DIRECTORS
 ADAMS INFINITE LEGACY — A [STATE] Corporation
 (Blanket / General Authority)
-
-DRAFT FOR REVIEW — to be reviewed by qualified corporate counsel before it is relied upon.
 
 The undersigned, being all of the directors of Adams Infinite Legacy (the "Corporation"), adopt the following resolutions by [unanimous written consent / vote at a meeting] effective [DATE]:
 
@@ -341,15 +327,11 @@ This consent may be signed in counterparts. By signing below, each director vote
 
 CERTIFICATE OF SECRETARY
 I certify that I am the Secretary of Adams Infinite Legacy and that the foregoing resolutions were duly adopted by its Board of Directors and remain in full force and effect.
-Secretary: ______________________   Date: [____]
-
-[TEMPLATE — a broad grant of authority. Have your attorney review and tailor it before use.]`,
+Secretary: ______________________   Date: [____]`,
 
   bankingcredit: `BANKING & BUSINESS CREDIT AUTHORIZATION
 RESOLUTION OF THE BOARD OF DIRECTORS
 ADAMS INFINITE LEGACY — A [STATE] Corporation
-
-DRAFT FOR REVIEW — to be reviewed by qualified corporate counsel before it is relied upon.
 
 The undersigned, being all of the directors of Adams Infinite Legacy (the "Corporation"), adopt the following resolutions by [unanimous written consent / vote at a meeting] effective [DATE]. The Corporation's EIN is [EIN] and its principal address is [ADDRESS].
 
@@ -377,7 +359,7 @@ CERTIFICATE OF SECRETARY
 I certify that I am the Secretary of Adams Infinite Legacy and that the foregoing resolutions were duly adopted by its Board of Directors and remain in full force and effect.
 Secretary: ______________________   Date: [____]
 
-[TEMPLATE — fill in the bracketed institution and officer details. Have your attorney review before use; some issuers require their own resolution or forms as well.]`,
+[Fill in the bracketed institution and officer details; some issuers require their own resolution or forms as well.]`,
 }
 
 // ─────────────────────────────────────────────────────────────────── LLC
@@ -424,7 +406,7 @@ const LLC_HELP: Record<string, string> = {
   articles: "File the Articles of Organization (some states call it a Certificate of Formation) with your Secretary of State. This legally creates the LLC.",
   regagent: 'Name a registered agent with a physical address in the state of formation to receive legal notices. You can be your own agent, or use a commercial service.',
   ein: "Apply for a free EIN at IRS.gov — search 'apply for EIN online.' Even a single-member LLC generally needs one for a bank account and taxes.",
-  operating: "The Operating Agreement is the LLC's core governing document — ownership, management, voting, profit distributions, and what happens when a member leaves. Even single-member LLCs should have one. Have counsel review, then all members sign.",
+  operating: "The Operating Agreement is the LLC's core governing document — ownership, management, voting, profit distributions, and what happens when a member leaves. Even single-member LLCs should have one. All members sign.",
   structure: 'Decide whether members run the LLC directly (member-managed) or appoint managers to run it (manager-managed), and record the choice in the Operating Agreement.',
   members: 'List each member and their ownership percentage (membership interest) in the membership ledger.',
   contributions: 'Record what each member contributed — cash, property, or services — and the value credited to their capital account.',
@@ -447,7 +429,7 @@ const LLC_DOCS: PortalDoc[] = [
 ]
 
 const LLC_INFO: Record<string, DocInfo> = {
-  operating: { desc: "The LLC's core governing document — ownership percentages, management structure, voting, profit and loss allocation, distributions, and member transfer/exit rules.", todo: 'Have counsel review, then all members sign electronically. Keep it with the company records — banks and investors will ask for it.' },
+  operating: { desc: "The LLC's core governing document — ownership percentages, management structure, voting, profit and loss allocation, distributions, and member transfer/exit rules.", todo: 'All members sign electronically. Keep it with the company records — banks and investors will ask for it.' },
   consent: { desc: 'A written consent the members sign to adopt the Operating Agreement, authorize banking, admit members, and ratify organizational acts — without holding a formal meeting.', todo: 'Confirm the resolutions, then route to all members to sign electronically.' },
   ledger: { desc: 'The ownership record — each member, their membership interest (%), and the capital they contributed.', todo: 'Update it whenever a member is admitted, contributes capital, or transfers interest.' },
   memberaction: { desc: 'A reusable record of a member decision, approved by vote or by written consent per the Operating Agreement.', todo: 'Describe the matter and how it was approved, then the members sign to record the decision.' },
@@ -456,8 +438,6 @@ const LLC_INFO: Record<string, DocInfo> = {
 const LLC_BODIES: Record<string, string> = {
   operating: `OPERATING AGREEMENT OF ADAMS INFINITE LEGACY, LLC
 A [STATE] Limited Liability Company
-
-DRAFT FOR REVIEW — to be reviewed by qualified counsel prior to adoption.
 
 ARTICLE I — FORMATION
 1.1 Formation. The Company was formed by filing Articles of Organization with the [STATE] Secretary of State on [DATE].
@@ -495,9 +475,7 @@ ARTICLE VIII — AMENDMENTS
 8.1 This Agreement may be amended by members holding [a majority] of the interests.
 
 The members adopt this Agreement effective [DATE].
-[EACH MEMBER SIGNS]   Date: [____]
-
-[TEMPLATE — have your attorney review before adoption.]`,
+[EACH MEMBER SIGNS]   Date: [____]`,
 
   consent: `ORGANIZATIONAL CONSENT OF THE MEMBERS
 ADAMS INFINITE LEGACY, LLC
@@ -512,9 +490,7 @@ The undersigned, being all of the members, adopt the following by written consen
 6. MEMBERSHIP LEDGER. RESOLVED, that the membership interests and capital contributions in Exhibit A are approved.
 
 This consent may be signed in counterparts.
-[EACH MEMBER SIGNS]   Date: [____]
-
-[TEMPLATE — have your attorney review.]`,
+[EACH MEMBER SIGNS]   Date: [____]`,
 
   ledger: `MEMBERSHIP LEDGER & CAPITAL CONTRIBUTIONS — ADAMS INFINITE LEGACY, LLC
 As of [DATE]
@@ -525,7 +501,7 @@ Member                     Interest %     Capital Contributed     Contribution T
 -----------------------------------------------------------------------------------
 TOTAL                      100%           $[TOTAL]
 
-[TEMPLATE — update whenever a member is admitted, contributes capital, or transfers interest.]`,
+[Update whenever a member is admitted, contributes capital, or transfers interest.]`,
 
   memberaction: `RECORD OF MEMBER ACTION — ADAMS INFINITE LEGACY, LLC
 

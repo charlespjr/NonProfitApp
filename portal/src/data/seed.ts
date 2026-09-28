@@ -44,7 +44,7 @@ export const BASE_DOCS: PortalDoc[] = [
 ]
 
 export const DOC_INFO: Record<string, DocInfo> = {
-  bylaws: { desc: 'The rulebook for how the foundation operates — its purpose, board, officers, meetings, and required policies.', todo: 'Have nonprofit counsel in your state review, then the full board adopts and signs. Certify it and keep it in the corporate records.' },
+  bylaws: { desc: 'The rulebook for how the foundation operates — its purpose, board, officers, meetings, and required policies.', todo: 'The full board adopts and signs. Certify it and keep it in the corporate records.' },
   minutes: { desc: 'The official record of your first (organizational) board meeting and the resolutions that formally start the corporation.', todo: 'Confirm the details (dates, addresses, filing numbers), then the board approves and the Secretary & President sign.' },
   resolution: { desc: 'A written consent that authorizes banking, credit cards, signatories, and other corporate actions without holding a separate meeting.', todo: 'Fill in the institution / account details and authorized signatories, then all directors sign to authorize.' },
   boardvote: { desc: 'A reusable record of a board decision — approved either by a vote at a meeting or by unanimous written consent.', todo: 'Describe the matter and how it was approved, then have the directors sign to record the decision.' },
@@ -62,8 +62,7 @@ export const DOC_INFO: Record<string, DocInfo> = {
  * Starter template text for the built-in documents — what "Open electronically"
  * shows as the document preview. Written against the demo org's name so the
  * store's brand() swaps in the registered organization automatically.
- * [BRACKETS] mark fields to fill in; every template should be reviewed by
- * counsel before adoption.
+ * [BRACKETS] mark fields to fill in.
  */
 /** State-neutral starter templates (use [STATE] fill-ins, no jurisdiction
  *  baked in). Registered organizations see these; the demo org overlays the
@@ -113,9 +112,7 @@ ARTICLE X — AMENDMENTS
 CERTIFICATE OF SECRETARY
 I certify that I am the duly elected Secretary of Adams Infinite Legacy and that these Bylaws were adopted by the Board of Directors on [DATE].
 
-Secretary: ______________________  Date: [____]
-
-[TEMPLATE — have your attorney review before adoption.]`,
+Secretary: ______________________  Date: [____]`,
 
   minutes: `MINUTES OF THE ORGANIZATIONAL MEETING OF THE BOARD OF DIRECTORS
 ADAMS INFINITE LEGACY — A [STATE] Nonprofit Public Benefit Corporation
@@ -138,9 +135,7 @@ The President called the meeting to order and the Secretary recorded the minutes
 
 There being no further business, the meeting adjourned at [TIME].
 
-Secretary: ______________________  President: ______________________
-
-[TEMPLATE — confirm details and have counsel review.]`,
+Secretary: ______________________  President: ______________________`,
 
   resolution: `BOARD RESOLUTION AND UNANIMOUS WRITTEN CONSENT
 ADAMS INFINITE LEGACY
@@ -156,7 +151,7 @@ This consent may be signed in counterparts, each of which is an original.
 
 [EACH DIRECTOR SIGNS]  Date: [____]
 
-[TEMPLATE — fill in your institution and signers; review with counsel.]`,
+[Fill in your institution and signers.]`,
 
   boardvote: `RECORD OF BOARD ACTION
 ADAMS INFINITE LEGACY
@@ -405,7 +400,7 @@ export const PHASES: ChecklistPhase[] = [
 export const TASK_HELP: Record<string, string> = {
   articles: "Go to your state's Secretary of State website (most have an online business-filing portal) and file the Articles of Incorporation for a nonprofit / public benefit corporation. Once approved you get a stamped copy — save it; it's the foundation's birth certificate.",
   orgmeeting: "Gather all seven directors (in person or by video) for the first official meeting. Use the Organizational Board Minutes as your agenda and record what's decided.",
-  bylaws: 'Have your attorney review the Bylaws, then the board votes to adopt them at the meeting. Sign them in the portal and keep a copy in your records.',
+  bylaws: 'The board votes to adopt the Bylaws at the meeting. Sign them in the portal and keep a copy in your records.',
   officers: 'At the meeting, formally confirm who holds each officer role (President, Treasurer, Secretary, etc.) and write it into the minutes.',
   minutes: 'After the meeting, finish the Minutes with the real dates and decisions. The Secretary and President sign them here in the portal, then file them with your records.',
   office: 'Decide the official mailing address for the foundation and record it in the Bylaws and minutes. It can be your home or a P.O. box.',

@@ -819,7 +819,7 @@ app.post('/ai/document', requireAuth, requireActivePlan, async (c) => {
     '- Plain text only, no markdown.',
     '- End with a signature block listing each of these signers with a signature and date line:',
     signers,
-    '- Add a final line: "[TEMPLATE — have your attorney review before it is relied upon.]"',
+    '- Do NOT add any attorney-review, "have counsel review", "draft for review", or "[TEMPLATE — …]" disclaimer line anywhere in the document.',
     '',
     'Return ONLY the document text.',
   ].filter(Boolean).join('\n')
