@@ -123,6 +123,7 @@ const CCORP_DOCS: PortalDoc[] = [
   { id: 'bylaws', name: 'Corporate Bylaws', cat: 'Governance', updated: 'Draft', pages: 14 },
   { id: 'minutes', name: 'Organizational Board Minutes', cat: 'Governance', updated: 'Draft', pages: 4 },
   { id: 'boardconsent', name: 'Board Action & Written Consent', cat: 'Governance', updated: 'Draft', pages: 3 },
+  { id: 'shareholders', name: 'Shareholders’ Agreement', cat: 'Governance', updated: 'Draft', pages: 8 },
   { id: 'stockpurchase', name: 'Founder Stock Purchase Agreement', cat: 'Equity', updated: 'Draft', pages: 6 },
   { id: 'ipassign', name: 'Invention & IP Assignment Agreement', cat: 'Equity', updated: 'Draft', pages: 5 },
   { id: 'captable', name: 'Capitalization Table', cat: 'Equity', updated: 'Draft', pages: 1 },
@@ -135,6 +136,7 @@ const CCORP_INFO: Record<string, DocInfo> = {
   bylaws: { desc: 'The internal rulebook for the corporation — board and shareholder meetings, quorum, voting, officer roles, and stock mechanics.', todo: 'The board adopts these and the Secretary certifies them. Keep it in the corporate records.' },
   minutes: { desc: 'The official record of the first (organizational) board meeting — adopting bylaws, electing directors, appointing officers, and authorizing stock.', todo: 'Confirm the dates and decisions, then the Secretary and Chair sign, and route to all directors electronically.' },
   boardconsent: { desc: 'A written consent the directors sign to approve an action (authorizing shares, opening banking, approving an equity plan) without holding a meeting.', todo: 'Describe the action, then route to all directors to sign electronically.' },
+  shareholders: { desc: 'The agreement among the shareholders — share ownership, transfer restrictions (right of first refusal), tag-along and drag-along rights, board and voting rights, buy-sell on a shareholder’s departure, and confidentiality. For a corporation this is the counterpart of an LLC’s operating agreement.', todo: 'Fill in the ownership, board seats, and thresholds, attach the cap table as Exhibit A, then all shareholders sign electronically. Keep it with the corporate records.' },
   stockpurchase: { desc: 'The agreement that issues founder shares — price, number of shares, and any vesting schedule and repurchase terms.', todo: 'Fill in each founder\'s shares, price, and vesting; the company and founder sign; remember the 83(b) election.' },
   ipassign: { desc: 'Assigns each founder\'s and employee\'s work product and inventions to the company. Investors and acquirers require this for everyone.', todo: 'Every founder and early hire signs before doing company work. Route to each person electronically.' },
   captable: { desc: 'The ownership ledger — who holds how many shares and what percentage, including options and reserved pools.', todo: 'Update it every time shares or options are issued. Keep it as the single source of truth on ownership.' },
@@ -213,6 +215,47 @@ RESOLVED FURTHER, that the officers are authorized to execute all documents and 
 
 This consent may be signed in counterparts.
 [EACH DIRECTOR SIGNS]   Date: [____]`,
+
+  shareholders: `SHAREHOLDERS’ AGREEMENT OF ADAMS INFINITE LEGACY
+A [STATE] Corporation
+
+This Shareholders’ Agreement (this "Agreement") is entered into effective [DATE] by and among Adams Infinite Legacy, a [STATE] corporation (the "Corporation"), and the persons listed on Exhibit A as holders of the Corporation’s capital stock (each a "Shareholder" and together the "Shareholders").
+
+ARTICLE I — Shares & Parties
+1.1 Shares Covered. This Agreement governs all shares of capital stock of the Corporation now or later owned by each Shareholder, including shares acquired on exercise of options or warrants.
+1.2 Ownership. The name, address, and number of shares held by each Shareholder are set out in Exhibit A (the capitalization table), as updated from time to time.
+1.3 Legend. Each stock certificate or book-entry notation shall bear a legend referencing the transfer restrictions in this Agreement.
+
+ARTICLE II — Transfer Restrictions
+2.1 General Restriction. No Shareholder may sell, assign, pledge, or otherwise transfer any shares except as permitted by this Agreement and applicable securities laws. Any purported transfer in violation of this Agreement is void.
+2.2 Right of First Refusal. Before transferring shares to any third party, a Shareholder (the "Selling Shareholder") shall first offer them in writing to the Corporation and then to the other Shareholders pro rata, on the same price and terms offered by the third party. The Corporation and the Shareholders have [30] days to accept as to all, but not less than all, of the offered shares.
+2.3 Permitted Transfers. A Shareholder may transfer shares to a wholly-owned entity or to a trust for estate-planning purposes, provided the transferee first agrees in writing to be bound by this Agreement.
+
+ARTICLE III — Tag-Along & Drag-Along
+3.1 Tag-Along Rights. If Shareholders holding a majority of the shares propose to sell to a third party, each other Shareholder may participate in that sale, on the same terms, as to a pro-rata portion of their shares.
+3.2 Drag-Along Rights. If Shareholders holding at least [two-thirds] of the shares approve a sale of the Corporation, whether by stock sale, merger, or sale of substantially all assets, all Shareholders shall vote for and participate in that sale on the same terms.
+
+ARTICLE IV — Governance & Voting
+4.1 Board Composition. The Shareholders shall vote their shares so that the Board of Directors consists of [NUMBER] directors, designated as set out in Exhibit A or as the Shareholders agree in writing.
+4.2 Major Decisions. The following require the approval of Shareholders holding at least [two-thirds] of the shares: amending the Articles or Bylaws; issuing new equity; incurring debt over $[AMOUNT]; selling the Corporation; or dissolving it.
+4.3 Information Rights. The Corporation shall provide each Shareholder with annual financial statements and the current capitalization table.
+
+ARTICLE V — Buy-Sell on Departure
+5.1 Triggering Events. On a Shareholder’s death, disability, or termination of service, the Corporation, and then the other Shareholders pro rata, may purchase that Shareholder’s shares.
+5.2 Purchase Price. The price is the fair market value of the shares as of the triggering event, determined in good faith by the Board or by an independent appraiser, unless the Shareholders have agreed on a formula in Exhibit A.
+5.3 Payment Terms. The price may be paid in a lump sum or over [36] months with interest at a commercially reasonable rate, at the buyer’s election.
+
+ARTICLE VI — Confidentiality
+6.1 Confidential Information. Each Shareholder shall keep the Corporation’s confidential and proprietary information in confidence and use it only for the benefit of the Corporation.
+
+ARTICLE VII — General
+7.1 Governing Law. This Agreement is governed by the laws of the State of [STATE].
+7.2 Amendments. This Agreement may be amended only in a writing signed by the Corporation and Shareholders holding at least [two-thirds] of the shares.
+7.3 Entire Agreement. This Agreement, together with the Articles, the Bylaws, and Exhibit A, is the entire agreement among the parties on its subject matter.
+7.4 Counterparts. This Agreement may be signed in counterparts, including electronically, each of which is an original.
+
+The parties adopt this Agreement effective [DATE].
+[EACH SHAREHOLDER SIGNS]   Date: [____]`,
 
   stockpurchase: `FOUNDER STOCK PURCHASE AGREEMENT
 ADAMS INFINITE LEGACY
