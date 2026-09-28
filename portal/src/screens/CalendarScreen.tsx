@@ -11,7 +11,7 @@ const DAYS = 31
 /** Boards live on different calendars — offer the common ones plus an
  *  ICS feed any calendar app can subscribe to. */
 const CAL_PROVIDERS: Array<{ id: string; name: string; letter: string; color: string; hint: string }> = [
-  { id: 'google', name: 'Google Calendar', letter: 'G', color: '#ea4335', hint: 'Sign in with the Google account your foundation uses.' },
+  { id: 'google', name: 'Google Calendar', letter: 'G', color: '#ea4335', hint: 'Sign in with the Google account your organization uses.' },
   { id: 'microsoft', name: 'Outlook / Microsoft 365', letter: 'M', color: '#0078d4', hint: 'Sign in with your Microsoft work or personal account.' },
   { id: 'apple', name: 'Apple iCloud Calendar', letter: '', color: '#111111', hint: 'Subscribe from iPhone, iPad, or Mac — meetings appear in the Calendar app.' },
   { id: 'ics', name: 'Other calendar (ICS feed)', letter: '@', color: 'var(--accent)', hint: 'Any calendar app that accepts an ICS subscription link works.' },

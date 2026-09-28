@@ -32,7 +32,7 @@ const EMAIL_PROVIDERS: EmailProvider[] = [
     letter: 'G',
     color: '#ea4335',
     steps: [
-      'Sign in to the Google account your foundation sends mail from (e.g. board@yourfoundation.org).',
+      'Sign in to the Google account your organization sends mail from (e.g. board@yourcompany.org).',
       'Open myaccount.google.com → Security and turn on 2-Step Verification if it isn’t already.',
       'Still under Security, search "App passwords" and create one named "Quorum" — Google shows a 16-character password once.',
       'Enter your sending address below and click Connect; use that app password when asked to authorize.',
@@ -45,7 +45,7 @@ const EMAIL_PROVIDERS: EmailProvider[] = [
     letter: 'M',
     color: '#0078d4',
     steps: [
-      'Sign in at outlook.office.com with the mailbox your foundation sends from.',
+      'Sign in at outlook.office.com with the mailbox your organization sends from.',
       'Ask your Microsoft 365 admin to allow "Authenticated SMTP" for that mailbox (Admin center → Users → the mailbox → Mail → Manage email apps).',
       'If your org uses multi-factor sign-in, create an app password at account.microsoft.com → Security.',
       'Enter your sending address below and click Connect; authorize with the mailbox (or app) password.',
@@ -58,7 +58,7 @@ const EMAIL_PROVIDERS: EmailProvider[] = [
     letter: 'Z',
     color: '#e42527',
     steps: [
-      'Sign in at mail.zoho.com with your foundation mailbox.',
+      'Sign in at mail.zoho.com with your organization mailbox.',
       'Open Settings → Security → App Passwords and generate one named "Quorum".',
       'Enter your sending address below and click Connect; authorize with that app password.',
     ],
@@ -749,7 +749,7 @@ export function Team() {
       <div style={sx('display:flex;align-items:flex-start;gap:11px;background:var(--accent-soft);border-radius:12px;padding:13px 16px;margin-bottom:14px')}>
         <IconInfo style={{ flex: 'none', marginTop: 1 }} />
         <div style={sx('font-size:12.5px;color:var(--brand);line-height:1.55')}>
-          Each board member signs in with a <strong>username &amp; password</strong> you set — they don't need a foundation email. Their <strong>personal email</strong> is where documents to sign are sent. Give <strong>Vote</strong> access to weigh in on motions; you keep <strong>Sign</strong>/admin rights.
+          Each board member signs in with a <strong>username &amp; password</strong> you set — they don't need an organization email. Their <strong>personal email</strong> is where documents to sign are sent. Give <strong>Vote</strong> access to weigh in on motions; you keep <strong>Sign</strong>/admin rights.
         </div>
       </div>
 

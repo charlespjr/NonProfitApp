@@ -29,7 +29,7 @@ const PAGE_TITLE: Record<ScreenKey, string> = {
 }
 
 const PAGE_SUB: Record<ScreenKey, string> = {
-  dashboard: 'Adams Infinite Legacy · Founder workspace',
+  dashboard: 'Adams Infinite Legacy · Board workspace',
   documents: 'Governance, fundraising & donor letters',
   checklist: 'Steps to launch the foundation',
   calendar: 'Board meetings & planning sessions',
