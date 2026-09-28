@@ -981,6 +981,15 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         }
         return { name: m.name, role: m.role, record: rec }
       })
+      // Who signs the "Certificate of Secretary" line: a member titled
+      // Secretary if there is one, otherwise the org admin (who keeps the
+      // records), otherwise the person exporting.
+      const members = roster()
+      const secretary =
+        members.find((m) => /secretary/i.test(m.role || '')) ||
+        members.find((m) => state.accounts[m.id]?.admin) ||
+        members.find((m) => m.id === state.sessionUserId) ||
+        members[0]
       try {
         const { exportSignedPdf } = await import('../lib/pdf')
         await exportSignedPdf({
@@ -989,13 +998,14 @@ export function StoreProvider({ children }: { children: ReactNode }) {
           docName: brand(doc.name),
           bodyText,
           signers,
+          secretaryName: secretary?.name,
         })
         flash('Signed copy downloaded')
       } catch {
         flash('Could not generate the PDF — try again')
       }
     },
-    [allDocs, brand, entity, state.signatures, state.sig, state.orgLogo, roster, orgName, flash],
+    [allDocs, brand, entity, state.signatures, state.sig, state.accounts, state.sessionUserId, state.orgLogo, roster, orgName, flash],
   )
 
   // ------------------------------------------------------ organization logo
