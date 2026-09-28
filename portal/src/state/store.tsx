@@ -369,6 +369,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       // every document shows real values where the profile provides them.
       const tokens: Record<string, string | undefined> = {
         '[STATE]': p.state,
+        '[FOREIGN STATE]': p.foreignState,
         '[ADDRESS]': p.address,
         '[CITY]': p.city,
         '[ZIP CODE]': p.zip,
@@ -996,6 +997,14 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       const cityState = [p.city, p.state].filter(Boolean).join(', ')
       const footerAddress = [p.address, [cityState, p.zip].filter(Boolean).join(' ')].filter(Boolean).join('  ·  ') || undefined
       const footerWebsite = p.website ? p.website.replace(/^https?:\/\//i, '').replace(/\/+$/, '') : undefined
+      // Foreign-registration subtitle (e.g. "Registered as a foreign
+      // corporation in the Commonwealth of Virginia"). Virginia, Kentucky,
+      // Massachusetts, and Pennsylvania are commonwealths.
+      const COMMONWEALTHS = new Set(['virginia', 'kentucky', 'massachusetts', 'pennsylvania'])
+      const fs = (p.foreignState || '').trim()
+      const subtitle = fs
+        ? `Registered as a foreign corporation in ${COMMONWEALTHS.has(fs.toLowerCase()) ? 'the Commonwealth' : 'the State'} of ${fs}`
+        : undefined
       try {
         const { exportSignedPdf } = await import('../lib/pdf')
         await exportSignedPdf({
@@ -1007,6 +1016,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
           secretaryName: secretary?.name,
           footerAddress,
           footerWebsite,
+          subtitle,
         })
         flash('Signed copy downloaded')
       } catch {

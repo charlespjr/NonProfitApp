@@ -215,6 +215,7 @@ function CompanyProfileCard() {
   const [zip, setZip] = useState(p.zip || '')
   const [phone, setPhone] = useState(p.phone || '')
   const [stateInc, setStateInc] = useState(p.state || '')
+  const [foreignState, setForeignState] = useState(p.foreignState || '')
   const [ein, setEin] = useState(p.ein || '')
   const [entityId, setEntityId] = useState(p.entityId || '')
   const [website, setWebsite] = useState(p.website || '')
@@ -222,7 +223,7 @@ function CompanyProfileCard() {
 
   const save = async () => {
     setBusy(true)
-    await store.setOrgProfile({ legalName, address, city, zip, phone, state: stateInc, ein, entityId, website })
+    await store.setOrgProfile({ legalName, address, city, zip, phone, state: stateInc, foreignState, ein, entityId, website })
     setBusy(false)
   }
 
@@ -255,7 +256,11 @@ function CompanyProfileCard() {
         </div>
         <div>
           <label style={smtpLabelStyle}>State of incorporation</label>
-          <input className="inp" value={stateInc} onChange={(e) => setStateInc(e.target.value)} placeholder="e.g. Delaware" style={smtpFieldStyle} />
+          <input className="inp" value={stateInc} onChange={(e) => setStateInc(e.target.value)} placeholder="e.g. Wyoming" style={smtpFieldStyle} />
+        </div>
+        <div>
+          <label style={smtpLabelStyle}>Foreign registration state <span style={sx('color:var(--muted);font-weight:400')}>(if any)</span></label>
+          <input className="inp" value={foreignState} onChange={(e) => setForeignState(e.target.value)} placeholder="e.g. Virginia" style={smtpFieldStyle} />
         </div>
         <div>
           <label style={smtpLabelStyle}>EIN <span style={sx('color:var(--muted);font-weight:400')}>(optional)</span></label>
