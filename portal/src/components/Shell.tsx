@@ -152,7 +152,7 @@ export function Shell({ children }: { children: ReactNode }) {
             <div data-mt="title" style={sx('font-family:Spectral,serif;font-size:20px;font-weight:600;letter-spacing:-.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis')}>{PAGE_TITLE[state.screen]}</div>
             <div style={sx('font-size:12.5px;color:var(--muted);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis')}>
               {state.screen === 'dashboard' && store.apiOrg
-                ? `${store.apiOrg.name} · Founder workspace`
+                ? `${store.apiOrg.name} · Board workspace`
                 : state.screen === 'checklist'
                   ? `Steps to launch the ${entity.orgNoun}`
                   : PAGE_SUB[state.screen]}

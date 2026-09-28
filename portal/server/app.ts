@@ -195,11 +195,15 @@ app.post('/auth/register', async (c) => {
   const orgId = id('org_')
   const userId = id('usr_')
   await db.insert(orgs).values({ id: orgId, name: orgName, entityType })
+  // The admin's default title fits the entity: a corporation is run by a CEO,
+  // an LLC by a managing member; "Founder" suits a nonprofit.
+  const adminTitle =
+    entityType === 'c_corp' ? 'Chief Executive Officer' : entityType === 'llc' ? 'Managing Member' : 'Founder & Administrator'
   await db.insert(users).values({
     id: userId,
     orgId,
     name,
-    roleTitle: 'Founder & Administrator',
+    roleTitle: adminTitle,
     initials: initials(name),
     username,
     email,
