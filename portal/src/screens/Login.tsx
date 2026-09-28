@@ -43,15 +43,19 @@ export function Login() {
         <div style={sx('position:absolute;inset:0;background:radial-gradient(120% 90% at 100% 0%, rgba(255,255,255,.10), transparent 60%);pointer-events:none')} />
         <div style={sx('display:flex;align-items:center;gap:13px;position:relative')}>
           <div style={sx('width:40px;height:40px;border-radius:11px;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.22);display:grid;place-items:center;font-family:Spectral,serif;font-size:20px;font-weight:600')}>Q</div>
-          <div style={sx('font-family:Spectral,serif;font-size:17px;font-weight:500;letter-spacing:.01em')}>Quorum — The Nonprofit Board OS</div>
+          <div style={sx('font-family:Spectral,serif;font-size:17px;font-weight:500;letter-spacing:.01em')}>Quorum — The Board Operating System</div>
         </div>
         <div style={sx('position:relative;max-width:440px')}>
-          <div style={sx('font-size:12px;letter-spacing:.16em;text-transform:uppercase;opacity:.72;margin-bottom:20px')}>Founder &amp; Board Portal</div>
-          <div style={sx('font-family:Spectral,serif;font-size:40px;line-height:1.14;font-weight:500;letter-spacing:-.01em')}>Everything to launch the foundation, in one place.</div>
+          <div style={sx('font-size:12px;letter-spacing:.16em;text-transform:uppercase;opacity:.72;margin-bottom:20px')}>Board &amp; Governance Portal</div>
+          <div style={sx('font-family:Spectral,serif;font-size:40px;line-height:1.14;font-weight:500;letter-spacing:-.01em')}>
+            {view === 'register'
+              ? `Everything to launch your ${ENTITY_CONFIG[entityType].orgNoun}, in one place.`
+              : 'Everything to launch your organization, in one place.'}
+          </div>
           <div style={sx('margin-top:22px;font-size:15px;line-height:1.6;opacity:.8')}>Track your formation checklist, sign governance documents electronically, schedule board meetings, and keep private notes — all secured to your organization's account.</div>
         </div>
         <div style={sx('position:relative;display:flex;gap:26px;font-size:12.5px;opacity:.72')}>
-          <span>Built for nonprofit boards</span>
+          <span>Built for nonprofits, corporations &amp; LLCs</span>
           <span>Form · Sign · Vote · Meet · Comply</span>
         </div>
       </div>
