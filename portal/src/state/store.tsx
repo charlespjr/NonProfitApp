@@ -990,6 +990,12 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         members.find((m) => state.accounts[m.id]?.admin) ||
         members.find((m) => m.id === state.sessionUserId) ||
         members[0]
+      // Footer lines from the company profile: address on the left, website on
+      // the right, matching the document house style.
+      const p = (apiOrg?.profile || {}) as Record<string, string | undefined>
+      const cityState = [p.city, p.state].filter(Boolean).join(', ')
+      const footerAddress = [p.address, [cityState, p.zip].filter(Boolean).join(' ')].filter(Boolean).join('  ·  ') || undefined
+      const footerWebsite = p.website ? p.website.replace(/^https?:\/\//i, '').replace(/\/+$/, '') : undefined
       try {
         const { exportSignedPdf } = await import('../lib/pdf')
         await exportSignedPdf({
@@ -999,13 +1005,15 @@ export function StoreProvider({ children }: { children: ReactNode }) {
           bodyText,
           signers,
           secretaryName: secretary?.name,
+          footerAddress,
+          footerWebsite,
         })
         flash('Signed copy downloaded')
       } catch {
         flash('Could not generate the PDF — try again')
       }
     },
-    [allDocs, brand, entity, state.signatures, state.sig, state.accounts, state.sessionUserId, state.orgLogo, roster, orgName, flash],
+    [allDocs, brand, entity, state.signatures, state.sig, state.accounts, state.sessionUserId, state.orgLogo, apiOrg, roster, orgName, flash],
   )
 
   // ------------------------------------------------------ organization logo
