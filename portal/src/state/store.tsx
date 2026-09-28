@@ -245,6 +245,23 @@ export interface Store {
 
 const StoreCtx = createContext<Store | null>(null)
 
+const US_STATE_ABBR: Record<string, string> = {
+  alabama: 'AL', alaska: 'AK', arizona: 'AZ', arkansas: 'AR', california: 'CA', colorado: 'CO',
+  connecticut: 'CT', delaware: 'DE', 'district of columbia': 'DC', florida: 'FL', georgia: 'GA',
+  hawaii: 'HI', idaho: 'ID', illinois: 'IL', indiana: 'IN', iowa: 'IA', kansas: 'KS', kentucky: 'KY',
+  louisiana: 'LA', maine: 'ME', maryland: 'MD', massachusetts: 'MA', michigan: 'MI', minnesota: 'MN',
+  mississippi: 'MS', missouri: 'MO', montana: 'MT', nebraska: 'NE', nevada: 'NV', 'new hampshire': 'NH',
+  'new jersey': 'NJ', 'new mexico': 'NM', 'new york': 'NY', 'north carolina': 'NC', 'north dakota': 'ND',
+  ohio: 'OH', oklahoma: 'OK', oregon: 'OR', pennsylvania: 'PA', 'rhode island': 'RI', 'south carolina': 'SC',
+  'south dakota': 'SD', tennessee: 'TN', texas: 'TX', utah: 'UT', vermont: 'VT', virginia: 'VA',
+  washington: 'WA', 'west virginia': 'WV', wisconsin: 'WI', wyoming: 'WY',
+}
+/** "Virginia" → "VA"; leaves already-abbreviated or unknown values unchanged. */
+function abbreviateState(s?: string): string {
+  const v = (s || '').trim()
+  return US_STATE_ABBR[v.toLowerCase()] || v
+}
+
 /** The slice of state that syncs to the server per-org in api mode. */
 const BOARD_KEYS = [
   'sig',
@@ -994,8 +1011,13 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       // Footer lines from the company profile: address on the left, website on
       // the right, matching the document house style.
       const p = (apiOrg?.profile || {}) as Record<string, string | undefined>
-      const cityState = [p.city, p.state].filter(Boolean).join(', ')
-      const footerAddress = [p.address, [cityState, p.zip].filter(Boolean).join(' ')].filter(Boolean).join('  ·  ') || undefined
+      // The address line uses the state where the office physically sits — the
+      // foreign-registration state if the entity is foreign-qualified (e.g. an
+      // office in Virginia for a Wyoming corporation), otherwise the home
+      // state — abbreviated (Virginia → VA) for the footer.
+      const addrState = abbreviateState(p.foreignState || p.state)
+      const cityLine = [p.city, [addrState, p.zip].filter(Boolean).join(' ')].filter(Boolean).join(', ')
+      const footerAddress = [p.address, cityLine].filter(Boolean).join('  ·  ') || undefined
       const footerWebsite = p.website ? p.website.replace(/^https?:\/\//i, '').replace(/\/+$/, '') : undefined
       // Foreign-registration subtitle (e.g. "Registered as a foreign
       // corporation in the Commonwealth of Virginia"). Virginia, Kentucky,

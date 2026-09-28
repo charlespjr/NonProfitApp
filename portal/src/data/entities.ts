@@ -219,7 +219,7 @@ This consent may be signed in counterparts.
   shareholders: `SHAREHOLDERS’ AGREEMENT OF ADAMS INFINITE LEGACY
 A [STATE] Corporation
 
-This Shareholders’ Agreement (this "Agreement") is entered into effective [DATE] by and among Adams Infinite Legacy, a [STATE] corporation (the "Corporation"), and the persons listed on Exhibit A as holders of the Corporation’s capital stock (each a "Shareholder" and together the "Shareholders").
+This Shareholders’ Agreement (this "Agreement") is entered into effective September 9, 2026 by and among Adams Infinite Legacy, a [STATE] corporation (the "Corporation"), and the persons listed on Exhibit A as holders of the Corporation’s capital stock (each a "Shareholder" and together the "Shareholders").
 
 ARTICLE I — Shares & Parties
 1.1 Shares Covered. This Agreement governs all shares of capital stock of the Corporation now or later owned by each Shareholder, including shares acquired on exercise of options or warrants.
@@ -228,34 +228,34 @@ ARTICLE I — Shares & Parties
 
 ARTICLE II — Transfer Restrictions
 2.1 General Restriction. No Shareholder may sell, assign, pledge, or otherwise transfer any shares except as permitted by this Agreement and applicable securities laws. Any purported transfer in violation of this Agreement is void.
-2.2 Right of First Refusal. Before transferring shares to any third party, a Shareholder (the "Selling Shareholder") shall first offer them in writing to the Corporation and then to the other Shareholders pro rata, on the same price and terms offered by the third party. The Corporation and the Shareholders have [30] days to accept as to all, but not less than all, of the offered shares.
+2.2 Right of First Refusal. Before transferring shares to any third party, a Shareholder (the "Selling Shareholder") shall first offer them in writing to the Corporation and then to the other Shareholders pro rata, on the same price and terms offered by the third party. The Corporation and the Shareholders have 30 days to accept as to all, but not less than all, of the offered shares.
 2.3 Permitted Transfers. A Shareholder may transfer shares to a wholly-owned entity or to a trust for estate-planning purposes, provided the transferee first agrees in writing to be bound by this Agreement.
 
 ARTICLE III — Tag-Along & Drag-Along
 3.1 Tag-Along Rights. If Shareholders holding a majority of the shares propose to sell to a third party, each other Shareholder may participate in that sale, on the same terms, as to a pro-rata portion of their shares.
-3.2 Drag-Along Rights. If Shareholders holding at least [two-thirds] of the shares approve a sale of the Corporation, whether by stock sale, merger, or sale of substantially all assets, all Shareholders shall vote for and participate in that sale on the same terms.
+3.2 Drag-Along Rights. If Shareholders holding at least two-thirds of the shares approve a sale of the Corporation, whether by stock sale, merger, or sale of substantially all assets, all Shareholders shall vote for and participate in that sale on the same terms.
 
 ARTICLE IV — Governance & Voting
-4.1 Board Composition. The Shareholders shall vote their shares so that the Board of Directors consists of [NUMBER] directors, designated as set out in Exhibit A or as the Shareholders agree in writing.
-4.2 Major Decisions. The following require the approval of Shareholders holding at least [two-thirds] of the shares: amending the Articles or Bylaws; issuing new equity; incurring debt over $[AMOUNT]; selling the Corporation; or dissolving it.
+4.1 Board Composition. The Shareholders shall vote their shares so that the Board of Directors consists of three (3) directors, designated as set out in Exhibit A or as the Shareholders agree in writing.
+4.2 Major Decisions. The following require the approval of Shareholders holding at least two-thirds of the shares: amending the Articles or Bylaws; issuing new equity; incurring debt over $25,000; selling the Corporation; or dissolving it.
 4.3 Information Rights. The Corporation shall provide each Shareholder with annual financial statements and the current capitalization table.
 
 ARTICLE V — Buy-Sell on Departure
 5.1 Triggering Events. On a Shareholder’s death, disability, or termination of service, the Corporation, and then the other Shareholders pro rata, may purchase that Shareholder’s shares.
 5.2 Purchase Price. The price is the fair market value of the shares as of the triggering event, determined in good faith by the Board or by an independent appraiser, unless the Shareholders have agreed on a formula in Exhibit A.
-5.3 Payment Terms. The price may be paid in a lump sum or over [36] months with interest at a commercially reasonable rate, at the buyer’s election.
+5.3 Payment Terms. The price may be paid in a lump sum or over 36 months with interest at a commercially reasonable rate, at the buyer’s election.
 
 ARTICLE VI — Confidentiality
 6.1 Confidential Information. Each Shareholder shall keep the Corporation’s confidential and proprietary information in confidence and use it only for the benefit of the Corporation.
 
 ARTICLE VII — General
 7.1 Governing Law. This Agreement is governed by the laws of the State of [STATE].
-7.2 Amendments. This Agreement may be amended only in a writing signed by the Corporation and Shareholders holding at least [two-thirds] of the shares.
+7.2 Amendments. This Agreement may be amended only in a writing signed by the Corporation and Shareholders holding at least two-thirds of the shares.
 7.3 Entire Agreement. This Agreement, together with the Articles, the Bylaws, and Exhibit A, is the entire agreement among the parties on its subject matter.
 7.4 Counterparts. This Agreement may be signed in counterparts, including electronically, each of which is an original.
 
-The parties adopt this Agreement effective [DATE].
-[EACH SHAREHOLDER SIGNS]   Date: [____]`,
+The parties adopt this Agreement effective September 9, 2026.
+Each shareholder signs below.   Date: September 9, 2026`,
 
   stockpurchase: `FOUNDER STOCK PURCHASE AGREEMENT
 ADAMS INFINITE LEGACY
