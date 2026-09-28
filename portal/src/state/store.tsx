@@ -963,7 +963,24 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       if (!doc) return
       const bodyText = brand(doc.body || entity.docBodies[docId] || '')
       const recs = state.signatures[docId] || {}
-      const signers = roster().map((m) => ({ name: m.name, role: m.role, record: recs[m.id] }))
+      const signedFlags = state.sig[docId] || {}
+      const signers = roster().map((m) => {
+        const rec = recs[m.id]
+        // Anyone the board marked as signed must appear signed in the PDF, even
+        // if they signed under an older build that stored only the signed flag
+        // and no rich signature record. Synthesize a typed signature of their
+        // name (exactly what the in-app signer list falls back to). Such a
+        // legacy record carries no timestamp, so `signedAt` is left blank and
+        // the PDF omits the date rather than inventing one.
+        if (!rec && signedFlags[m.id]) {
+          return {
+            name: m.name,
+            role: m.role,
+            record: { memberId: m.id, name: m.name, method: 'typed' as const, value: m.name, signedAt: '' },
+          }
+        }
+        return { name: m.name, role: m.role, record: rec }
+      })
       try {
         const { exportSignedPdf } = await import('../lib/pdf')
         await exportSignedPdf({
@@ -978,7 +995,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         flash('Could not generate the PDF — try again')
       }
     },
-    [allDocs, brand, entity, state.signatures, state.orgLogo, roster, orgName, flash],
+    [allDocs, brand, entity, state.signatures, state.sig, state.orgLogo, roster, orgName, flash],
   )
 
   // ------------------------------------------------------ organization logo

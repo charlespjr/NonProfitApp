@@ -133,7 +133,14 @@ export async function exportSignedPdf(input: SignedPdfInput): Promise<void> {
     y += 14
     doc.setFontSize(9.5)
     doc.setTextColor(120, 112, 100)
-    doc.text(s.record ? `Electronically signed ${fmtDate(s.record.signedAt)}` : 'Awaiting signature', margin, y)
+    // A record with no timestamp is a legacy signature (signed before the app
+    // captured signing times) — show it as signed without inventing a date.
+    const caption = !s.record
+      ? 'Awaiting signature'
+      : s.record.signedAt
+        ? `Electronically signed ${fmtDate(s.record.signedAt)}`
+        : 'Electronically signed'
+    doc.text(caption, margin, y)
     y += 26
   }
 
