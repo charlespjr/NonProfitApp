@@ -789,7 +789,7 @@ app.post('/ai/document', requireAuth, requireActivePlan, async (c) => {
     ? [
         '',
         'FORMAT — this is a corporate RESOLUTION written as meeting minutes. Follow this structure exactly:',
-        '- A header line with the word "RESOLUTION" at the top-left and "MINUTES" at the top-right; directly under "MINUTES" on the right put "Corporation ID: <the corporation/state entity ID>" (use the real ID if known).',
+        '- Begin with three short plain lines, each on its own line (do NOT pad them into columns with spaces): "RESOLUTION", then "MINUTES", then "Corporation ID: <the corporation/state entity ID>" (use the real ID if known).',
         '- The corporation\'s legal name and state of incorporation, and its EIN if known.',
         '- "Date of meeting and of this resolution:" with the date.',
         '- MEETING DETAILS: the exact day of week, date, and start time the meeting was called to order, and the place (the corporation\'s address, or by video/teleconference). Note a quorum was present.',

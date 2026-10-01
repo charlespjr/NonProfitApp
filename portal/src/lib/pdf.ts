@@ -167,13 +167,41 @@ export async function exportSignedPdf(input: SignedPdfInput): Promise<void> {
   }
 
   // ---------- Title block (first page, centered)
-  const rawLines = input.bodyText.split('\n')
+  // Collapse runs of spaces/tabs so a columnar, space-padded source line
+  // (e.g. a "RESOLUTION          MINUTES" header) can't blow out the layout.
+  const rawLines = input.bodyText.split('\n').map((l) => l.replace(/[ \t]{2,}/g, ' ').replace(/\s+$/, ''))
   let idx = 0
   while (idx < rawLines.length && rawLines[idx].trim() === '') idx++
-  const titleLine = (rawLines[idx] || input.docName).trim()
-  idx++
+
+  // Some resolution templates lead with a two-column "RESOLUTION … MINUTES /
+  // Corporation ID: X" header. The house layout supplies the letterhead itself,
+  // so lift the Corporation ID out for a small label and skip these meta lines
+  // rather than mistaking "RESOLUTION" for the document title.
+  let corporationId = ''
+  let metaHeader = false
+  const isMeta = (t: string) => /^RESOLUTION(\s+MINUTES)?$/i.test(t) || /^MINUTES$/i.test(t) || /^Corporation ID\b/i.test(t)
+  while (idx < rawLines.length && rawLines[idx].trim() !== '' && isMeta(rawLines[idx].trim())) {
+    const m = rawLines[idx].trim().match(/Corporation ID[:#\s]+(.+)$/i)
+    if (m) corporationId = m[1].trim()
+    metaHeader = true
+    idx++
+  }
+  while (idx < rawLines.length && rawLines[idx].trim() === '') idx++
+
+  let titleLine: string
+  if (metaHeader) {
+    // The body's "title" was the meta header; use the document's own name.
+    titleLine = input.docName
+  } else {
+    titleLine = (rawLines[idx] || input.docName).trim()
+    idx++
+  }
+  // An entity descriptor is a short "A <State> Corporation" line — not any
+  // sentence that merely contains the word "corporation".
   const entityLine =
-    rawLines[idx] && /(Corporation|Company|Limited Liability Company|Nonprofit)/i.test(rawLines[idx].trim()) && rawLines[idx].trim().length < 80
+    rawLines[idx] &&
+    rawLines[idx].trim().length < 90 &&
+    /(^A\s.+\b(Corporation|Company|Limited Liability Company|Nonprofit|LLC)\b|—\s*A\s.+\b(Corporation|Company)\b)/i.test(rawLines[idx].trim())
       ? rawLines[idx].trim()
       : ''
   if (entityLine) idx++
@@ -181,7 +209,7 @@ export async function exportSignedPdf(input: SignedPdfInput): Promise<void> {
   // or a "Registered…" line already present in the body.
   const maybeSub = rawLines[idx]?.trim() || ''
   const bodySub =
-    maybeSub && /^[A-Z]/.test(maybeSub) && /[a-z]/.test(maybeSub) && !/^ARTICLE\b/i.test(maybeSub) && maybeSub.length < 110 && /^Registered|^A .*registered/i.test(maybeSub)
+    maybeSub && /^[A-Z]/.test(maybeSub) && /[a-z]/.test(maybeSub) && !/^ARTICLE\b/i.test(maybeSub) && maybeSub.length < 120 && /^Registered|^A .*registered/i.test(maybeSub)
       ? maybeSub
       : ''
   if (bodySub) idx++
@@ -212,6 +240,13 @@ export async function exportSignedPdf(input: SignedPdfInput): Promise<void> {
   for (const tl of doc.splitTextToSize(titleLine.toUpperCase(), contentW)) {
     doc.text(tl, cx, y, { align: 'center', charSpace: 1.4 })
     y += 28
+  }
+  if (corporationId) {
+    doc.setFont('helvetica', 'normal')
+    doc.setFontSize(8.5)
+    set(GRAY)
+    doc.text(`CORPORATION ID: ${corporationId.toUpperCase()}`, cx, y, { align: 'center', charSpace: 1 })
+    y += 16
   }
   if (subtitle) {
     doc.setFont('times', 'italic')
