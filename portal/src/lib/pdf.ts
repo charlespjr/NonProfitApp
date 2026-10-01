@@ -135,9 +135,28 @@ export async function exportSignedPdf(input: SignedPdfInput): Promise<void> {
     doc.setFontSize(8)
     set(NAVY)
     doc.text(orgUpper, hx, 43, { charSpace: 1.2 })
+    const orgRight = hx + doc.getTextWidth(orgUpper) + 1.2 * Math.max(0, orgUpper.length - 1)
+    // Right-aligned document title. jsPDF's align:'right' ignores charSpace and
+    // overflows past the margin, so position it by its true (letter-spaced)
+    // width; shrink spacing/size if it would collide with the org name.
     doc.setFont('helvetica', 'normal')
     set(GRAY)
-    doc.text(docUpper, pageW - marginR, 43, { align: 'right', charSpace: 1.2 })
+    let hCs = 1.2
+    let hSize = 8
+    const avail = pageW - marginR - orgRight - 16
+    doc.setFontSize(hSize)
+    const twOf = () => doc.getTextWidth(docUpper) + hCs * Math.max(0, docUpper.length - 1)
+    let tw = twOf()
+    if (tw > avail) {
+      hCs = 0.4
+      tw = twOf()
+    }
+    while (tw > avail && hSize > 5.5) {
+      hSize -= 0.5
+      doc.setFontSize(hSize)
+      tw = twOf()
+    }
+    doc.text(docUpper, pageW - marginR - tw, 43, { charSpace: hCs })
     draw(RULE)
     doc.setLineWidth(0.75)
     doc.line(marginL, 51, pageW - marginR, 51)
@@ -151,7 +170,9 @@ export async function exportSignedPdf(input: SignedPdfInput): Promise<void> {
     }
     if (input.footerWebsite) {
       set(STEEL)
-      doc.text(input.footerWebsite, pageW - marginR, pageH - 38, { align: 'right', charSpace: 0.3 })
+      const wcs = 0.3
+      const ww = doc.getTextWidth(input.footerWebsite) + wcs * Math.max(0, input.footerWebsite.length - 1)
+      doc.text(input.footerWebsite, pageW - marginR - ww, pageH - 38, { charSpace: wcs })
     }
   }
 
