@@ -303,10 +303,10 @@ Fully-diluted total (incl. pool): [#]
 
 [Update every time shares or options are issued — this is the single source of truth for ownership.]`,
 
-  boardvote: `RESOLUTION                                                    MINUTES
-                                                              Corporation ID: [CORPORATION ID]
+  boardvote: `RESOLUTION
+MINUTES
+Corporation ID: [CORPORATION ID]
 
-BOARD RESOLUTION AND MINUTES
 ADAMS INFINITE LEGACY — A [STATE] Corporation
 EIN: [EIN]
 
