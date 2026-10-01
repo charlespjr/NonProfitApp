@@ -165,10 +165,13 @@ export function DocuSealModal() {
   const store = useStore()
   const { state, currentUser } = store
   const [signingOpen, setSigningOpen] = useState(false)
+  const [editing, setEditing] = useState(false)
+  const [draft, setDraft] = useState('')
   const docId = state.modal
   if (!docId) return null
   const doc = store.allDocs().find((d) => d.id === docId)
   if (!doc) return null
+  const isCustomDoc = state.customDocs.some((d) => d.id === docId)
 
   const rawInfo = store.entity.docInfo[doc.id] || { desc: doc.desc || '', todo: doc.todo || '' }
   const info = { desc: store.brand(rawInfo.desc), todo: store.brand(rawInfo.todo) }
@@ -203,7 +206,26 @@ export function DocuSealModal() {
           <div style={sx('text-align:center;font-family:Spectral,serif;font-size:12px;letter-spacing:.06em;color:#666;text-transform:uppercase')}>{store.orgName}</div>
           <div style={sx('text-align:center;font-family:Spectral,serif;font-size:18px;font-weight:600;margin-top:5px')}>{doc.name}</div>
           <div style={sx('height:1px;background:#eee;margin:14px 0')} />
-          {bodyText ? (
+          {editing ? (
+            <div>
+              <textarea
+                value={draft}
+                onChange={(e) => setDraft(e.target.value)}
+                spellCheck={false}
+                style={sx("width:100%;min-height:300px;box-sizing:border-box;font-size:12px;line-height:1.55;color:#222;font-family:ui-monospace,Menlo,Consolas,monospace;border:1px solid var(--line);border-radius:8px;padding:12px 13px;resize:vertical")}
+              />
+              <div style={sx('display:flex;justify-content:flex-end;gap:8px;margin-top:10px')}>
+                <button className="hv-bg" onClick={() => setEditing(false)} style={{ ...sx('border:1px solid var(--line);background:#fff;color:#444;font-size:12.5px;font-weight:600;padding:7px 14px;border-radius:8px'), cursor: 'pointer' }}>Cancel</button>
+                <button
+                  className="hv-bright"
+                  onClick={() => { store.editCustomDocBody(doc.id, draft); setEditing(false) }}
+                  style={{ ...sx('border:none;background:var(--brand);color:#fff;font-size:12.5px;font-weight:600;padding:7px 16px;border-radius:8px'), cursor: 'pointer' }}
+                >
+                  Save text
+                </button>
+              </div>
+            </div>
+          ) : bodyText ? (
             <div data-m="docbody" style={sx("font-size:12.5px;line-height:1.65;color:#333;white-space:pre-wrap;max-height:340px;overflow:auto;font-family:'Spectral',Georgia,serif")}>
               {bodyText}
             </div>
@@ -322,7 +344,16 @@ export function DocuSealModal() {
         </div>
         <div style={sx('display:flex;gap:10px')}>
           <button className="hv-bg" onClick={store.closeModal} style={cancelBtnStyle}>Close</button>
-          {bodyText && (
+          {isCustomDoc && user.isAdmin && !editing && (
+            <button
+              className="hv-border-accent"
+              onClick={() => { setDraft(doc.body || bodyText || ''); setEditing(true) }}
+              style={sx('border:1px solid var(--line);background:var(--panel);color:var(--brand);font-size:13px;font-weight:600;padding:9px 14px;border-radius:9px;cursor:pointer')}
+            >
+              Edit text
+            </button>
+          )}
+          {bodyText && !editing && (
             <button
               className="hv-border-accent"
               onClick={() => void store.exportDocPdf(doc.id)}

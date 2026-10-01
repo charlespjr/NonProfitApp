@@ -184,6 +184,8 @@ export interface Store {
   /** Write the document body with AI from the form's name + description. */
   writeDocWithAi(): Promise<void>
   removeCustomDoc(docId: string): void
+  /** Edit the text of a custom (org-added / AI-drafted) document. */
+  editCustomDocBody(docId: string, body: string): void
   /** Download the document + its e-signature block as a PDF (client-side). */
   exportDocPdf(docId: string): Promise<void>
 
@@ -975,6 +977,25 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     [guard, flash],
   )
 
+  /** Replace the text of a custom (org-added / AI-drafted) document. Built-in
+   *  template documents are not editable this way. */
+  const editCustomDocBody = useCallback(
+    (docId: string, body: string) => {
+      if (!guard()) return
+      setState((s) => {
+        if (!s.customDocs.some((d) => d.id === docId)) return s
+        return {
+          ...s,
+          customDocs: s.customDocs.map((d) =>
+            d.id === docId ? { ...d, body, updated: fmtDate(), pages: Math.max(1, Math.round(body.length / 1800)) } : d,
+          ),
+        }
+      })
+      flash('Document text updated')
+    },
+    [guard, flash],
+  )
+
   const exportDocPdf = useCallback(
     async (docId: string) => {
       const doc = allDocs().find((d) => d.id === docId)
@@ -1693,6 +1714,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     saveDoc,
     writeDocWithAi,
     removeCustomDoc,
+    editCustomDocBody,
     exportDocPdf,
     uploadLogo,
     removeLogo,
