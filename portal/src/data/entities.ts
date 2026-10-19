@@ -130,6 +130,7 @@ const CCORP_DOCS: PortalDoc[] = [
   { id: 'boardvote', name: 'Board Resolution & Minutes (Vote)', cat: 'Governance', updated: 'Draft', pages: 2, vote: true },
   { id: 'omnibus', name: 'Omnibus Board Resolution (Blanket Authority)', cat: 'Governance', updated: 'Draft', pages: 3, vote: true },
   { id: 'bankingcredit', name: 'Banking & Business Credit Authorization', cat: 'Governance', updated: 'Draft', pages: 4, vote: true },
+  { id: 'propcontribution', name: 'Resolution Accepting Contribution of Real Property', cat: 'Governance', updated: 'Draft', pages: 2, vote: true },
 ]
 
 const CCORP_INFO: Record<string, DocInfo> = {
@@ -143,6 +144,7 @@ const CCORP_INFO: Record<string, DocInfo> = {
   boardvote: { desc: 'A full board resolution written as meeting minutes — title, Corporation ID, date, meeting start day/time, attendees, statement of purpose, the resolution, and a for/against vote (majority rules), with an optional notary block. Comes pre-filled with an example meeting; adjust the date, matter, and vote to your own.', todo: 'Review the pre-filled meeting details, matter, and vote and adjust them to match your meeting; the directors sign to record the decision. Notarize if the recipient requires it.' },
   omnibus: { desc: 'A broad, catch-all board resolution authorizing the officers to take any lawful action reasonably necessary to organize, fund, and operate the corporation — the general authority third parties often ask to see.', todo: 'Adopt at a meeting or by unanimous written consent; route to all directors to sign. Keep it in the corporate records to present to banks, vendors, and agencies.' },
   bankingcredit: { desc: 'Authorizes opening the corporate bank account, obtaining a business credit card and a corporate fuel/gas card, and establishing the company’s business-credit profiles with Experian Business, Dun & Bradstreet (D-U-N-S), and Nav.', todo: 'Fill in the institution and authorized-officer details, then all directors sign — banks and credit issuers routinely require this resolution.' },
+  propcontribution: { desc: 'A board resolution written as meeting minutes that authorizes the Corporation to accept the contribution of inherited real property — the contributor’s undivided interests in the five Pointe Coupee Parish, Louisiana parcels acquired through the Succession of Ann Marie St. Amant Pleasant — and directs the officers to execute and record the transfer. Includes a for/against vote (majority rules) and signatures.', todo: 'Review the parcels and contribution terms, hold the vote, and have all directors sign. Keep it with the corporate records; the recorded deed to the Corporation is a separate instrument executed by the contributor.' },
 }
 
 const CCORP_BODIES: Record<string, string> = {
@@ -403,6 +405,58 @@ I certify that I am the Secretary of Adams Infinite Legacy and that the foregoin
 Secretary: ______________________   Date: [____]
 
 [Fill in the bracketed institution and officer details; some issuers require their own resolution or forms as well.]`,
+
+  propcontribution: `RESOLUTION
+MINUTES
+Corporation ID: [CORPORATION ID]
+
+ADAMS INFINITE LEGACY — A [STATE] Corporation (foreign-qualified in [FOREIGN STATE])
+EIN: [EIN]
+
+Date of meeting and of this resolution: October 14, 2026
+
+MEETING DETAILS
+A meeting of the Board of Directors of Adams Infinite Legacy (the "Corporation") was duly called and held on Wednesday, October 14, 2026, at 10:00 a.m., at [ADDRESS], [CITY], [FOREIGN STATE] (or by video/teleconference). A quorum being present, the meeting was called to order.
+
+DIRECTORS PRESENT
+All directors of the Corporation were present, in person or by teleconference, constituting a quorum.
+Directors absent: None.
+Also present: None.
+
+STATEMENT OF PURPOSE
+The Board determined that it is in the best interest of the Corporation to consider and act upon the following matter: whether to accept the contribution to the Corporation of certain inherited real property located in Pointe Coupee Parish, Louisiana.
+Background: Charles Edward Pleasant, Jr. (the "Contributor") acquired an undivided interest in the five parcels described below as the sole heir of Ann Marie St. Amant Pleasant (died December 13, 2023, Pointe Coupee Parish, Louisiana), whose interest is being recognized in the Contributor by a small succession affidavit under La. C.C.P. arts. 3431–3434 to be recorded in the conveyance records of Pointe Coupee Parish. The Contributor wishes to contribute that undivided interest to the Corporation.
+
+PROPERTY TO BE CONTRIBUTED
+All of the Contributor's undivided interest, together with all buildings and improvements, in the following parcels situated in Pointe Coupee Parish, Louisiana (2025 assessor market values shown for each whole parcel):
+  Parcel 00797700 — Two lots each fronting 48 ft. on St. Mary Street; CB 117, E-254 — $14,000
+  Parcel 00797800 — Part of Lot 26, 807 Richey Street, New Roads, LA; CB 117, E-254; CB 454, E-8 — $33,700
+  Parcel 00797900 — Lot 36 ft. on the east side of Richey Street; CB "V", E-407; CB 117, E-254; CB 454, E-8 — $4,600
+  Parcel 00798000 — Lot on the west side of St. Mary Street, 905 St. Mary Street, New Roads, LA; CB 117, E-254 — $56,200
+  Parcel 00798010 — Lot 17, Square 7, Second Addition, Morningside Subdivision; CB 117, E-254; CB 348, E-35 — $8,000
+The contribution is of the Contributor's undivided (fractional) interest only; the Corporation will hold such interest as a co-owner with the other owners of record.
+
+RESOLUTION
+Upon motion duly made, seconded, and after discussion, it was:
+RESOLVED, that the Corporation accept the contribution of the Contributor's undivided interest in the parcels described above as a contribution to the capital of the Corporation; and further
+RESOLVED, that the officers of the Corporation are authorized and directed to accept, negotiate, execute, and deliver, and to cause to be recorded in Pointe Coupee Parish, Louisiana, an act of contribution, donation, or cash-sale deed and any related instruments conveying that interest to the Corporation, on terms the officers approve; and further
+RESOLVED, that the officers record the contribution on the Corporation's books, issue any consideration or capital credit the officers determine, and take all further actions reasonably necessary to carry out these resolutions.
+
+VOTE (majority rules — the resolution passes only if the Ayes are a majority of the directors present)
+Votes in favor (Ayes): all directors present        Votes against (Noes): 0        Abstentions: 0
+Result:   [X] ADOPTED        [ ] REJECTED
+
+There being no further business, the meeting was adjourned at 10:30 a.m.
+
+SIGNATURES
+The undersigned certify that the foregoing accurately records the action taken by the Board of Directors of the Corporation.
+Each director signs below.   Date: October 14, 2026
+Secretary: ______________________   Date: October 14, 2026
+
+NOTARY ACKNOWLEDGMENT (optional)
+State of [FOREIGN STATE]     County of [COUNTY]
+Subscribed and sworn to before me this [__] day of [MONTH], [YEAR].
+Notary Public: ______________________     My commission expires: [____]`,
 }
 
 // ─────────────────────────────────────────────────────────────────── LLC
