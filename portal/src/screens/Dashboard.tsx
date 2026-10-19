@@ -128,14 +128,44 @@ export function Dashboard() {
             </div>
             {recentDocs.map((d) => {
               const st = store.docStatusOf(d)
+              const members = store.roster()
+              const sig = store.sigFor(d.id)
+              const votes = store.votesFor(d.id)
+              const isVoteDoc = !!d.vote
               return (
-                <div key={d.id} style={sx('display:flex;align-items:center;gap:14px;padding:12px 6px;border-bottom:1px solid var(--line)')}>
+                <div key={d.id} style={sx('display:flex;align-items:flex-start;gap:14px;padding:12px 6px;border-bottom:1px solid var(--line)')}>
                   <span style={sx('width:34px;height:34px;border-radius:8px;background:var(--accent-soft);color:var(--brand);display:grid;place-items:center;flex:none')}>
                     <IconDocuments size={16} />
                   </span>
                   <div style={sx('flex:1;min-width:0')}>
                     <div style={sx('font-size:13.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis')}>{d.name}</div>
                     <div style={sx('font-size:11.5px;color:var(--muted)')}>{d.cat} · Updated {d.updated}</div>
+                    <div style={sx('display:flex;flex-wrap:wrap;gap:4px;margin-top:6px')}>
+                      {members.map((m) => {
+                        const signed = !!sig[m.id]
+                        const v = votes[m.id]
+                        const vColor = v === 'for' ? '#1a7f4b' : v === 'against' ? '#b3261e' : v === 'abstain' ? 'var(--muted)' : ''
+                        return (
+                          <span
+                            key={m.id}
+                            title={`${m.name}${m.role ? ' — ' + m.role : ''}\nSignature: ${signed ? 'signed' : 'not signed'}${isVoteDoc ? `\nVote: ${v || 'not voted'}` : ''}`}
+                            style={{
+                              ...sx('display:inline-flex;align-items:center;gap:4px;font-size:10.5px;line-height:1;padding:3px 7px;border-radius:999px;white-space:nowrap'),
+                              border: '1px solid var(--line)',
+                              background: signed ? 'var(--accent-soft)' : 'var(--panel)',
+                              color: 'var(--ink)',
+                              opacity: signed ? 1 : 0.7,
+                            }}
+                          >
+                            <span style={{ color: signed ? '#1a7f4b' : 'var(--muted)', fontWeight: 700 }}>{signed ? '✓' : '○'}</span>
+                            <span style={sx('font-weight:600')}>{m.name.split(' ')[0]}</span>
+                            {isVoteDoc && (
+                              <span style={{ fontWeight: 700, textTransform: 'capitalize', color: vColor || 'var(--muted)' }}>{v || '—'}</span>
+                            )}
+                          </span>
+                        )
+                      })}
+                    </div>
                   </div>
                   <span style={STATUS_META[st].style}>{STATUS_META[st].label}</span>
                 </div>
