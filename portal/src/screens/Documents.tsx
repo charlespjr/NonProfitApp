@@ -70,6 +70,15 @@ export function Documents() {
             : st === 'draft'
               ? `Updated ${d.updated}`
               : `${nSig} of ${rosterN} ${entity.memberNounPlural} signed`
+          const members = store.roster()
+          const sig = store.sigFor(d.id)
+          const votes = store.votesFor(d.id)
+          const isVoteDoc = !!d.vote
+          const ayes = members.filter((m) => votes[m.id] === 'for').length
+          const noes = members.filter((m) => votes[m.id] === 'against').length
+          const abstains = members.filter((m) => votes[m.id] === 'abstain').length
+          const voteCast = ayes + noes + abstains
+          const adopted = ayes * 2 > members.length
           return (
             <div key={d.id} data-m="docrow" className="hv-row" style={sx('display:grid;grid-template-columns:minmax(0,1fr) 130px 170px 150px;gap:12px;padding:15px 20px;border-bottom:1px solid var(--line);align-items:center')}>
               <div style={sx('display:flex;align-items:center;gap:13px;min-width:0')}>
@@ -79,7 +88,40 @@ export function Documents() {
                 <div style={sx('min-width:0')}>
                   <div style={sx('font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis')}>{d.name}</div>
                   <div style={sx('font-size:12px;color:var(--muted);line-height:1.4;margin-top:2px;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical')}>{info.desc}</div>
-                  <div style={sx('font-size:11px;color:var(--muted);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis')}>{d.pages} pp · {signText}</div>
+                  <div style={sx('font-size:11px;color:var(--muted);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis')}>
+                    {d.pages} pp · {signText}
+                    {isVoteDoc && (
+                      <> · {voteCast === 0 ? 'No votes yet' : `${ayes} for · ${noes} against · ${abstains} abstain${voteCast >= members.length ? (adopted ? ' · adopted' : ' · rejected') : ''}`}</>
+                    )}
+                  </div>
+                  <div style={sx('display:flex;flex-wrap:wrap;gap:5px;margin-top:6px')}>
+                    {members.map((m) => {
+                      const signed = !!sig[m.id]
+                      const v = votes[m.id]
+                      const vColor = v === 'for' ? '#1a7f4b' : v === 'against' ? '#b3261e' : v === 'abstain' ? 'var(--muted)' : ''
+                      return (
+                        <span
+                          key={m.id}
+                          title={`${m.name}${m.role ? ' — ' + m.role : ''}\nSignature: ${signed ? 'signed' : 'not signed'}${isVoteDoc ? `\nVote: ${v || 'not voted'}` : ''}`}
+                          style={{
+                            ...sx('display:inline-flex;align-items:center;gap:5px;font-size:11px;line-height:1;padding:4px 8px;border-radius:999px;white-space:nowrap'),
+                            border: '1px solid var(--line)',
+                            background: signed ? 'var(--accent-soft)' : 'var(--panel)',
+                            color: 'var(--ink)',
+                            opacity: signed ? 1 : 0.7,
+                          }}
+                        >
+                          <span style={{ color: signed ? '#1a7f4b' : 'var(--muted)', fontWeight: 700 }}>{signed ? '✓' : '○'}</span>
+                          <span style={sx('font-weight:600')}>{m.name}</span>
+                          {isVoteDoc && (
+                            <span style={{ fontWeight: 700, textTransform: 'capitalize', color: vColor || 'var(--muted)' }}>
+                              {v ? v : '— no vote'}
+                            </span>
+                          )}
+                        </span>
+                      )
+                    })}
+                  </div>
                 </div>
               </div>
               <div style={sx('font-size:13px;color:var(--muted)')}>{d.cat}</div>
