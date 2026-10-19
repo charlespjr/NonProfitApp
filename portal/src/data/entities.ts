@@ -131,6 +131,7 @@ const CCORP_DOCS: PortalDoc[] = [
   { id: 'omnibus', name: 'Omnibus Board Resolution (Blanket Authority)', cat: 'Governance', updated: 'Draft', pages: 3, vote: true },
   { id: 'bankingcredit', name: 'Banking & Business Credit Authorization', cat: 'Governance', updated: 'Draft', pages: 4, vote: true },
   { id: 'propcontribution', name: 'Resolution Accepting Contribution of Real Property', cat: 'Governance', updated: 'Draft', pages: 2, vote: true },
+  { id: 'propcontribdeed', name: 'Act of Contribution of Immovable Property', cat: 'Equity', updated: 'Draft', pages: 3 },
 ]
 
 const CCORP_INFO: Record<string, DocInfo> = {
@@ -145,6 +146,7 @@ const CCORP_INFO: Record<string, DocInfo> = {
   omnibus: { desc: 'A broad, catch-all board resolution authorizing the officers to take any lawful action reasonably necessary to organize, fund, and operate the corporation — the general authority third parties often ask to see.', todo: 'Adopt at a meeting or by unanimous written consent; route to all directors to sign. Keep it in the corporate records to present to banks, vendors, and agencies.' },
   bankingcredit: { desc: 'Authorizes opening the corporate bank account, obtaining a business credit card and a corporate fuel/gas card, and establishing the company’s business-credit profiles with Experian Business, Dun & Bradstreet (D-U-N-S), and Nav.', todo: 'Fill in the institution and authorized-officer details, then all directors sign — banks and credit issuers routinely require this resolution.' },
   propcontribution: { desc: 'A board resolution written as meeting minutes that authorizes the Corporation to accept the contribution of inherited real property — the contributor’s undivided interests in the five Pointe Coupee Parish, Louisiana parcels acquired through the Succession of Ann Marie St. Amant Pleasant — and directs the officers to execute and record the transfer. Includes a for/against vote (majority rules) and signatures.', todo: 'Review the parcels and contribution terms, hold the vote, and have all directors sign. Keep it with the corporate records; the recorded deed to the Corporation is a separate instrument executed by the contributor.' },
+  propcontribdeed: { desc: 'The deed that actually transfers title — an Act of Contribution of Immovable Property conveying the contributor’s undivided interest in the five Pointe Coupee Parish parcels to the Corporation as a capital contribution in exchange for shares. This is the instrument the board resolution authorizes. In Louisiana it must be an authentic act: signed before a notary and two witnesses, then recorded in Pointe Coupee Parish.', todo: 'Fill in the recorded Book/Entry of the succession affidavit and the number of shares issued, then sign before a notary and two witnesses and record it in Pointe Coupee Parish. The Corporation’s officer signs to accept.' },
 }
 
 const CCORP_BODIES: Record<string, string> = {
@@ -457,6 +459,63 @@ NOTARY ACKNOWLEDGMENT (optional)
 State of [FOREIGN STATE]     County of [COUNTY]
 Subscribed and sworn to before me this [__] day of [MONTH], [YEAR].
 Notary Public: ______________________     My commission expires: [____]`,
+
+  propcontribdeed: `ACT OF CONTRIBUTION OF IMMOVABLE PROPERTY
+(Capital Contribution in Exchange for Stock)
+Corporation ID: [CORPORATION ID]
+
+STATE OF [FOREIGN STATE]
+PARISH/COUNTY OF ______________________
+
+BE IT KNOWN, that on the date set forth below, before me, the undersigned Notary Public, and in the presence of the two undersigned competent witnesses, personally came and appeared:
+
+CHARLES EDWARD PLEASANT, JR., a competent major residing at 9450 Fairfax Blvd., Apt. 1339, Fairfax, Virginia 22031 ("Contributor"),
+
+who declared that, for the consideration stated below, he does by these presents CONTRIBUTE, TRANSFER, ASSIGN, SET OVER, and DELIVER, with full substitution and subrogation to all rights and actions of warranty he holds, but otherwise WITHOUT WARRANTY of title and without recourse, even for the return of the consideration, unto:
+
+ADAMS INFINITE LEGACY, a [STATE] corporation foreign-qualified in [FOREIGN STATE], EIN [EIN], whose address is [ADDRESS], [CITY], [FOREIGN STATE] ("the Corporation"),
+
+here present and accepting, and purchasing for the Corporation, its successors and assigns, the following described immovable property, together with all buildings, improvements, rights, ways, and appurtenances thereto belonging.
+
+ORIGIN OF TITLE
+Contributor acquired the interest conveyed herein as the sole heir of Ann Marie St. Amant Pleasant (died December 13, 2023, Pointe Coupee Parish, Louisiana), whose succession was opened and whose heir was recognized by Affidavit of Small Succession under La. C.C.P. arts. 3431–3434, recorded in the conveyance records of Pointe Coupee Parish, Louisiana, at Conveyance Book [____], Entry [____]. The Decedent acquired her interest by act recorded in Conveyance Book 117, Entry 254 of said records.
+
+PROPERTY
+All of Contributor's undivided interest, together with all buildings and improvements, in the following parcels situated in Pointe Coupee Parish, Louisiana:
+  Parcel 00797700 — Two lots each fronting 48 ft. on St. Mary Street; bounded north and east by A. Fabre, south by J. Roberts; CB 117, E-254.
+  Parcel 00797800 — Part of Lot 26, 92 x 96 ft., east side of Richey Street, less a 36' x 46' lot in the northeast corner (lot fronts 56' on Richey Street); bounded north by T. Jeffrion, west by Nelson, south by O. Desormes; CB 117, E-254; CB 454, E-8. Municipal address 807 Richey Street, New Roads, LA.
+  Parcel 00797900 — Lot 36 ft. on the east side of Richey Street; bounded north by O. Fabre, west by W. St. Amant; CB "V", E-407; CB 117, E-254; CB 454, E-8.
+  Parcel 00798000 — Lot fronting the west side of St. Mary Street, 56 x 85 ft.; bounded north by M. Labbe, south by C. Hollins; CB 117, E-254. Municipal address 905 St. Mary Street, New Roads, LA.
+  Parcel 00798010 — Lot 17, Square 7, Second Addition, Morningside Subdivision, Section 35, Township 4, Range 10; CB 117, E-254; CB 348, E-35.
+
+The interest conveyed is Contributor's undivided (fractional) interest only. The Corporation takes title as a co-owner in indivision with the other owners of record and acknowledges that this act conveys no greater interest than Contributor owns.
+
+CONSIDERATION
+This contribution is made as a contribution to the capital of the Corporation. In exchange, the Corporation shall issue to Contributor [____] shares of its common stock, and the contribution shall be credited to the Corporation's capital accounts accordingly. The parties agree this is a non-cash capital contribution and not a sale for a cash price.
+
+TAXES & POSSESSION
+Ad valorem taxes for the current year shall be prorated to the date of this act. Possession is delivered as of the date hereof. The parties waive production of mortgage and conveyance certificates and relieve the Notary of responsibility for their production.
+
+ACCEPTANCE
+The Corporation, through its undersigned officer, accepts this contribution and the property described above on the terms stated herein.
+
+THUS DONE AND PASSED in the presence of the undersigned competent witnesses and me, Notary, who sign with the parties.
+
+____________________________________
+Charles Edward Pleasant, Jr., Contributor
+
+ADAMS INFINITE LEGACY
+By: ________________________________
+Name/Title: ________________________, Authorized Officer
+
+WITNESSES:
+____________________________________     ____________________________________
+Witness 1 (printed): ______________       Witness 2 (printed): ______________
+
+____________________________________
+Notary Public
+Printed name: ______________________     Notary ID / Bar No.: ______________
+My commission expires: ______________          Date: ______________, 20____`,
 }
 
 // ─────────────────────────────────────────────────────────────────── LLC
