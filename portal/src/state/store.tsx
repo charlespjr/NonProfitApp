@@ -679,7 +679,14 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     (): PortalDoc[] => {
       const src = entity.baseDocs
       const base = apiOrgName ? src.map((d) => ({ ...d, name: brand(d.name) })) : src
-      return base.concat(state.customDocs)
+      // Custom/AI documents that read as resolutions also collect a board vote,
+      // so a user-created resolution behaves like the built-in ones.
+      const custom = state.customDocs.map((d) =>
+        d.vote || !/\b(resolution|resolved|written consent|board action|member action|minutes|motion|appointment)\b/i.test(`${d.name} ${d.body || ''}`)
+          ? d
+          : { ...d, vote: true },
+      )
+      return base.concat(custom)
     },
     [state.customDocs, apiOrgName, brand, entity],
   )
