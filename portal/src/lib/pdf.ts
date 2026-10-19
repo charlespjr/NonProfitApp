@@ -17,6 +17,8 @@ export interface PdfSigner {
   name: string
   role: string
   record?: SignatureRecord
+  /** Board vote cast on a resolution document. */
+  vote?: 'for' | 'against' | 'abstain'
 }
 
 export interface SignedPdfInput {
@@ -34,6 +36,14 @@ export interface SignedPdfInput {
   footerWebsite?: string
   /** Italic subtitle under the title (e.g. foreign-registration note). */
   subtitle?: string
+  /** Board-vote tally for resolution documents. */
+  boardVote?: {
+    ayes: number
+    noes: number
+    abstains: number
+    total: number
+    result: 'adopted' | 'rejected' | 'pending'
+  }
 }
 
 function fmtDate(iso: string): string {
@@ -462,6 +472,37 @@ export async function exportSignedPdf(input: SignedPdfInput): Promise<void> {
   doc.line(marginL, y, pageW - marginR, y)
   y += 26
 
+  // ---------- Board vote tally (resolution documents)
+  if (input.boardVote) {
+    const bv = input.boardVote
+    ensure(70)
+    const boxY = y
+    const boxH = 54
+    draw(RULE)
+    doc.setLineWidth(0.75)
+    doc.rect(marginL, boxY, contentW, boxH)
+    doc.setFont('helvetica', 'bold')
+    doc.setFontSize(9)
+    set(STEEL)
+    doc.text('BOARD VOTE', marginL + 12, boxY + 17, { charSpace: 1.4 })
+    const resultText = bv.result === 'adopted' ? 'ADOPTED' : bv.result === 'rejected' ? 'REJECTED' : 'PENDING'
+    const resultColor: RGB = bv.result === 'adopted' ? NAVY : bv.result === 'rejected' ? [150, 40, 40] : GRAY
+    doc.setFont('helvetica', 'bold')
+    doc.setFontSize(13)
+    set(resultColor)
+    const rw = doc.getTextWidth(resultText)
+    doc.text(resultText, marginL + contentW - 12 - rw, boxY + 19)
+    doc.setFont('times', 'normal')
+    doc.setFontSize(11)
+    set(INK)
+    doc.text(`Votes in favor (Ayes): ${bv.ayes}        Votes against (Noes): ${bv.noes}        Abstentions: ${bv.abstains}`, marginL + 12, boxY + 37)
+    doc.setFont('helvetica', 'normal')
+    doc.setFontSize(8)
+    set(GRAY)
+    doc.text(`Majority of the board (${bv.total} directors) rules.`, marginL + 12, boxY + 48, { charSpace: 0.2 })
+    y = boxY + boxH + 22
+  }
+
   const drawTypedFallback = (text: string) => {
     doc.setFont('times', 'italic')
     doc.setFontSize(22)
@@ -521,6 +562,14 @@ export async function exportSignedPdf(input: SignedPdfInput): Promise<void> {
         ? `Electronically signed ${fmtDate(s.record.signedAt)}`
         : 'Electronically signed'
     doc.text(caption, marginL, y)
+    if (s.vote) {
+      const vl = s.vote === 'for' ? 'Vote: For' : s.vote === 'against' ? 'Vote: Against' : 'Vote: Abstain'
+      const vc: RGB = s.vote === 'for' ? NAVY : s.vote === 'against' ? [150, 40, 40] : GRAY
+      doc.setFont('helvetica', 'bold')
+      doc.setFontSize(8.5)
+      set(vc)
+      doc.text(vl, marginL + 300, y)
+    }
     y += 28
   }
 
