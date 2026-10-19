@@ -59,6 +59,7 @@ const defaultPersisted: PersistedState = {
   screen: 'dashboard',
   sig: {},
   signatures: {},
+  docVotes: {},
   docNotified: {},
   tasks: {},
   notes: [],
@@ -177,6 +178,10 @@ export interface Store {
   /** Apply a real electronic signature (typed or drawn) for a member on the
    *  currently-open document. */
   applySignature(memberId: string, sigRecord: { method: 'typed' | 'drawn'; value: string }): void
+  /** Record a board member's vote on a resolution document. */
+  castDocVote(memberId: string, choice: VoteChoice): void
+  /** Votes cast on a document, keyed by member id. */
+  votesFor(docId: string): Record<string, VoteChoice>
   signAll(): void
   notifyDocSigners(docId: string): void
   openAddDoc(): void
@@ -268,6 +273,7 @@ function abbreviateState(s?: string): string {
 const BOARD_KEYS = [
   'sig',
   'signatures',
+  'docVotes',
   'docNotified',
   'tasks',
   'notes',
@@ -526,6 +532,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         screen: state.screen,
         sig: state.sig,
         signatures: state.signatures,
+        docVotes: state.docVotes,
         docNotified: state.docNotified,
         tasks: state.tasks,
         notes: state.notes,
@@ -860,6 +867,26 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     [state.modal, sigFor, roster, flash, guard],
   )
 
+  /** Record a board member's vote (for/against/abstain) on a resolution
+   *  document. Votes are kept per document, alongside the signatures. */
+  const castDocVote = useCallback(
+    (memberId: string, choice: VoteChoice) => {
+      const docId = state.modal
+      if (!docId || !guard()) return
+      setState((s) => ({
+        ...s,
+        docVotes: { ...s.docVotes, [docId]: { ...(s.docVotes[docId] || {}), [memberId]: choice } },
+      }))
+      flash(memberId === state.sessionUserId ? `Vote recorded: ${choice}` : 'Vote recorded')
+    },
+    [state.modal, state.sessionUserId, flash, guard],
+  )
+
+  const votesFor = useCallback(
+    (docId: string): Record<string, VoteChoice> => ({ ...(state.docVotes[docId] || {}) }),
+    [state.docVotes],
+  )
+
   const signAll = useCallback(() => {
     const docId = state.modal
     if (!docId || !guard()) return
@@ -1003,8 +1030,10 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       const bodyText = brand(doc.body || entity.docBodies[docId] || '')
       const recs = state.signatures[docId] || {}
       const signedFlags = state.sig[docId] || {}
+      const voteMap = state.docVotes[docId] || {}
       const signers = roster().map((m) => {
         const rec = recs[m.id]
+        const vote = voteMap[m.id]
         // Anyone the board marked as signed must appear signed in the PDF, even
         // if they signed under an older build that stored only the signed flag
         // and no rich signature record. Synthesize a typed signature of their
@@ -1015,11 +1044,29 @@ export function StoreProvider({ children }: { children: ReactNode }) {
           return {
             name: m.name,
             role: m.role,
+            vote,
             record: { memberId: m.id, name: m.name, method: 'typed' as const, value: m.name, signedAt: '' },
           }
         }
-        return { name: m.name, role: m.role, record: rec }
+        return { name: m.name, role: m.role, vote, record: rec }
       })
+      // Board-vote tally for resolution documents (majority of the board rules).
+      const boardVote = doc.vote
+        ? (() => {
+            const r = roster()
+            const ayes = r.filter((m) => voteMap[m.id] === 'for').length
+            const noes = r.filter((m) => voteMap[m.id] === 'against').length
+            const abstains = r.filter((m) => voteMap[m.id] === 'abstain').length
+            const cast = ayes + noes + abstains
+            return {
+              ayes,
+              noes,
+              abstains,
+              total: r.length,
+              result: cast === 0 ? ('pending' as const) : ayes * 2 > r.length ? ('adopted' as const) : cast >= r.length ? ('rejected' as const) : ('pending' as const),
+            }
+          })()
+        : undefined
       // Who signs the "Certificate of Secretary" line: a member titled
       // Secretary if there is one, otherwise the org admin (who keeps the
       // records), otherwise the person exporting.
@@ -1060,13 +1107,14 @@ export function StoreProvider({ children }: { children: ReactNode }) {
           footerAddress,
           footerWebsite,
           subtitle,
+          boardVote,
         })
         flash('Signed copy downloaded')
       } catch {
         flash('Could not generate the PDF — try again')
       }
     },
-    [allDocs, brand, entity, state.signatures, state.sig, state.accounts, state.sessionUserId, state.orgLogo, apiOrg, roster, orgName, flash],
+    [allDocs, brand, entity, state.signatures, state.sig, state.docVotes, state.accounts, state.sessionUserId, state.orgLogo, apiOrg, roster, orgName, flash],
   )
 
   // ------------------------------------------------------ organization logo
@@ -1708,6 +1756,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     closeModal,
     signMember,
     applySignature,
+    castDocVote,
+    votesFor,
     signAll,
     notifyDocSigners,
     openAddDoc,

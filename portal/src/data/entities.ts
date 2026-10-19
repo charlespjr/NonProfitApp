@@ -122,14 +122,14 @@ const CCORP_HELP: Record<string, string> = {
 const CCORP_DOCS: PortalDoc[] = [
   { id: 'bylaws', name: 'Corporate Bylaws', cat: 'Governance', updated: 'Draft', pages: 14 },
   { id: 'minutes', name: 'Organizational Board Minutes', cat: 'Governance', updated: 'Draft', pages: 4 },
-  { id: 'boardconsent', name: 'Board Action & Written Consent', cat: 'Governance', updated: 'Draft', pages: 3 },
+  { id: 'boardconsent', name: 'Board Action & Written Consent', cat: 'Governance', updated: 'Draft', pages: 3, vote: true },
   { id: 'shareholders', name: 'Shareholders’ Agreement', cat: 'Governance', updated: 'Draft', pages: 8 },
   { id: 'stockpurchase', name: 'Founder Stock Purchase Agreement', cat: 'Equity', updated: 'Draft', pages: 6 },
   { id: 'ipassign', name: 'Invention & IP Assignment Agreement', cat: 'Equity', updated: 'Draft', pages: 5 },
   { id: 'captable', name: 'Capitalization Table', cat: 'Equity', updated: 'Draft', pages: 1 },
-  { id: 'boardvote', name: 'Board Resolution & Minutes (Vote)', cat: 'Governance', updated: 'Draft', pages: 2 },
-  { id: 'omnibus', name: 'Omnibus Board Resolution (Blanket Authority)', cat: 'Governance', updated: 'Draft', pages: 3 },
-  { id: 'bankingcredit', name: 'Banking & Business Credit Authorization', cat: 'Governance', updated: 'Draft', pages: 4 },
+  { id: 'boardvote', name: 'Board Resolution & Minutes (Vote)', cat: 'Governance', updated: 'Draft', pages: 2, vote: true },
+  { id: 'omnibus', name: 'Omnibus Board Resolution (Blanket Authority)', cat: 'Governance', updated: 'Draft', pages: 3, vote: true },
+  { id: 'bankingcredit', name: 'Banking & Business Credit Authorization', cat: 'Governance', updated: 'Draft', pages: 4, vote: true },
 ]
 
 const CCORP_INFO: Record<string, DocInfo> = {
@@ -466,9 +466,9 @@ const LLC_HELP: Record<string, string> = {
 
 const LLC_DOCS: PortalDoc[] = [
   { id: 'operating', name: 'Operating Agreement', cat: 'Governance', updated: 'Draft', pages: 16 },
-  { id: 'consent', name: 'Organizational Consent of Members', cat: 'Governance', updated: 'Draft', pages: 3 },
+  { id: 'consent', name: 'Organizational Consent of Members', cat: 'Governance', updated: 'Draft', pages: 3, vote: true },
   { id: 'ledger', name: 'Membership Ledger & Capital Contributions', cat: 'Equity', updated: 'Draft', pages: 1 },
-  { id: 'memberaction', name: 'Member Action & Vote', cat: 'Governance', updated: 'Draft', pages: 2 },
+  { id: 'memberaction', name: 'Member Action & Vote', cat: 'Governance', updated: 'Draft', pages: 2, vote: true },
 ]
 
 const LLC_INFO: Record<string, DocInfo> = {

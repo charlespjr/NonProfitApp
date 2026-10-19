@@ -51,6 +51,8 @@ export interface PortalDoc {
   desc?: string
   todo?: string
   body?: string
+  /** Resolution-type documents also collect a board vote (for/against/abstain). */
+  vote?: boolean
 }
 
 export interface DocInfo {
@@ -174,6 +176,8 @@ export interface PersistedState {
   /** Rich electronic-signature records, keyed docId → memberId. Parallels
    *  `sig` (which stays the quick signed/not-signed status map). */
   signatures: Record<string, Record<string, SignatureRecord>>
+  /** Board votes on resolution documents, keyed docId → memberId → choice. */
+  docVotes: Record<string, Record<string, VoteChoice>>
   docNotified: Record<string, DocNotifiedEntry>
   tasks: Record<string, boolean>
   notes: Note[]

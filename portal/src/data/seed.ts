@@ -31,8 +31,8 @@ export const SEED_ACCOUNTS: Record<string, Account> = {
 export const BASE_DOCS: PortalDoc[] = [
   { id: 'bylaws', name: 'Bylaws of Adams Infinite Legacy', cat: 'Governance', updated: 'Jun 24, 2026', pages: 18 },
   { id: 'minutes', name: 'Organizational Board Minutes', cat: 'Governance', updated: 'Jun 20, 2026', pages: 4 },
-  { id: 'resolution', name: 'Board Resolution & Written Consent', cat: 'Governance', updated: 'Jul 1, 2026', pages: 3 },
-  { id: 'boardvote', name: 'Board Action & Vote', cat: 'Governance', updated: 'Jul 1, 2026', pages: 2 },
+  { id: 'resolution', name: 'Board Resolution & Written Consent', cat: 'Governance', updated: 'Jul 1, 2026', pages: 3, vote: true },
+  { id: 'boardvote', name: 'Board Action & Vote', cat: 'Governance', updated: 'Jul 1, 2026', pages: 2, vote: true },
   { id: 'festivalresolution', name: 'Board Resolution — Festival & Sponsorship', cat: 'Governance', updated: 'Jul 2, 2026', pages: 2 },
   { id: 'prospectus', name: 'Sponsorship Prospectus — Get Well Soon Festival', cat: 'Fundraising', updated: 'Jun 27, 2026', pages: 2 },
   { id: 'sponsoragreement', name: 'Sponsorship Agreement (per sponsor)', cat: 'Fundraising', updated: 'Jul 2, 2026', pages: 3 },

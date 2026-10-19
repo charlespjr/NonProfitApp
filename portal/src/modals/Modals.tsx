@@ -187,6 +187,18 @@ export function DocuSealModal() {
   const user = currentUser!
   const meSigned = !!sig[user.member.id]
 
+  // Resolution documents also collect a board vote (majority of the board rules).
+  const isVoteDoc = !!doc.vote
+  const votes = store.votesFor(doc.id)
+  const ayes = roster.filter((m) => votes[m.id] === 'for').length
+  const noes = roster.filter((m) => votes[m.id] === 'against').length
+  const abstains = roster.filter((m) => votes[m.id] === 'abstain').length
+  const votedCount = ayes + noes + abstains
+  const adopted = ayes * 2 > roster.length
+  const myVote = votes[user.member.id]
+  const voteLabel = (c?: string) => (c === 'for' ? 'For' : c === 'against' ? 'Against' : c === 'abstain' ? 'Abstain' : '')
+  const voteColor = (c?: string) => (c === 'for' ? 'var(--good)' : c === 'against' ? 'var(--danger)' : 'var(--muted)')
+
   return (
     <ModalShell onClose={store.closeModal} maxWidth={640}>
       <div style={sx('display:flex;align-items:center;gap:12px;padding:15px 20px;border-bottom:1px solid var(--line)')}>
@@ -251,6 +263,29 @@ export function DocuSealModal() {
           </div>
         </div>
 
+        {isVoteDoc && (
+          <div style={sx('background:var(--panel);border:1px solid var(--line);border-radius:11px;padding:12px 14px;margin-bottom:14px')}>
+            <div style={sx('display:flex;align-items:center;justify-content:space-between;margin-bottom:9px')}>
+              <div style={sx('font-size:13px;font-weight:700;color:var(--ink)')}>Board vote · majority rules</div>
+              <span
+                style={{
+                  ...sx('font-size:11.5px;font-weight:700;padding:3px 10px;border-radius:7px'),
+                  color: votedCount === 0 ? 'var(--muted)' : adopted ? 'var(--good)' : votedCount >= roster.length ? 'var(--danger)' : 'var(--muted)',
+                  background: votedCount === 0 ? 'var(--line)' : adopted ? 'var(--good-soft)' : votedCount >= roster.length ? 'var(--warn-soft)' : 'var(--line)',
+                }}
+              >
+                {votedCount === 0 ? 'Awaiting votes' : adopted ? 'ADOPTED' : votedCount >= roster.length ? 'REJECTED' : 'Pending majority'}
+              </span>
+            </div>
+            <div style={sx('display:flex;gap:16px;font-size:12.5px;color:var(--ink)')}>
+              <span><strong style={{ color: 'var(--good)' }}>{ayes}</strong> For</span>
+              <span><strong style={{ color: 'var(--danger)' }}>{noes}</strong> Against</span>
+              <span><strong style={{ color: 'var(--muted)' }}>{abstains}</strong> Abstained</span>
+              <span style={sx('margin-left:auto;color:var(--muted)')}>{votedCount} of {roster.length} voted</span>
+            </div>
+          </div>
+        )}
+
         <div style={sx('display:flex;align-items:center;justify-content:space-between;margin-bottom:10px')}>
           <div style={sx('font-size:13px;font-weight:700;color:var(--ink)')}>Signers · full board required</div>
           <div style={sx('font-size:12px;font-weight:600;color:var(--muted)')}>{signedCount} of {roster.length} signed</div>
@@ -296,6 +331,37 @@ export function DocuSealModal() {
                     </div>
                   ) : (
                     <div style={sx('font-size:11.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis')}>{m.role}</div>
+                  )}
+                  {isVoteDoc && (
+                    <div style={sx('margin-top:7px')}>
+                      {isYou ? (
+                        <div style={sx('display:inline-flex;gap:5px')}>
+                          {(['for', 'against', 'abstain'] as const).map((c) => {
+                            const active = myVote === c
+                            return (
+                              <button
+                                key={c}
+                                onClick={() => store.castDocVote(m.id, c)}
+                                style={{
+                                  ...sx('font-size:11px;font-weight:600;padding:4px 11px;border-radius:7px;cursor:pointer'),
+                                  border: '1px solid ' + (active ? voteColor(c) : 'var(--line)'),
+                                  background: active ? voteColor(c) : 'var(--panel)',
+                                  color: active ? '#fff' : 'var(--ink)',
+                                }}
+                              >
+                                {voteLabel(c)}
+                              </button>
+                            )
+                          })}
+                        </div>
+                      ) : votes[m.id] ? (
+                        <span style={{ ...sx('font-size:11px;font-weight:600;padding:3px 9px;border-radius:7px;background:var(--line)'), color: voteColor(votes[m.id]) }}>
+                          Voted: {voteLabel(votes[m.id])}
+                        </span>
+                      ) : (
+                        <span style={sx('font-size:11px;color:var(--muted)')}>Not yet voted</span>
+                      )}
+                    </div>
                   )}
                 </div>
                 {signed ? (
