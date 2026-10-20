@@ -146,7 +146,7 @@ const CCORP_INFO: Record<string, DocInfo> = {
   omnibus: { desc: 'A broad, catch-all board resolution authorizing the officers to take any lawful action reasonably necessary to organize, fund, and operate the corporation — the general authority third parties often ask to see.', todo: 'Adopt at a meeting or by unanimous written consent; route to all directors to sign. Keep it in the corporate records to present to banks, vendors, and agencies.' },
   bankingcredit: { desc: 'Authorizes opening the corporate bank account, obtaining a business credit card and a corporate fuel/gas card, and establishing the company’s business-credit profiles with Experian Business, Dun & Bradstreet (D-U-N-S), and Nav.', todo: 'Fill in the institution and authorized-officer details, then all directors sign — banks and credit issuers routinely require this resolution.' },
   propcontribution: { desc: 'A board resolution written as meeting minutes that authorizes the Corporation to accept the contribution of inherited real property — the contributor’s undivided interests in the five Pointe Coupee Parish, Louisiana parcels acquired through the Succession of Ann Marie St. Amant Pleasant — and directs the officers to execute and record the transfer. Includes a for/against vote (majority rules) and signatures.', todo: 'Review the parcels and contribution terms, hold the vote, and have all directors sign. Keep it with the corporate records; the recorded deed to the Corporation is a separate instrument executed by the contributor.' },
-  propcontribdeed: { desc: 'The deed that actually transfers title — an Act of Contribution of Immovable Property conveying the contributor’s undivided interest in the five Pointe Coupee Parish parcels to the Corporation as a contribution to capital. Because the contributor is the sole shareholder, no new shares are issued; the value is credited to additional paid-in capital. This is the instrument the board resolution authorizes. In Louisiana it must be an authentic act: signed before a notary and two witnesses, then recorded in Pointe Coupee Parish.', todo: 'Sign before a notary and two witnesses, then record it in Pointe Coupee Parish. The Corporation’s officer signs to accept. Keep a copy with the corporate records and send one to the Assessor to update the ownership name.' },
+  propcontribdeed: { desc: 'The deed that actually transfers title — an Act of Contribution of Immovable Property conveying the contributor’s undivided interest in the five Pointe Coupee Parish parcels to the Corporation as a contribution to capital. Because the contributor is the sole shareholder, no new shares are issued; the value is credited to additional paid-in capital. This is the instrument the board resolution authorizes. It is an act under private signature: the parties sign and acknowledge their signatures before a notary (no witnesses required), then it is recorded in Pointe Coupee Parish.', todo: 'Sign, then acknowledge your signatures before a notary; the Corporation’s officer signs to accept. Record it in Pointe Coupee Parish, keep a copy with the corporate records, and send one to the Assessor to update the ownership name.' },
 }
 
 const CCORP_BODIES: Record<string, string> = {
@@ -461,13 +461,13 @@ Subscribed and sworn to before me this [__] day of [MONTH], [YEAR].
 Notary Public: ______________________     My commission expires: [____]`,
 
   propcontribdeed: `ACT OF CONTRIBUTION OF IMMOVABLE PROPERTY
-(Contribution to the Capital of a Wholly-Owned Corporation)
+(Contribution to the Capital of a Wholly-Owned Corporation — Act Under Private Signature)
 Corporation ID: [CORPORATION ID]
 
 STATE OF [FOREIGN STATE]
 PARISH/COUNTY OF ______________________
 
-BE IT KNOWN, that on the date set forth below, before me, the undersigned Notary Public, and in the presence of the two undersigned competent witnesses, personally came and appeared:
+BE IT KNOWN, that on the date set forth below, the undersigned:
 
 CHARLES EDWARD PLEASANT, JR., a competent major residing at 9450 Fairfax Blvd., Apt. 1339, Fairfax, Virginia 22031 ("Contributor"),
 
@@ -475,7 +475,7 @@ who declared that, for the consideration stated below, he does by these presents
 
 ADAMS INFINITE LEGACY, a [STATE] corporation foreign-qualified in [FOREIGN STATE], EIN [EIN], whose address is [ADDRESS], [CITY], [FOREIGN STATE] ("the Corporation"),
 
-here present and accepting, and purchasing for the Corporation, its successors and assigns, the following described immovable property, together with all buildings, improvements, rights, ways, and appurtenances thereto belonging.
+which, through its undersigned officer, accepts for the Corporation, its successors and assigns, the following described immovable property, together with all buildings, improvements, rights, ways, and appurtenances thereto belonging.
 
 ORIGIN OF TITLE
 Contributor acquired the interest conveyed herein as the sole heir of Ann Marie St. Amant Pleasant (died December 13, 2023, Pointe Coupee Parish, Louisiana), whose succession was opened and whose heir was recognized by Affidavit of Small Succession under La. C.C.P. arts. 3431–3434, recorded October 20, 2026 in the conveyance records of Pointe Coupee Parish, Louisiana, at Conveyance Book (COB) 9898, Page 1. The Decedent acquired her interest by act recorded in Conveyance Book 117, Entry 254 of said records.
@@ -494,28 +494,30 @@ CONSIDERATION
 This contribution is made as a contribution to the capital of the Corporation. Contributor is the sole shareholder of the Corporation; accordingly, no new shares are issued, and the value of the contributed property is credited to the Corporation's additional paid-in capital. The parties agree this is a non-cash contribution to capital and not a sale for a cash price.
 
 TAXES & POSSESSION
-Ad valorem taxes for the current year shall be prorated to the date of this act. Possession is delivered as of the date hereof. The parties waive production of mortgage and conveyance certificates and relieve the Notary of responsibility for their production.
+Ad valorem taxes for the current year shall be prorated to the date of this act. Possession is delivered as of the date hereof. The parties waive production of mortgage and conveyance certificates.
 
 ACCEPTANCE
 The Corporation, through its undersigned officer, accepts this contribution and the property described above on the terms stated herein.
 
-THUS DONE AND PASSED in the presence of the undersigned competent witnesses and me, Notary, who sign with the parties.
+This Act of Contribution is executed by the parties as an act under private signature, intended to be recorded in the conveyance records of Pointe Coupee Parish, Louisiana upon acknowledgment as provided below.
 
-____________________________________
+____________________________________          Date: ______________, 20____
 Charles Edward Pleasant, Jr., Contributor
 
 ADAMS INFINITE LEGACY
-By: ________________________________
+By: ________________________________          Date: ______________, 20____
 Name/Title: ________________________, Authorized Officer
 
-WITNESSES:
-____________________________________     ____________________________________
-Witness 1 (printed): ______________       Witness 2 (printed): ______________
+ACKNOWLEDGMENT
+STATE OF [FOREIGN STATE]
+PARISH/COUNTY OF ______________________
+
+On this ______ day of ____________________, 20____, before me, the undersigned Notary Public, personally appeared Charles Edward Pleasant, Jr., and the above-named authorized officer of Adams Infinite Legacy, each to me known (or satisfactorily proven) to be the persons who executed the foregoing Act of Contribution, who each acknowledged to me that they signed and executed the same as their free act and deed, and the officer that he/she did so on behalf of and with the authority of the Corporation.
 
 ____________________________________
 Notary Public
 Printed name: ______________________     Notary ID / Bar No.: ______________
-My commission expires: ______________          Date: ______________, 20____`,
+My commission expires: ______________`,
 }
 
 // ─────────────────────────────────────────────────────────────────── LLC
