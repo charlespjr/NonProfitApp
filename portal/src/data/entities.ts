@@ -478,7 +478,7 @@ ADAMS INFINITE LEGACY, a [STATE] corporation foreign-qualified in [FOREIGN STATE
 here present and accepting, and purchasing for the Corporation, its successors and assigns, the following described immovable property, together with all buildings, improvements, rights, ways, and appurtenances thereto belonging.
 
 ORIGIN OF TITLE
-Contributor acquired the interest conveyed herein as the sole heir of Ann Marie St. Amant Pleasant (died December 13, 2023, Pointe Coupee Parish, Louisiana), whose succession was opened and whose heir was recognized by Affidavit of Small Succession under La. C.C.P. arts. 3431–3434, recorded in the conveyance records of Pointe Coupee Parish, Louisiana, at Conveyance Book [____], Entry [____]. The Decedent acquired her interest by act recorded in Conveyance Book 117, Entry 254 of said records.
+Contributor acquired the interest conveyed herein as the sole heir of Ann Marie St. Amant Pleasant (died December 13, 2023, Pointe Coupee Parish, Louisiana), whose succession was opened and whose heir was recognized by Affidavit of Small Succession under La. C.C.P. arts. 3431–3434, recorded October 20, 2026 in the conveyance records of Pointe Coupee Parish, Louisiana, at Conveyance Book (COB) 9898, Page 1. The Decedent acquired her interest by act recorded in Conveyance Book 117, Entry 254 of said records.
 
 PROPERTY
 All of Contributor's undivided interest, together with all buildings and improvements, in the following parcels situated in Pointe Coupee Parish, Louisiana:
