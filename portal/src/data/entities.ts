@@ -146,7 +146,7 @@ const CCORP_INFO: Record<string, DocInfo> = {
   omnibus: { desc: 'A broad, catch-all board resolution authorizing the officers to take any lawful action reasonably necessary to organize, fund, and operate the corporation — the general authority third parties often ask to see.', todo: 'Adopt at a meeting or by unanimous written consent; route to all directors to sign. Keep it in the corporate records to present to banks, vendors, and agencies.' },
   bankingcredit: { desc: 'Authorizes opening the corporate bank account, obtaining a business credit card and a corporate fuel/gas card, and establishing the company’s business-credit profiles with Experian Business, Dun & Bradstreet (D-U-N-S), and Nav.', todo: 'Fill in the institution and authorized-officer details, then all directors sign — banks and credit issuers routinely require this resolution.' },
   propcontribution: { desc: 'A board resolution written as meeting minutes that authorizes the Corporation to accept the contribution of inherited real property — the contributor’s undivided interests in the five Pointe Coupee Parish, Louisiana parcels acquired through the Succession of Ann Marie St. Amant Pleasant — and directs the officers to execute and record the transfer. Includes a for/against vote (majority rules) and signatures.', todo: 'Review the parcels and contribution terms, hold the vote, and have all directors sign. Keep it with the corporate records; the recorded deed to the Corporation is a separate instrument executed by the contributor.' },
-  propcontribdeed: { desc: 'The deed that actually transfers title — an Act of Contribution of Immovable Property conveying the contributor’s undivided interest in the five Pointe Coupee Parish parcels to the Corporation as a capital contribution in exchange for shares. This is the instrument the board resolution authorizes. In Louisiana it must be an authentic act: signed before a notary and two witnesses, then recorded in Pointe Coupee Parish.', todo: 'Fill in the recorded Book/Entry of the succession affidavit and the number of shares issued, then sign before a notary and two witnesses and record it in Pointe Coupee Parish. The Corporation’s officer signs to accept.' },
+  propcontribdeed: { desc: 'The deed that actually transfers title — an Act of Contribution of Immovable Property conveying the contributor’s undivided interest in the five Pointe Coupee Parish parcels to the Corporation as a contribution to capital. Because the contributor is the sole shareholder, no new shares are issued; the value is credited to additional paid-in capital. This is the instrument the board resolution authorizes. In Louisiana it must be an authentic act: signed before a notary and two witnesses, then recorded in Pointe Coupee Parish.', todo: 'Sign before a notary and two witnesses, then record it in Pointe Coupee Parish. The Corporation’s officer signs to accept. Keep a copy with the corporate records and send one to the Assessor to update the ownership name.' },
 }
 
 const CCORP_BODIES: Record<string, string> = {
@@ -461,7 +461,7 @@ Subscribed and sworn to before me this [__] day of [MONTH], [YEAR].
 Notary Public: ______________________     My commission expires: [____]`,
 
   propcontribdeed: `ACT OF CONTRIBUTION OF IMMOVABLE PROPERTY
-(Capital Contribution in Exchange for Stock)
+(Contribution to the Capital of a Wholly-Owned Corporation)
 Corporation ID: [CORPORATION ID]
 
 STATE OF [FOREIGN STATE]
@@ -491,7 +491,7 @@ All of Contributor's undivided interest, together with all buildings and improve
 The interest conveyed is Contributor's undivided (fractional) interest only. The Corporation takes title as a co-owner in indivision with the other owners of record and acknowledges that this act conveys no greater interest than Contributor owns.
 
 CONSIDERATION
-This contribution is made as a contribution to the capital of the Corporation. In exchange, the Corporation shall issue to Contributor [____] shares of its common stock, and the contribution shall be credited to the Corporation's capital accounts accordingly. The parties agree this is a non-cash capital contribution and not a sale for a cash price.
+This contribution is made as a contribution to the capital of the Corporation. Contributor is the sole shareholder of the Corporation; accordingly, no new shares are issued, and the value of the contributed property is credited to the Corporation's additional paid-in capital. The parties agree this is a non-cash contribution to capital and not a sale for a cash price.
 
 TAXES & POSSESSION
 Ad valorem taxes for the current year shall be prorated to the date of this act. Possession is delivered as of the date hereof. The parties waive production of mortgage and conveyance certificates and relieve the Notary of responsibility for their production.
