@@ -20,18 +20,30 @@ export interface SessionUser {
   orgId: string
 }
 
+// The session cookie must also work when the portal is shown inside the
+// owner's executive dashboard (an iframe on another site), so in production it
+// is SameSite=None + Partitioned (CHIPS: the embedded copy gets its own cookie
+// jar, keyed to the embedding site). SameSite=Lax used to be the defence
+// against cross-site form posts; csrfGuard below takes over that job by
+// rejecting state-changing requests from any origin not on the allowlist.
+const PROD = process.env.NODE_ENV === 'production'
+const cookieOpts = PROD
+  ? ({ httpOnly: true, sameSite: 'None', secure: true, partitioned: true, path: '/' } as const)
+  : ({ httpOnly: true, sameSite: 'Lax', secure: false, path: '/' } as const)
+
+/** Sites allowed to make signed-in, state-changing requests: the portal itself
+ *  and the executive dashboard that embeds it. Extend with EMBED_ORIGINS
+ *  (comma-separated) without a code change. */
+const EMBED_ORIGINS = ['https://executive-admin.vercel.app'].concat(
+  (process.env.EMBED_ORIGINS || '').split(',').map((s) => s.trim()).filter(Boolean),
+)
+
 export async function createSession(c: Context, s: SessionUser) {
   const token = await sign(
     { sub: s.userId, org: s.orgId, exp: Math.floor(Date.now() / 1000) + SESSION_TTL_S },
     JWT_SECRET,
   )
-  setCookie(c, COOKIE, token, {
-    httpOnly: true,
-    sameSite: 'Lax',
-    secure: process.env.NODE_ENV === 'production',
-    path: '/',
-    maxAge: SESSION_TTL_S,
-  })
+  setCookie(c, COOKIE, token, { ...cookieOpts, maxAge: SESSION_TTL_S })
 }
 
 async function readSession(c: Context): Promise<SessionUser | null> {
@@ -151,6 +163,25 @@ function orgFacts(o: typeof orgs.$inferSelect): string {
 
 export const app = new Hono<Env>().basePath('/api')
 
+/**
+ * CSRF guard. Browsers always send Origin on cross-site POST/PUT/PATCH/DELETE,
+ * so a state-changing request from a page that isn't the portal itself (same
+ * host) or an allowlisted embedder is refused. Requests with no Origin at all
+ * (server-to-server: Stripe webhooks, Vercel crons) are unaffected.
+ */
+app.use('*', async (c, next) => {
+  const m = c.req.method
+  if (m === 'GET' || m === 'HEAD' || m === 'OPTIONS') return next()
+  const origin = c.req.header('origin')
+  if (!origin) return next()
+  // "null" (sandboxed frames, data: pages) is refused: it can't be attributed to a trusted site.
+  let host = ''
+  try { host = new URL(origin).host } catch { return c.json({ error: 'bad origin' }, 403) }
+  const self = c.req.header('x-forwarded-host') || c.req.header('host') || ''
+  if (host === self || EMBED_ORIGINS.includes(origin) || /^(localhost|127\.0\.0\.1)(:\d+)?$/.test(host)) return next()
+  return c.json({ error: 'cross-site request refused' }, 403)
+})
+
 app.get('/health', (c) =>
   c.json({
     ok: true,
@@ -248,7 +279,7 @@ app.post('/auth/login', async (c) => {
 })
 
 app.post('/auth/logout', (c) => {
-  deleteCookie(c, COOKIE, { path: '/' })
+  deleteCookie(c, COOKIE, cookieOpts)
   return c.json({ ok: true })
 })
 

@@ -539,7 +539,22 @@ async function main() {
   res = await app.request('/api/auth/me', { headers: { cookie: judyCookie } })
   check('revoked member session invalid → 401', res.status === 401)
 
-  // 17. logout clears session
+  // 17. cross-site requests are refused; the portal itself and the embedding dashboard are allowed
+  const post = (origin?: string) => app.request('http://app.quorumsuite.com/api/auth/logout', { method: 'POST', headers: { host: 'app.quorumsuite.com', ...(origin ? { origin } : {}) } })
+  res = await post('https://evil.example')
+  check('cross-site POST refused → 403', res.status === 403)
+  res = await post('null')
+  check('null-origin POST refused → 403', res.status === 403)
+  res = await post('https://app.quorumsuite.com')
+  check('same-site POST allowed', res.status === 200)
+  res = await post('https://executive-admin.vercel.app')
+  check('dashboard embed POST allowed', res.status === 200)
+  res = await post()
+  check('no-origin POST (webhooks, crons) allowed', res.status === 200)
+  res = await app.request('http://app.quorumsuite.com/api/auth/me', { headers: { host: 'app.quorumsuite.com', origin: 'https://evil.example' } })
+  check('cross-site GET not blocked by the guard', res.status !== 403)
+
+  // 18. logout clears session
   res = await app.request('/api/auth/logout', { method: 'POST', headers: { cookie: admin } })
   check('logout ok', res.status === 200)
 
