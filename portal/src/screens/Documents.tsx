@@ -5,7 +5,7 @@ import { STATUS_META } from '../components/shared'
 import type { DocCategory } from '../types'
 
 /** Fixed display order; only categories with a document are shown as tabs. */
-const CAT_ORDER: DocCategory[] = ['Governance', 'Formation', 'Equity', 'Compliance', 'Fundraising', 'Donor Letters']
+const CAT_ORDER: DocCategory[] = ['Governance', 'Formation', 'Equity', 'Compliance', 'Fundraising', 'Donor Letters', 'Estate']
 
 export function Documents() {
   const store = useStore()

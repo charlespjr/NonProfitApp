@@ -17,6 +17,7 @@ export type DocCategory =
   | 'Governance'
   | 'Fundraising'
   | 'Donor Letters'
+  | 'Estate'
   | 'Equity'
   | 'Compliance'
   | 'Formation'
